@@ -1,0 +1,64 @@
+Notes for the writer, not part of the body: the body starts at the `**Status:**` line below the rule, and
+nothing above the rule is written to Leeway.
+
+Two owners, one body: the product owner writes everything down to "Open questions for dev" with `shape-work`, and
+`plan-work` checks it without editing it; after that check passes, the planner adds "Technical criteria" with
+`plan-work`. Neither touches the other's part; the Status line is shared, and each sets its own half. A body
+written by hand in this shape counts the same.
+
+- Replace every `<placeholder>`. A heading with nothing to say reads "n/a: <why>". Delete an optional section
+  rather than leave it empty, except Design, where "Design link missing" is written out.
+- An answer nobody has decided yet stays under its heading as one line starting "OPEN:", never a guess; the
+  OPEN: lines are what is still open, and the Status line does not count them.
+- Numbers are stable, because tasks cite them: a new criterion goes at the end, and a dropped one stays as
+  "AC-n (removed: <why>)". Never renumber.
+- Short, and by reference: what can be looked up in the code or a doc is a pointer to where, not a retelling.
+- Leeway shows raw HTML as text, so the body carries no HTML comment or other marker.
+- A description holds at most 5,000 characters. If the body would not fit, `plan-work` moves the whole
+  Technical criteria section to one story comment whose body opens with the heading `# Technical criteria`
+  (the latest one wins), and leaves a pointer here.
+
+---
+
+**Status:** shaped by <who> on <YYYY-MM-DD> · planned by <who> on <YYYY-MM-DD>
+
+## Scope
+As a <role>, I want <capability>, so that <outcome>.
+<One to three sentences of context: what exists today, and what this story changes about it. What it
+leaves out goes under Out of scope, not here.>
+
+## Acceptance criteria
+
+### AC-1 <short name>
+As a <role>, I can <behaviour>.
+- <rule>
+- <rule>
+- Fallback if not implemented in this story: <what the user gets instead>
+
+### AC-2 <short name>
+As a <role>, I can <behaviour>.
+- <rule>
+- OPEN: <a product question nobody has answered yet>
+
+## Design
+<Figma link> | Design link missing
+
+## Out of scope
+<Optional. What a reader could reasonably expect from this story and will not get, and where it went
+instead, if anywhere. The one place the story says what it leaves out.>
+
+## Open questions for dev
+<Optional. Technical things the PO noticed or the code showed, for a developer to answer in planning:
+"does an endpoint for X exist?", "the list on page Y looks like the one to match". Never a criterion
+in disguise, and never decided here. A question whose answer the user would see is a product
+question: it is asked and answered above, not here.>
+
+## Technical criteria
+<Optional: delete it for a small change or a trivial implementation. Written by the developer with
+plan-work, after the product check. What the build must hold to that the user does not see: a bound,
+a contract that must not change, a sibling to match, an answer to an open question above. Point to
+where the detail lives rather than restating it. Moved to a comment when the body would not fit:
+then this heading keeps one line, "In the latest technical-criteria comment on this story.">
+
+### TC-1 <short name>
+- <rule a reviewer would fail the work for breaking>
