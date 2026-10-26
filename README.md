@@ -11,6 +11,12 @@ contract the skills execute.
 
 Requires Claude Code, `node` on `PATH` (the hooks are Node) and the `leeway` CLI.
 
+**Step 0: get the `leeway` CLI.** Today it is built from the Leeway repository: in a checkout of
+`shinyventures/leeway`, run `npm install` and `npm run build:cli`, which produce `apps/cli/dist/leeway.js`.
+Run it as `node <repo>/apps/cli/dist/leeway.js`, or put a `leeway` on your `PATH` that does. The command
+you use is recorded as `cli:` in `.sdlc/leeway.md`, which `/leeway-sdlc:sdlc-install` writes. Publishing the
+CLI as an npm package is a later decision.
+
 ```sh
 leeway login --server <url>
 claude plugin marketplace add shinyventures/leeway-sdlc
@@ -18,6 +24,12 @@ claude plugin install leeway-sdlc@leeway --scope project
 ```
 
 Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions.
+
+## Status
+
+The manifests, `plugin/PROCESS.md` and the craft doc exist. The hooks, agents, templates and skills
+(including `/leeway-sdlc:sdlc-install`, used above) land in later work, and `0.1.0` is not tagged until
+they do. Until then the install steps above describe the released plugin.
 
 ## Versioning
 

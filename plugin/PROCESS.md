@@ -1,5 +1,11 @@
 # The contract for delegated work
 
+**Status at this version.** This file is the contract the plugin is built to. At the time it is written the
+hooks (`git-guard`, `leeway-guard`, `version-notice`), the three agents, the templates and the skills
+(`sdlc-install`, `shape-work`, `plan-work`, `run-task`, `run-story`) are not yet in the plugin: they arrive
+with the hooks (E2), agents and templates (E3) and skills (F) work, and `0.1.0` is not tagged until they do.
+Wherever this file says a hook enforces something or a skill does something, it describes the released plugin.
+
 Your repo's own floor binds all work in it, paired or delegated. This sits on top and binds only
 **delegated** work — work broken into tasks and handed to subagents. **Never quote it at someone
 pairing turn by turn:** there the human in the loop is the review, and a subagent round buys
@@ -55,6 +61,11 @@ the one failure that corrupts everything downstream.**
   token, and `leeway-guard` stops its writes.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
+- **Size limits.** A comment body is 1 to 20,000 characters, a description at most 5,000, a title at most
+  200, `--tests` at most 200, and `--stdin` is capped at 64 KiB. A brief over the comment cap goes in whole
+  across the comment and a reply (`comment add <ref> --parent cN --stdin body`), never cut. A verdict that
+  would exceed it shrinks: each finding is its own comment, posted before the verdict and anchored where it
+  can be, and the verdict only names them by `cN`.
 - Leeway's Markdown shows raw HTML as text, so no record, template or skill uses an HTML comment or any
   other marker that relies on it. A record opens with a heading instead (`# Brief · it.N`).
 
@@ -181,21 +192,28 @@ spending one on it.
 
 ## The evidence ladder
 
-How much a change must prove depends on what it can break. Each rung includes the ones below it.
+How much a change must prove depends on what it can break. **Rungs are cumulative**: a change at R4 also
+owes R3's proof. Find the highest rung the change touches; when two apply, take the higher one.
 
 | Rung | The change | What it must prove |
 |---|---|---|
-| R0 | Docs, config, copy, a rename: nothing runs differently | The result reads true and the references resolve |
-| R1 | Logic with no I/O: a function, a parser, a pure module | A unit test, including the failing cases |
-| R2 | A screen or a component | R1, plus the screen rendered and looked at |
-| R3 | I/O across a boundary: a route, a query, a CLI call, a migration's shape | R1, plus the boundary exercised for real (a server up, a database touched) |
-| R4 | A user-visible flow end to end, or a change to shared state | R3, plus the flow run through the surface a user would use |
-| R5 | Production data, a migration applied to a live store, a release | R4, plus a dry run, the target named, and the state read back after |
+| R0 | Docs, comments, renames with no behaviour change, test-only edits | Nothing beyond the repo's gate |
+| R1 | Internal logic: pure functions, sanitizers, mappers, parsers | The new test fails before the change and passes after |
+| R2 | User-facing behaviour: a page, a form, a flow | The changed screen, and the action that produced it, checked as a user would meet it |
+| R3 | Runtime surfaces with no visual output: an API, a tool, a job | A caller-side transcript of the call and its result against the running target |
+| R4 | Auth, ownership, isolation, exposure, and any other security control | The refusal, and proof that this control is what refused: the same attack refused, then the same attack with the control disabled. For an isolation boundary, two principals, one query, and the negative case |
+| R5 | Migrations, destructive scripts, anything touching a real deployment | The dry run, the target named, then the after-state read back |
 
-The `build` step's `blockingRungs` lists the rungs at which an unproven claim blocks the verdict rather
-than being noted. A repo may record where the proof is committed durably in `.sdlc/CONFIG.md`. A claim
-about runtime behaviour is settled by running something, and the result is read from what it left
-behind.
+A security control that is not an isolation boundary is still R4. A refusal alone proves the request
+failed, not that the guard is why.
+
+**Which rungs block comes from the process, not from this table.** The `build` step's `blockingRungs`
+lists the rungs at which an unproven claim blocks the verdict rather than being noted as a finding
+(the presets: `[R4, R5]` for a maintained product, `[]` for an mvp). **The instruments are the repo's own:**
+its evidence standard (the `evidence` doc in its doc map) names the exact commands, viewports and
+transcripts, and where it differs from the wording above, it wins. A repo may record where the proof is
+committed durably in `.sdlc/CONFIG.md`. A claim about runtime behaviour is settled by running something,
+and the result is read from what it left behind.
 
 ## Questions to the human are escalations
 
@@ -229,7 +247,7 @@ Every artifact of the loop is a Leeway record. The orchestrator writes each one.
 |---|---|
 | plan / story / task | project / issue (its type from the process) / sub-issue |
 | branch | `issue update <ref> --branch <prefix>/<ref lower>-<slug40> --repository owner/repo`, read back |
-| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" --passed/--no-passed --addresses c1,c2 --as <impl>/implementer`; the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
+| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses c1,c2 --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Brief · it.N`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Verdict · it.N · PASS` or `FAIL`) |
 | dispute needing a human; `run-story` hard stop | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer`; the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
@@ -258,7 +276,9 @@ On top of what your repo's floor says every change owes:
 
 - Evidence per the ladder, in the task's round record, and committed durably for a change at or above the
   rung `.sdlc/CONFIG.md` names.
-- The round records carry the **full** brief and the **full** verdict, not a summary. Both reach the
+- The round records carry the **full** brief and the **full** verdict, not a summary, within the size
+  limits in "How the plugin reaches Leeway": over the comment cap, the brief spans a comment and a reply and
+  the verdict names findings posted as their own comments. Both reach the
   orchestrator as the subagent's final message and are written to no file by the subagent, so the record
   in Leeway is the only lasting copy.
 - A task lands deliberately: PASS, merge into the story's worktree, `--status done`. The story is closed at
