@@ -1,0 +1,27 @@
+# Codebase invariants
+
+> **This file is a stub.** The shape exists so you know where the content belongs before there is
+> any. It is marked `stub` in `.sdlc/CONFIG.md`, and that state is load-bearing: agents must not
+> cite a stub. A reviewer that needs a rule from here says *"no rule exists for this"* instead of
+> citing a document that says nothing.
+>
+> **Its first entry belongs here when:** you explain a decision for the second time that a neighbouring file would not have shown.
+>
+> When that happens, write the entry, delete this block, and change this doc's state in
+> `.sdlc/CONFIG.md` to `real`. A stub that has quietly become real is a doc nobody is allowed to
+> cite and everybody assumes they can.
+
+Three layers decide how code should look here, and only the third one needs writing down.
+
+1. **What the tooling enforces.** Never prose. If a linter or a type can hold it, that is where it
+   goes.
+2. **What a neighbouring file shows.** Copy the neighbour. Local convention beats general best
+   practice, and it needs no document.
+3. **What no file shows you.** Decisions with one or two instances tree-wide — which is precisely
+   why they drift. That is this file.
+
+## The invariants
+
+Each entry names the **symptom** that should make a reader reach for it, then the rule, then why.
+An invariant nobody can find from the symptom is an invariant that gets rediscovered the hard way.
+
