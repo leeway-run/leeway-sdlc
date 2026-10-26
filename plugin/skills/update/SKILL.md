@@ -62,7 +62,8 @@ never picked up.
 
 ## 5. Is this repo behind?
 
-One line, and no diffs. Only if this repo has `.sdlc/CONFIG.md`; otherwise go to step 6.
+One line, and no diffs. Find `.sdlc/CONFIG.md` as the session notice does: the nearest one at or above
+the current directory. None found: go to step 6.
 
 Read the `Synced to` row under `## Repo copies` in `.sdlc/CONFIG.md`, and compare it with the new
 version, numerically by major, minor, patch:
@@ -75,7 +76,7 @@ version, numerically by major, minor, patch:
 This line is a statement, not a question, so it is the same wherever the repo's contract sends
 questions.
 
-**Never compare, offer or write a repo file here.** When everyone who updates is offered the same
+**Never diff, offer or write a repo file here.** When everyone who updates is offered the same
 diffs, two people open the same PR, and a copy the team decided to keep is asked about at every
 release.
 

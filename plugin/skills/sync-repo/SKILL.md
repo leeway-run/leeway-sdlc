@@ -10,12 +10,29 @@ it runs once per developer, and a repo change offered to everyone gets made twic
 repo's half, **run once per release, by one person**. It changes the repo only through one pull
 request, and only with an answer per copy.
 
-**Where a question goes.** Each "ask" below is one question per copy. Where the repo's contract says
-questions go to Leeway, raise it as one escalation on the issue for this sync (the one the user
-named; none named: stop and say there is nowhere to put it), with 2 to 5 options (take, keep, merge,
-each with its argument) and the diff in a comment first, then stop the turn until it is answered
-(`PROCESS.md`, "Questions to the human are escalations"). Elsewhere, ask in the terminal. Never write
-a copy on an unanswered question.
+**Where a question goes.** Each "ask" below is one question per copy. The test is whether the repo has
+`.sdlc/leeway.md` (the binding the installer writes):
+
+- **Without it**, ask in the terminal, copy by copy.
+- **With it**, a question is a Leeway escalation, raised on the issue the user named when invoking this
+  skill. None named: stop and say there is nowhere to put it. Read the CLI command from `cli:` in
+  `.sdlc/leeway.md`. Every write carries `--as <alias>/agent`: the alias is `<word>-<two hex digits>`,
+  chosen once for this session and kept (the CLI's roles are `implementer`, `reviewer`, `planner` and
+  `agent`; a skill acting for the orchestrator writes as `agent`).
+
+Raising, all together, once steps 0 to 2 have found which copies need an answer:
+
+1. Per differing copy, `comment add <issue> --stdin body` with the diff and your guess at who changed it,
+   then `escalation raise <issue> --comment cN` with a question that **begins with the copy's name**
+   (for example `Sync .sdlc/templates/TASK.md to 0.1.0:`), 2 to 5 options (take, keep, merge, each with its
+   argument), and `--meanwhile` saying nothing is written.
+2. Raise every one of them in the same turn, then stop the turn, naming the issue and the escalations
+   (`PROCESS.md`, "Questions to the human are escalations").
+
+**On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
+`question` to its copy by that opening name. An answered one is acted on in step 3. An open one with no
+answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
+remain open. Never write a copy on an unanswered question.
 
 ## 0. Before anything
 
@@ -31,6 +48,8 @@ a copy on an unanswered question.
   installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. One exists: link it
   and stop. No `gh` and no matching branch is not proof; say that you could not check the PR list.
 - **The working tree is clean** (`git status --short`), so the branch carries only the sync.
+- **Then be on the sync branch** (step 4 names it): create it, or on a resume check out the one that
+  exists. Nothing below is written anywhere else.
 
 ## 1. Read the record
 
@@ -45,18 +64,24 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | the text between the `leeway-sdlc:begin` and `leeway-sdlc:end` markers (HTML comments) in `CLAUDE.md` | `skills/sdlc-install/scaffold/CLAUDE-BLOCK.md.tmpl`, with `{{ENGINEERING_PATH}}` replaced by the path the block's own `@` import uses |
+| the contract block | in `CLAUDE.md`, from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/CLAUDE-BLOCK.md.tmpl`, the whole file, marker lines and their text included, with `{{ENGINEERING_PATH}}` replaced by the path the block's own `@` import uses |
 | the `.gitignore` lines | `git check-ignore -q .worktrees/` and `git check-ignore -q CLAUDE.local.md`, one at a time | a `.worktrees/` line and a `CLAUDE.local.md` line in `.gitignore` |
 
-Compare with `diff -u <repo copy> <plugin copy>`, or the filled-in block for the contract block. Each
-copy is one of:
+Compare with `diff -u --strip-trailing-cr <repo copy> <plugin copy>`, so a CRLF checkout does not show every
+line changed; for the contract block, the repo's span (`sed -n '/leeway-sdlc:begin/,/leeway-sdlc:end/p' CLAUDE.md`)
+against the filled-in template. Each copy is one of:
 
 - **the same** → nothing to do;
-- **different, and a `Kept` row matches**: its recorded hash equals the first 12 characters of
-  `git hash-object <plugin copy>` now → the team already decided, and the plugin's copy has not
+- **different, and a `Kept` row matches**: its recorded hash equals the **Kept hash** of the plugin
+  copy now (below) → the team already decided, and the plugin's copy has not
   changed since. Report it as kept, with the reason, and do not ask;
 - **different otherwise** → ask in step 3. A `Kept` row whose hash no longer matches means the plugin
   changed that file again: show the new diff, and say what the team kept last time and why.
+
+**The Kept hash** is the first 12 characters of `tr -d '' < <file> | git hash-object --stdin`: the
+file with CRs stripped, so a CRLF and an LF checkout of one release give the same hash. `<file>` is the
+plugin copy; for the contract block it is the template file (`CLAUDE-BLOCK.md.tmpl`, unfilled); a
+`.gitignore` line has no plugin file, so its `Kept` row carries `-`, and is kept until the line is added.
 
 The diff alone does not tell you whether the release changed the plugin's copy or the team edited
 its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer decide.
@@ -73,10 +98,10 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
 
 Show each diff and ask: **take the release's copy, keep the repo's, or merge by hand.**
 
-- **Take** → write the plugin's copy over the repo's; for the contract block, replace only the text
-  between the markers.
-- **Keep** → ask for the reason in one line. It goes in a `Kept` row with today's 12-character
-  `git hash-object <plugin copy>`, so the next sync does not ask again until the plugin's copy changes.
+- **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
+  begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
+  outside the span is untouched. A second compare then says "the same".
+- **Keep** → ask for the reason in one line. It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result. Record a `Kept` row too, since the repo copy
   now differs on purpose.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
@@ -102,7 +127,7 @@ the human to push). In the same change, update `## Repo copies`:
 
 | Kept | Plugin copy hash | Why | Decided |
 |---|---|---|---|
-| <copy> | <git hash-object, 12 chars> | <the reason given> | <who>, <date> |
+| <copy> | <Kept hash, or - for a .gitignore line> | <the reason given> | <who>, <date> |
 ```
 
 The `Synced to` row is the stamp the session notice reads. Drop a `Kept` row whose copy was taken
