@@ -31,9 +31,15 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
    (`<cli> --json issue get <ref>`): `issue.type`, `issue.step` (an object: `issue.step.id`, or null), `issue.description`, `comments`, `escalations`.
 4. **Does the type shape?** Only when the issue's type has a step of kind `shape`. A type without one (a bug,
    a chore) is taken as written by `plan-work` or `run-task`: **say so, change nothing, and stop.**
-5. **Start.** When `issue.step.id` is empty, `shape` or `plan` (a story `plan-work` sent back lands there), run
-   `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it. A story already
-   past `plan` keeps its step: tell the PO that changing its criteria changes what its tasks were built against.
+5. **Start.** Decide from content and status, not from the step alone, whether the story is *unplanned*: it has
+   no sub-issues (`subIssues` empty), no comment opening `# Technical criteria`, its `issue.status` is `backlog`,
+   and `issue.step.id` is empty, `shape` or `plan` (a story `plan-work` sent back lands on `shape`).
+   - **Unplanned:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.
+   - **Done or cancelled:** say so and stop. Change nothing.
+   - **Anything else** (tasks, a technical-criteria comment, or a status other than `backlog`, for example a
+     planned story at `ready` with no step): keep its step and status, and tell the PO what state it is in and
+     that changing its criteria changes what its tasks were built against. This is the amendment path: write the
+     body only on their yes (step 5), and do not set `--step shape`.
 
 **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question to the PO is never a terminal
 question: it is a Leeway escalation on the story, and then you stop the turn (`PROCESS.md`, "Questions to the
@@ -129,7 +135,7 @@ looked up — how a screen works today, a rule in the intent doc, an existing fl
 (*"as the upload on the Documents page"*, *"VISION.md, Retention"*), not a retelling. The body is
 what the work is checked against, not its background.
 
-**The description holds at most 5,000 characters** (`wc -m`: characters, not bytes), and the developer adds
+**The description holds at most 5,000 characters** (UTF-16 code units of the trimmed text, as the server counts; `plan-work` gives the one-liner), and the developer adds
 *Technical criteria* to the same body, so leave room. A body over the cap is first cut — verbose rules, restated
 context, anything a pointer can carry — and only then, if it still does not fit, a story that should be two:
 say so to the PO and let them split it. Never truncate.
@@ -175,7 +181,7 @@ or create the project that holds them (`project list <KEY>`; `project create <KE
 --stdin description`, at most 5,000 characters); `plan-work` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
-**You never create tasks, branches or a design doc**, and the only step you set is `shape`, in step 0. A status
+**You never create tasks, branches or a design doc**, and the only step you set is `shape`, in step 0, and only for an unplanned story. A status
 is set by `--step` or `--status` and nothing else: no comment and no escalation moves a story.
 
 ## Done when
@@ -183,4 +189,5 @@ is set by `--step` or `--status` and nothing else: no comment and no escalation 
 Every story body is in the template's shape, every heading filled or `n/a: <why>`, at least one rule
 says what must not happen where the gap checklist requires one, every undecided answer is an
 `OPEN:` line, the Status line names the PO and today's date, and the description read back is at most 5,000
-characters. The PO has seen the body as written, and the story sits at `--step shape`.
+characters. The PO has seen the body as written, and an unplanned story sits at `--step shape` (a planned one
+keeps the step and status it had).

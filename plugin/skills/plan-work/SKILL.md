@@ -161,8 +161,15 @@ gate is watched by the developer in this session.
 
 ### The 5,000-character cap, and the overflow
 
-An issue description holds at most 5,000 characters. Count the full body you are about to write with `wc -m`
-(characters, not bytes).
+An issue description holds at most 5,000 characters, counted by the server as UTF-16 code units of the trimmed
+text. Count the full body you are about to write the same way, from the file you will send (`wc -m` depends on
+the locale and can count bytes):
+
+```sh
+node -e "process.stdout.write(String(require('fs').readFileSync(0,'utf8').trim().length))" <body
+```
+
+**Treat 4,800 as the line**: a body over it overflows, which leaves room for the pointer line and a late edit.
 
 1. **Cut your section first** — verbose rules, restated detail a pointer can carry. Never shorten the PO's part.
 2. **Still over → overflow to a comment.** The whole *Technical criteria* section moves to **one story comment
@@ -172,12 +179,18 @@ An issue description holds at most 5,000 characters. Count the full body you are
    and never truncate.
 3. **A revision posts a new comment with the full list**, numbers unchanged. The latest such comment is in force;
    never edit an earlier one.
-4. **The PO's part alone over the cap** is a story that should be two: a step 1 gap.
+4. **Criteria that move back into the body** (a re-plan whose TCs now fit under the line) leave the older comment
+   as the latest, and so in force. Post a final `# Technical criteria` comment first, whose body is the heading
+   and one line, *"Moved to the story description; this comment list is closed."*, then write the description with
+   the section in full.
+5. **A `# Technical criteria` comment over 20,000 characters** is not cut and not split: the story should be two.
+   Say so and stop, as for the PO's part.
+6. **The PO's part alone over the cap** is a story that should be two: a step 1 gap.
 
 Whoever reads the criteria reads the body **and** the latest `# Technical criteria` comment when the body points
 to one. Post the comment first, then write the description with `issue update <story> --stdin description` from a
 file outside the repo by absolute path or a quoted heredoc, so a pointer never exists without its comment. Then read
-it back: its length is at most 5,000 and, when it overflowed, the
+it back: its length (counted as above) is at most 5,000 and, when it overflowed, the
 comment exists and holds every `TC-n` (count them: the list is as long as the plan's).
 
 ## 4. Two lists, and never one
@@ -230,8 +243,13 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 2. **The Plan record, now, once, in the project:**
 
    ```sh
-   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --title "Plan record" --status backlog --stdin description <record.md
+   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "Plan record" --status backlog --stdin description <record.md
    ```
+
+   `<type>` is `chore` when the process has it and it has no `shape`, `plan` or `gate` step; else the first type in
+   `process get` with none of the three (a bug counts on the board as a defect, so `chore` is preferred); else the
+   process's default type, so the record is not plannable work; the record's description says which type
+   it took and why.
 
    Its description says what it is: one comment per nit and per status update, never an edit to its body. It stays
    `backlog` while the plan runs: it is not work anyone picks up. Create it **with the plan**, not when the first
@@ -263,8 +281,11 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 
 4. **Floor questions, per story, before its tasks.** Read the repo's floor (`ENGINEERING.md`) and the intent doc
    for a rule that asks for a decision on each user-facing story before it is built (for example whether a
-   feature belongs on every surface a person uses). For each such story post the context as a comment and raise
-   that rule's question as an escalation, with the options the rule names. **Stop**, report the escalation ids,
+   feature belongs on every surface a person uses). **User-facing** means a story whose acceptance criteria name
+   something a person does through a surface. For each such story post the context as a comment, quoting the
+   rule's own sentence, and raise that rule's question as an escalation. Its options are the alternatives the
+   rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
+   on any surface*, so leaving it out is a decision. **Stop**, report the escalation ids,
    and create no tasks for a story whose question is open. On resume write each answer into every task of that
    story under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
    skips this step; say which.
@@ -284,9 +305,16 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    it back on `issue get <ref>`: `issue.blockedBy`.
 
 7. **Branch names: derive, write back, read back.** The server stores a branch and does not generate one. For the
-   story and each task derive `<prefix>/<ref lower>-<slug of the title, at most 40 characters>`, `<prefix>` being
-   the `branchPrefix` of the story's type (`feat` for a feature: `feat/dry-4.1-schema-table` for `DRY-4.1` titled
-   "Schema table"). Do the story before its tasks. Write it back, read it back, and **use it verbatim for the rest
+   story and each task derive `<prefix>/<ref lower>-<slug>`, `<prefix>` being the `branchPrefix` of the story's type (`feat` for a
+   feature: `feat/dry-4.1-schema-table` for `DRY-4.1` titled "Schema table"). The slug is the title lower-cased,
+   every run of characters outside `[a-z0-9]` replaced by one `-`, leading and trailing `-` trimmed, cut at 40
+   characters, trailing `-` trimmed again:
+
+   ```sh
+   printf '%s' "<title>" | node -e "process.stdout.write(require('fs').readFileSync(0,'utf8').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+\$/g,'').slice(0,40).replace(/-+\$/g,''))"
+   ```
+
+   Do the story before its tasks. Write it back, read it back, and **use it verbatim for the rest
    of the loop** — the embedded ref is what ties a branch to its item:
 
    ```sh
