@@ -67,7 +67,7 @@ the one failure that corrupts everything downstream.**
   would exceed it shrinks: each finding is its own comment, posted before the verdict and anchored where it
   can be, and the verdict only names them by `cN`.
 - Leeway's Markdown shows raw HTML as text, so no record, template or skill uses an HTML comment or any
-  other marker that relies on it. A record opens with a heading instead (`# Brief · it.N`).
+  other marker that relies on it. A record opens with a heading instead (`# Handoff brief — <ref> · round <N>`).
 
 ## The process, read at runtime
 
@@ -166,8 +166,9 @@ task whose type says `redTests: false` goes straight to implementing.
 
 **The round, and counting it.** A round is one **iteration** (the commit, the lane line and whether it
 passed), one **brief** (the implementer's handoff), the **findings** (the reviewer's anchored comments)
-and one **verdict**. They are joined by the iteration number `N`: the brief opens `# Brief · it.N`, the
-verdict `# Verdict · it.N · PASS|FAIL`, and each finding carries the anchor `iteration N`. **The round
+and one **verdict**. They are joined by the iteration number `N`: the brief opens `# Handoff brief — <ref> · round <N>`, the
+verdict `# Review verdict: PASS | FAIL — <ref> · round <N>` (`round <N>` is the iteration number: the round and
+the iteration are the same count), and each finding carries the anchor `iteration N`. **The round
 count is the number of iterations on the sub-issue**, read from Leeway, never from text. Round-0
 attempts are the iterations recorded before the `step_set` entry whose `to` is `implementing`.
 
@@ -247,8 +248,8 @@ Every artifact of the loop is a Leeway record. The orchestrator writes each one.
 |---|---|
 | plan / story / task | project / issue (its type from the process) / sub-issue |
 | branch | `issue update <ref> --branch <prefix>/<ref lower>-<slug40> --repository owner/repo`, read back |
-| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses c1,c2 --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
-| brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Brief · it.N`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Verdict · it.N · PASS` or `FAIL`) |
+| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
+| brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; `run-story` hard stop | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer`; the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
