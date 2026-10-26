@@ -25,8 +25,12 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
   (`comment add <ref> --stdin body`) on the issue the human named when invoking this skill (no ref given:
   stop and say an issue is needed), then one escalation on it with `--comment cN`, 2 to 5 options
   `{label, argument}` (label at most 60 characters, argument at most 1,000, question at most 500), the
-  pre-filled option first. Then **stop the turn**. On resume read the answer (`<cli> issue get <ref> --json`,
-  `escalations[].answer`) and write only on a yes.
+  pre-filled option first. Raise it with `--json` and **note the id it returns** (`escalation.escalation`:
+  `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **stop the turn**. On
+  resume read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number` is the noted
+  id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it is the
+  yes option. No answer there, or an answer only on another escalation, is "not yet": write nothing and stop
+  again.
 - **Without it**, ask in the terminal, one question at a time.
 
 ## Step 1 - read what is there
@@ -52,9 +56,17 @@ Take the request in the human's words. It is one or more of these, and nothing e
   is the `plan` step's `designDoc: true`). Name the type; a request that names none applies to none, so ask
   which.
 - **A type dropped**, or **added by analogy** ("a type spike that behaves like experiment"): copy that type's
-  steps under a new `id`, `label` and `branchPrefix`, and say so. The `defaultType` is never the dropped one.
+  steps under a new `id`, `label` and `branchPrefix`, and say so. The new type's `id`, `label` and prefix come from
+  the human's word (the `id` lower-cased and hyphenated, the prefix the same, within the rules below) and are
+  shown in the before → after. The `defaultType` is never the dropped one: if the human drops it, ask which
+  type becomes the default.
+- **A type the request names that is not in the definition** ("spikes skip plan" with no spike): say so and
+  ask; do not guess a neighbour.
 - **Unattended** ("run chores without me") sets `unattended` on that type's `build` step.
-- **A build parameter** (red tests, review depth, caps, blocking rungs) on that type's `build` step.
+- **A build parameter** (red tests, review depth, caps, blocking rungs) on that type's `build` step. The
+  `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an integer 1 to 10;
+  `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1` to `R5`;
+  `unattended` boolean. The `plan` step's `params.designDoc` is a boolean.
 
 Edit only the named types in the `process` value of `before.json`, into `after.json` (a short `node` script
 is enough). Every other type, and every field not asked about, stays **byte-identical**. The edit keeps the
@@ -67,7 +79,9 @@ rules the server enforces:
   non-decreasing along a type's steps; a `build` step has status `in_progress`.
 
 **The bounds.** At most **12 types**, **12 steps per type**, and the definition at most **16384 bytes**
-(`wc -c after.json`, the body you will send). A request that would exceed any of them is **refused before any
+(`wc -c after.json`). Write `after.json` **compact**: `JSON.stringify` without indent, the `process` value
+alone, no envelope. The server measures that compact form, so `wc -c` on that file is its count; an indented
+file counts about twice and would refuse a legal request. A request that would exceed any of them is **refused before any
 write**: say which bound, the count it would reach, and what the human could drop instead. The server refuses
 the same as `invalid_process`; that is the backstop, not the check.
 
@@ -81,9 +95,12 @@ change is not a step list). Then the open issues it would affect:
 <cli> issue list <KEY> <projectId> --json      # every project of the product
 ```
 
-An issue is **open** when its status is not `done` or `cancelled` (those keep their strings). It is
-**affected** when its type is removed, or its `step` is not a step of its type in the new definition at the
-issue's status. List the refs, or say none.
+The server's rule, which you apply the same way, in this order: `done` and `cancelled` issues are skipped (they
+keep their strings). An issue that is not a sub-issue, has a type, and whose type is not in the new definition is
+**affected**, whether or not it has a step. A sub-issue (it has a parent, and its `type` is null) is never
+stranded by a type edit: its steps are the fixed task steps (`red-tests`, `implementing`). An issue with no
+`step` is otherwise fine. Any other open issue is **affected** when its `step` is not a step of its type in the
+new definition at the issue's status. List the refs, or say none.
 
 ## Step 4 - confirm, then write
 
@@ -113,7 +130,8 @@ their type, status and step. For each, offer a move the human can pick:
 - or **leave the process as it was** and finish the issue first.
 
 This is a second question to the human (escalation mode: a second escalation, with the refs and the moves in
-a comment first, one option per plan of moves and one for "Leave it"). Make no move without the answer. After
+a comment first, one option per plan of moves and one for "Leave it"; note its id as above and read only that
+entry's `answer`). Make no move without the answer. After
 it, make the moves, **retry the write once**, and if it is refused again report the refs that remain and stop.
 
 ## Step 6 - read it back
