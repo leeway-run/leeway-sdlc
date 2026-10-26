@@ -1,10 +1,8 @@
 # The contract for delegated work
 
-**Status at this version.** This file is the contract the plugin is built to. At the time it is written the
-hooks (`git-guard`, `leeway-guard`, `version-notice`), the three agents, the templates and the skills
-(`sdlc-install`, `shape-work`, `plan-work`, `run-task`, `run-story`) are not yet in the plugin: they arrive
-with the hooks (E2), agents and templates (E3) and skills (F) work, and `0.1.0` is not tagged until they do.
-Wherever this file says a hook enforces something or a skill does something, it describes the released plugin.
+**Status at this version.** `0.1.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
+`version-notice`), the three agents, the templates and the skills (`sdlc-install`, `sdlc-tune`, `shape-work`,
+`plan-work`, `run-task`, `run-story`, `update`, `sync-repo`). The tag itself is the release task's (G1).
 
 Your repo's own floor binds all work in it, paired or delegated. This sits on top and binds only
 **delegated** work — work broken into tasks and handed to subagents. **Never quote it at someone
@@ -29,6 +27,12 @@ Five roles, three of them subagents:
 
 The human is not a role the loop plays. The human decides what only a human can, and is reached by an
 escalation.
+
+**The alias and the role.** The orchestrator chooses an alias per session of the form `<word>-<two hex digits>` (for
+example `kestrel-b1`, matching `^[a-z][a-z0-9-]{1,23}$`), never one already visible on the issue. Every write carries
+`--as <alias>/<role>`, the role being `implementer`, `reviewer`, `planner` or `agent` (the CLI's four). The
+orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the plan
+gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their role.
 
 **Two invariants make it work.**
 

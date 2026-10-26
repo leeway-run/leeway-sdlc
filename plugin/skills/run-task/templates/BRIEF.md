@@ -44,6 +44,11 @@ stale inside one; heading text is stable and quoting it proves you opened the fi
 If a doc in your map is marked `stub` or `absent`, it is a place to write a finding into, **not a
 source to cite**. If a doc was silent where you needed it, say so — that is a gap worth closing.
 
+## Rules read
+
+Only when your prompt carries a *Required reading* table. Each file you opened under it, with the heading you
+applied, or "none owed". The orchestrator compares this with the paths you staged.
+
 ## Tests
 
 - **Lane:** which, and why that one.

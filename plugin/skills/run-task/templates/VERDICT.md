@@ -151,6 +151,11 @@ as `cN`. Check each against the code at this sha.
   - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000).
   - **Meanwhile:** what stays blocked and what does not.
 
+## Rules read
+
+Only when your prompt carries a *Required reading* table. Each file you opened under it, with the heading you
+applied, or "none owed". The orchestrator compares this with the paths the diff changes.
+
 ## Friction
 
 A tooling, test-data, local-setup or process gap that cost this review time (the slow lane, the missing
