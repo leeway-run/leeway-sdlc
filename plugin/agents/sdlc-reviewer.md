@@ -337,6 +337,8 @@ orchestrator posts each body as its own comment, then your verdict naming them.
 Do not soften. Do not hedge with "consider" or "might want to". **If severity is unclear, err toward
 the more severe rating.**
 
+The verdict lists every rules file you read under *Rules read*; the hook's context names that section.
+
 **Your final message is the verdict.** It opens with the heading `# Review verdict: PASS | FAIL — <ref> · round <N>`
 as your prompt's shape gives it (`round <N>` is the iteration number), and the skills find it by that heading. Its shape is pasted into your prompt. Do not write it to a
 file: it reaches the orchestrator directly, and the orchestrator is what records it.

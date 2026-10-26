@@ -1,0 +1,46 @@
+# Evidence standard
+
+**Tests prove the code does what its author expected. Evidence proves the product does what the
+change claimed.** They are different questions and a green suite answers only the first.
+
+Every task's proof goes in its round record. A file under the evidence directory is written only
+when the proof outlives the task.
+
+## The ladder
+
+**Rungs are cumulative** — a change at R4 also owes R3's proof. **Find the highest rung your change
+touches.** When two apply, take the higher one.
+
+| Rung | Change class | What it must prove | Instrument |
+|---|---|---|---|
+| **R0** | Docs, comments, renames with no behaviour change, test-only edits | Nothing beyond the gate | {{GATE_COMMAND}} |
+| **R1** | Internal logic: pure functions, sanitizers, mappers, parsers | The new test **fails before and passes after** | Paste both runs of the single test |
+| **R2** | User-facing behaviour: a page, a form, a flow | The changed screen, and the action that produced it | {{R2_INSTRUMENT}} |
+| **R3** | Runtime surfaces with no visual output: an API, a tool, a job | A caller-side transcript of the call and its result | {{R3_INSTRUMENT}} |
+| **R4** | Auth, ownership, isolation, exposure — **and any other security control** | **The refusal, AND proof that this control is what refused.** For an isolation boundary: two principals, one query, and the negative case | {{R4_INSTRUMENT}} |
+| **R5** | Migrations, destructive scripts, anything touching a real deployment | The dry run, the target verification, then the after-state | {{R5_INSTRUMENT}} |
+
+**A security control that is not an isolation boundary is still R4** — an SSRF guard, a rate limit,
+an input allowlist. **A refusal alone proves the request failed, not that your guard is why** — so
+the R4 instrument is always the attack refused, then the same attack with the control disabled.
+
+**Blocking at:** the rungs the `build` step of the issue's type lists as `blockingRungs` in the product's process (`leeway process get <KEY>`). Below that, a missing proof is a finding rather than a blocker.
+
+## What makes evidence real
+
+The failure to design against is not laziness. **It is proof that looks like proof.**
+
+- **Name the environment.** Which service, which mode, which data.
+- **Paste the actual command and the actual output, verbatim.** Not a description of them. "I
+  confirmed the tenant could not see it" is not evidence; the query and its empty result set are.
+- **Include the negative case** wherever a control is being proved.
+- **Say what you did not test.** Evidence with no stated limits reads as exhaustive.
+
+## Two shapes, and the filename tells you which
+
+- A **script** has an **undated** filename. Written before the run, re-runnable, with `Expect:`
+  blocks, and at least one adversarial scenario.
+- A **record** has a **dated** filename. Written after, describes one run, no checkboxes, and opens
+  with the environment and the dataset.
+
+**An undated record is indistinguishable from a script somebody forgot to run.**
