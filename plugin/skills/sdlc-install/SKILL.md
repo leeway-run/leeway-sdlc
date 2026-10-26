@@ -14,7 +14,9 @@ absolutely.
 
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call. Below,
 `<cli>` is the command the repo is configured with (step 3 settles it), and `<server>` the server URL. Pass
-`--server <server>` on every call. Writes carry `--as install/agent`. **No token, no credential, no
+`--server <server>` on every call. Writes carry `--as <alias>/agent`, the alias being this session's, chosen as
+`PROCESS.md` ("The cast") describes (`<word>-<two hex digits>`, for example `kestrel-b1`); the CLI's roles are
+`implementer`, `reviewer`, `planner` and `agent`, and a skill acting for the orchestrator is `agent`. **No token, no credential, no
 server secret is written to any file, and none is shown in the transcript.**
 
 **Where the human is asked.** Every question below is a question to the human. In a repo whose
@@ -22,6 +24,15 @@ server secret is written to any file, and none is shown in the transcript.**
 does), do not prompt in the terminal: raise each interview question as an escalation on the install's issue
 (the ref the human gave when invoking this skill; with none, stop and say that an issue is needed), with the
 pre-filled answer as the first option and 2 to 5 options in all, and stop the turn until it is answered.
+Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
+sentence or two) at most 1,000, and the question at most 500.
+
+- **Yes/no questions** (6, 7, 8, 10 and any "Right?"): two options, the pre-filled one first.
+- **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
+  note" as the fifth.
+- **Question 9** is a batch of yes/no lines: raise one escalation per ambiguous mapping, or post the batch as
+  a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `--comment cN`
+  (one open escalation per comment).
 Anywhere else, ask in the terminal, one question at a time, pre-filled.
 
 ## Step 1 — decide which mode this is
@@ -92,8 +103,8 @@ a finding and not asked.
 3. **Types.** "The types are `<labels>`. Keep them all, drop any, or add one by naming it and the type it
    behaves like?" A type added by analogy copies that type's steps under a new id, label and branch prefix.
    Skipped on (d).
-4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" State it in
-   words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
+4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
+   "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
 5. **Unattended.** "`run-story` may run these types without a person between tasks: `<types whose build step
    is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
@@ -110,15 +121,15 @@ a finding and not asked.
     Default to patch when `CLAUDE.md` exists without the block, and to create it when there is none.
 11. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
     filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
-    the product whose title says developer experience or friction (`<cli> issue list <KEY> --projectId
-    <id>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
+    the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
+    ids, then `<cli> issue list <KEY> <projectId>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
     wanted: `n/a` and why.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
 config format nobody tunes correctly.
 
-**Written without asking, as framework defaults:** the per-story budget `2,000,000 subagent usage units · 15
+**Written without asking, as framework defaults:** the per-story budget `2,000,000 subagent tokens · 15
 rounds · 4 h wall-clock`, whichever comes first (a harness fact, so it lives in `CONFIG.md`, not in Leeway).
 A human edits `CONFIG.md` to change it.
 
@@ -192,10 +203,13 @@ Those three ship as stubs. The others are filled from detection:
   `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
 - `.gitignore` lines `.worktrees/` and `CLAUDE.local.md`, each only if absent.
-- `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, copied from `scaffold/templates/`. **If the
+- `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
+  `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
+  is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
+  LF; copy them as they are, since `sync-repo` normalises line endings in its compare. **If the
   directory exists, leave it alone** and show its diff against the plugin's copy: a team that edited its
   templates made a decision.
-- The craft doc: `craft/HOW-WE-CHANGE-CODE.md` **copied** into the repo's docs directory (for example
+- The craft doc: `craft/HOW-WE-CHANGE-CODE.md` **byte-copied** (same line-ending rule) into the repo's docs directory (for example
   `docs/engineering/HOW-WE-CHANGE-CODE.md`); that path is `{{CRAFT_PATH}}`. An `@` import cannot reach the
   plugin cache, so the import needs a file in the repo. **If it exists, leave it alone** and show its diff.
 
@@ -215,8 +229,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
   convention in the history; `plan-work` reads this row.
 - **`{{FRICTION_COLLECTOR}}`** — a ref you have read back from Leeway. **Never invent one.** Creation is two
-  writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience"`, then
-  `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as install/agent`.
+  writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
+  `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
 - **`CLAUDE.local.md`** — run `git check-ignore -q CLAUDE.local.md && echo ignored || echo NOT ignored`
   after the `.gitignore` write and print the answer. Never claim it is ignored when it is not.
@@ -227,8 +241,12 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   file that is not there is the one failure that breaks every subsequent round. The same for every file in
   the *Required reading* table and the craft path.
 - **Grep every file you wrote for `{{`.** A surviving placeholder is a value the loop will read as real.
-- **Grep them for `token`, `Bearer` and `lw_`.** Any hit is a credential or a lie: remove it.
-- `<cli> process get <KEY> --json` once more: its `version` is what you set, and the types are what you
+- **Each doc role appears once** in the doc map, and each path in it once.
+- **Grep them for secret shapes**: `grep -rnE "Bearer [A-Za-z0-9]|lw_[A-Za-z0-9]{8,}"`, and for any value
+  held in the CLI's credentials file (compare without printing it). A hit is a possible credential: **stop and
+  show the human the line**, and let them decide. Never remove it automatically; the word "token" alone is
+  legitimate text (a Secrets section, the per-story budget) and is not a hit.
+- `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
 - Confirm `CLAUDE.md` loads the floor (the `@` line names an existing file).
 - If the evidence directory is gitignored, say that evidence has nowhere durable to live and let the human
