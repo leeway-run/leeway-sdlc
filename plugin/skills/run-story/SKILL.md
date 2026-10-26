@@ -35,7 +35,7 @@ A refusal here writes nothing: say in the session which precondition failed and 
    Such a story is run one task at a time with `run-task`, where a person is in the session. The process is what
    decides this, not a flag you pass.
 2. **The plan gate is recorded**, when the type has a `gate` step: a coverage report comment on the story by
-   `<div>/reviewer`, and an escalation on it answered PASS or PASS WITH DECISIONS (`escalations[].answer`, with an
+   `<div>/reviewer` (`<div>` is the divergence reviewer's alias, so `<div>/reviewer` is that reviewer's alias and role), and an escalation on it answered PASS or PASS WITH DECISIONS (`escalations[].answer`, with an
    answer to every QUESTION in the note). A gate that only existed in a conversation did not happen. A type without
    `gate` needs only that the story has tasks (`subIssues`) and is planned.
 3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
@@ -216,8 +216,9 @@ that was written down; this is where it leaves them.
 
 A run is only unattended if nothing in it waits for a keypress. That needs four things, set up before the first run.
 
-- **A permission allow-list**, in the repo's Claude Code settings, covering everything the run does: the lane and
-  setup commands `.sdlc/CONFIG.md` names; `git add`, `commit`, `push`, `fetch`, `merge`, `switch` and `worktree`;
+- **A permission allow-list**, in the repo's Claude Code settings, covering at least the following and every command the skill names: the lane and
+  setup commands `.sdlc/CONFIG.md` names; `git add`, `commit`, `push`, `fetch`, `merge`, `switch`, `worktree`,
+  `branch -d`, `ls-remote`, `rev-parse` and `diff --cached`; `node -e` for the counting one-liner;
   and the `leeway` CLI's write verbs for the orchestrator. A subagent is stopped from those by the plugin's
   `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this

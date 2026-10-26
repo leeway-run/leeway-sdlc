@@ -175,6 +175,8 @@ cannot be addressed again.
 the orchestrator files it on the friction collector, and only on a human yes. Write "none" when there is
 none.
 
+**Rules read.** The brief lists every rules file you read under *Rules read*; the hook's context names that section.
+
 **Heading.** The brief opens `# Handoff brief — <ref> · round <N>`, where `round <N>` is the iteration
 number, exactly as the shape in your prompt gives it.
 

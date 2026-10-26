@@ -50,7 +50,8 @@ round leaves the status exactly where it was.
 
 **How the CLI clears a step: it cannot send null.** `leeway issue update <ref> --step null` sends the four-letter
 string `null`, and the server answers `invalid_step` (`--owner null` the same: `invalid_owner`); `--branch` is typed the
-same way. The CLI types a field that may be null as a plain
+same way. This was run against `leeway` 0.2.0, whose help says "or null to clear it" regardless; a later CLI may
+accept a literal `null`, and `--status` then still works. The CLI types a field that may be null as a plain
 string and has no flag for a JSON null. The one way a step is cleared is a `--status` that is not the step's own
 status, which clears the step in the same write. This is why `--status in_review` takes a task out of
 `implementing`, and why a step is never cleared on purpose: set the next one. A CLI change is a nit on the Leeway
@@ -189,15 +190,17 @@ Round 0 runs "Delegate to the implementer" to "Gate again, record, act" below, w
   story's *Acceptance criteria* and *Technical criteria* verbatim and `redTests` as "red tests are running".
 - **The headings** of the brief and the verdict still carry the iteration number as `round <N>`, with `(round 0)`
   after it, for example `# Handoff brief — DRY-2.1 · round 1 (round 0)`.
-- **Round 0 never sets `in_review`.** The task stays at `red-tests` through every attempt, so the thread's
-  `implementing` entry is the one mark that closes round 0.
+- **Round 0 follows the same statuses as a code round.** After the gate the task goes `--status in_review` (the
+  step clears), so the board shows the reviewer has it. The thread's `step` entry with `to: implementing` still
+  comes once, at the round-0 PASS, so it remains the one mark that closes round 0 and the counting one-liner is
+  unaffected by the `in_review` writes.
 - **PASS** → the round is already committed and pushed: that sha is the **round-0 commit**. Set `--step
-  implementing` (the entry that closes round 0), and the freeze below begins. **FAIL** → the full verdict goes
-  back to the implementer in the same worktree, the step stays `red-tests`, and the next attempt is a new commit on
-  top.
+  implementing` (the entry that closes round 0), and the freeze below begins. **FAIL** → set `--step red-tests`
+  again (the status goes back to `in_progress`), the full verdict goes back to the implementer in the same
+  worktree, and the next attempt is a new commit on top.
 - **The cap.** After a FAIL, if the round-0 attempts have reached `round0Cap`: stop. Two failed attempts mean the
   criteria are ambiguous, which is a question about the story for its owner, not another round. Leave the task at
-  `red-tests` and raise one escalation on the sub-issue as `<alias>/agent` that names the outstanding findings
+  `red-tests` (set again after the FAIL) and raise one escalation on the sub-issue as `<alias>/agent` that names the outstanding findings
   (`cN`) and the owner (the product owner for an `AC-n`, the developer for a `TC-n`), with options such as
   "Clarify the criterion", "Split the story" and "Allow one more attempt", each with its argument.
 
@@ -322,8 +325,8 @@ a step that fails stops the round.
    across the comment and a reply (the rest as `comment add <ref> --parent cN --stdin body`), never cut.
 
 6. **Hand over to review.** In a code round: `leeway --as <alias>/agent issue update <ref> --status in_review`
-   (the step clears with it, see "How the CLI clears a step"). In round 0 write no status: go straight to the
-   reviewer.
+   (the step clears with it, see "How the CLI clears a step"). Round 0 is the same: `--status in_review`, then
+   the reviewer.
 
 **One iteration and one brief per round; the verdict answers that same round, joined by `--iteration N`; the next
 round opens a new one. Rounds never interleave.** The brief opens `# Handoff brief — <ref> · round <N>` with `N`
@@ -411,7 +414,7 @@ sufficient: the verdict exists nowhere else.
    `--comment cN` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
    review. A question about the round as a whole omits it. Report the escalation id and the issue, and do not go to
-   PASS or FAIL handling until it is answered. Leave the sub-issue `in_review` (round 0: at `red-tests`).
+   PASS or FAIL handling until it is answered. Leave the sub-issue `in_review`, in round 0 too.
 
 ### What a deferred finding becomes
 
@@ -422,7 +425,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | The follow-up is | What you do |
 |---|---|
 | Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway --as <alias>/agent issue create <KEY> --projectId <project.id> --title "…" --status backlog --stdin description <desc.md`, in the task's project |
-| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue with options "File it" and "Keep it a nit", each with its argument, `--meanwhile` saying the loop carries on because nothing in hand waits on it. On a yes, `issue create` as above, quoting the answer's `option` and `note`; on a no it stays a nit |
+| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and under `run-story` that the run stops here (its stop 4). On a yes, `issue create` as above, quoting the answer's `option` and `note`; on a no it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway --as <alias>/agent comment add <collector> --stdin body <nit.md` |
 
 **If you cannot name the consequence of leaving it, it is a nit.** A nit is a comment on the collector, never an
@@ -434,7 +437,7 @@ edit to its body.
   back and record the reason as a comment from `<alias>/agent`. The override spends a round. A PASS that carries a
   missing proof at a rung in `blockingRungs` contradicts itself: send it back.
 - **FAIL** → set the step back: `leeway --as <alias>/agent issue update <ref> --step implementing` (it sets
-  `in_progress`; after a round-0 FAIL the task is still at `red-tests` and nothing is written). Hand the **full
+  `in_progress`; after a round-0 FAIL it is `--step red-tests` instead, which sets `in_progress` too). Hand the **full
   verdict** and the `cN` of each live finding (including the new one a dispute brought) to the implementer, and
   repeat from "Delegate to the implementer". **Nothing is merged on a FAIL.** The next round's commit sits on the
   same task branch, on top of this one.
@@ -467,7 +470,7 @@ On a PASS of a code round.
 5. **Friction, only when `run-task` was invoked on its own** (`run-story` harvests the whole story once, at the
    end). Collect every *Friction* line from this task's briefs and verdicts, round 0 included; drop `none`; dedupe
    against each other and against the comments already on the friction collector (`.sdlc/leeway.md`,
-   `friction-collector:`). Propose what is left as **one escalation** on the sub-issue (options "File them" and "File
+   `friction-collector:`). Propose what is left as **one escalation** on the sub-issue, as `<alias>/agent` (options "File them" and "File
    none", the lines in the question's context comment), `--meanwhile` saying nothing waits. File each accepted line
    as a comment on the collector, and only on a yes. `n/a` there: the proposal is still made, nothing is filed.
 6. **Was it the story's last task?** Every sub-issue of the story `done` or `cancelled` → "The story gate".
@@ -476,7 +479,8 @@ On a PASS of a code round.
 
 ## The story gate
 
-When the story's last task has landed, in the **story worktree**:
+When the story's last task has landed, in the **story worktree**. The order is fixed: the story branch is merged into
+its base (step 5) before the story's next step is written, so a `manual` next step never skips the merge.
 
 1. **Merge the story's base into the story branch** (fetched fresh), and resolve conflicts **yourself**. A conflict
    in a file a human wrote that is not mechanical (a lockfile the package manager regenerates is) is a stop: abort the
@@ -490,14 +494,18 @@ When the story's last task has landed, in the **story worktree**:
 4. **Durable evidence.** At or above the rung the repo's evidence doc names for committed proof (and, where it names
    none, the lowest rung in `blockingRungs`), commit the record under the evidence directory in `.sdlc/CONFIG.md`.
    The round records keep the working copy; the repo keeps the one that survives.
-5. **Push the story branch, then close the story by the process.** Read the type's steps: the step after `build`.
+5. **Push the story branch and merge it, then close the story by the process.** Merge the story branch into its
+   base before any next step is written, so a `manual` stop cannot skip the merge: push the base as the
+   orchestrator when it is a plan or story branch; the integration branch is reached only as the repo's convention
+   says (`run-story`'s pre-push guard enforces it). Remove the story worktree. Then read the type's steps: the step
+   after `build`.
    - **A next step** → `leeway --as <alias>/agent issue update <story> --step <next>`. If its kind is `manual`
      ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and never moves
      the story past it.
    - **No next step** → `leeway --as <alias>/agent issue update <story> --status done`.
 
    Read the story back (`issue get <story>`) and check the step or status reads as written. Nothing else moves it.
-6. **Merge** the story branch into its base and remove the story worktree. If the story went `done` and was the
+6. **Afterwards.** If the story went `done` and was the
    project's last open story (`leeway --json issue list <KEY> <project.id>`: everything else `done` or `cancelled`,
    the collector aside), post the project's status update as a comment on the nit collector
    (`comment add <collector> --stdin body`, as `<alias>/agent`) and set the collector `--status done`: it is an
@@ -533,10 +541,10 @@ moves an issue.
 | 3 | gate, commit, stalled check, push | none (a stalled round: `escalation raise`, stop) |
 | 4 | iteration | `--as <alias>/implementer iteration record <ref> <sha> --tests "…" [--passed] [--addresses '[…]']` |
 | 5 | brief | `--as <alias>/implementer comment add <ref> --stdin body` |
-| 6 | hand over | code round: `issue update <ref> --status in_review`; round 0: none |
+| 6 | hand over | `issue update <ref> --status in_review`, in round 0 too |
 | 7 | reviewer | none |
 | 8 | findings | `--as <alias>/reviewer comment add <ref> [--anchor '{…}'] --stdin body`, one each |
 | 9 | verdict | `--as <alias>/reviewer comment add <ref> --kind review --iteration X --settles … --disputes … --raises … --stdin body` |
 | 10 | a human is needed | `--as <alias>/reviewer escalation raise <ref> … [--comment <the finding's cN>]` (never the verdict's), then stop |
 | 11 | nits, follow-ups | comment on the nit collector; `issue create` for a security follow-up; an escalation for a debt proposal |
-| 12 | outcome | round-0 PASS: `issue update <ref> --step implementing`. Code-round PASS: merge, `issue update <ref> --status done`. FAIL: `issue update <ref> --step implementing` (round-0 FAIL: nothing) |
+| 12 | outcome | round-0 PASS: `issue update <ref> --step implementing`. Code-round PASS: merge, `issue update <ref> --status done`. FAIL: `issue update <ref> --step implementing` (round-0 FAIL: `--step red-tests`) |
