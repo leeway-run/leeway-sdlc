@@ -21,7 +21,7 @@ posts this brief.
   `typecheck, unit 412/412 green`. A lane that failed goes here too, starting `FAILED:`.
 - **Passed:** yes | no | n/a (no lane owns this change)
 - **Addresses:** `c1, c3` — the earlier findings (`cN`, from the reviewer's last verdict) this round fixed, or
-  `none`. Round 1 is always `none`. Name only the `cN` your prompt lists as live (`open` or `addressed`): a
+  `none`. The first round of a task is always `none`. Name only the `cN` your prompt lists as live (`open` or `addressed`): a
   `disputed` or `settled` finding cannot be addressed again, and the verdict re-raises a disputed one as a new
   finding, whose `cN` is the one to name.
 
@@ -43,6 +43,11 @@ stale inside one; heading text is stable and quoting it proves you opened the fi
 
 If a doc in your map is marked `stub` or `absent`, it is a place to write a finding into, **not a
 source to cite**. If a doc was silent where you needed it, say so — that is a gap worth closing.
+
+## Rules read
+
+Only when your prompt carries a *Required reading* table. Each file you opened under it, with the heading you
+applied, or "none owed". The orchestrator compares this with the paths you staged.
 
 ## Tests
 
