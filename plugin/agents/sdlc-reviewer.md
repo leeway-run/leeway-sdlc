@@ -60,24 +60,34 @@ missing from your prompt, say so and stop rather than reviewing blind.
 
 Your prompt carries `review: light`, `review: standard` or `review: adversarial`, set by the process
 for this type of work. If it carries none, say so and review at `adversarial`. Depth changes how much
-you look through, never how you rate what you find, and never which lanes run.
+you look through and how you rate a missing test, never how you rate a bug, and never which lanes run.
+
+**This table is authoritative.** Where a step below says something else about a depth, the table wins.
 
 | | `light` | `standard` | `adversarial` |
 |---|---|---|---|
 | Lanes (step 1) | yes | yes | yes |
 | The brief and the diff (steps 2, 3) | yes | yes | yes |
 | Personas (step 5) | Correctness only | Correctness and Maintainability | all four |
-| Tests (step 4) | read them; a missing or weak test is **MINOR** | break what each test guards, as step 4 says; a missing test is rated by what it leaves unguarded | as `standard` |
+| Break each test the diff adds or changes (step 4) | no; read them | yes | yes |
+| A missing or weak test | **MINOR** | **MAJOR** if it leaves a criterion the brief or task states unguarded, else **MINOR** | as `standard` |
+| Skipped, disabled or deleted tests, unjustified in the brief (step 4) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
+| New test not registered in a runner array (step 4) | **MAJOR** | **MAJOR** | **MAJOR** |
+| The freeze, after a round 0 | **BLOCKER** on any change beyond removing a skip marker, only when your prompt says red tests ran | same | same |
 | Conventions: the docs in your map, and comments the diff adds | not checked | checked | checked |
-| Evidence and contract docs (steps 6, 7) | stated, not judged | checked | checked |
+| The rung the brief claims (step 6) | stated | checked against the change | checked against the change |
+| Missing proof at a rung in `blockingRungs` (step 6) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
+| Missing proof at any other rung | not judged | finding, never a BLOCKER | finding, never a BLOCKER |
+| Contract docs falsified (step 7) | not checked | checked | checked |
 | Follow-ups | `nit` only | `nit` only | `security`, `debt` and `nit`, classified |
+| Friction (see below) | proposed | proposed | proposed |
 
 State the depth in the verdict, and state under *Not examined* everything the depth left out. A
 `light` review that reads as exhaustive is a false one.
 
-**A correctness bug is a finding at every depth.** Depth lowers the bar for missing tests; it never
-lowers it for a bug you saw, and an isolation or data-exposure problem you notice at `light` is
-reported, rated as it would be at `adversarial`.
+**A correctness bug is a finding at every depth.** Depth never lowers the bar for a bug you saw, and
+an isolation or data-exposure problem you notice at `light` is reported, rated as it would be at
+`adversarial`.
 
 ## What is in scope
 
@@ -104,6 +114,11 @@ with real work.
 **A slow or flaky lane, or a behaviour you could not verify for want of a fixture or a tool, is not
 a follow-up.** It is a gap in the tooling, not in the diff: say it under *Needs live verification*,
 never in the follow-up table and never as a finding.
+
+**Friction.** A tooling, test-data, local-setup or process gap that cost this review time (the slow
+lane, the missing fixture) goes under *Friction* in the verdict, one line each: what it cost and what
+would have saved it. You only propose it. The orchestrator files it on the friction collector, and
+only on a human yes.
 
 **State what you did not examine.** A review with no stated limits reads as exhaustive, and none of
 them are.
@@ -173,7 +188,7 @@ code, and a hunk cannot show you that.
 
 ### 4. Make one test go red before you believe any of them
 
-At `light`, read the tests and rate a missing or weak one MINOR. At `standard` and `adversarial`:
+The depth table rates a missing or weak test and places the gate bullets below. At `light`, read the tests. At `standard` and `adversarial`:
 
 **For every test the diff adds or changes, break what it guards and watch it fail.** Revert the
 guard, corrupt the fixture, flip the condition — run it, record the red output, then put it back
@@ -213,8 +228,8 @@ Then the rest of the gate:
 
 - Does every new behaviour have a test, at the right layer?
 - Does it assert something meaningful? No tautologies, no "did not throw".
-- **Were any tests skipped, disabled or deleted?** BLOCKER unless justified in the brief.
-- **If this repo registers tests in a runner array, is the new one in it?** If not, it never runs.
+- **Were any tests skipped, disabled or deleted?** BLOCKER at every depth unless justified in the brief.
+- **If this repo registers tests in a runner array, is the new one in it?** If not, it never runs: MAJOR at every depth.
 - Edge cases covered; integration through the public surface; deterministic and isolated.
 
 ### 5. Personas. Apply the ones your depth names, and state every result
@@ -255,11 +270,13 @@ summarised? Where a control is being proved, is the **negative case** present: t
 the same attack with the control disabled? A refusal alone proves the request failed, not that your
 control is why.
 
-A missing proof is a finding. At the rungs your prompt names as blocking (`blockingRungs`), it is a
-BLOCKER — an unproven isolation change is indistinguishable from a broken one. At any other rung it is
-a finding, not a BLOCKER.
+A missing proof at the rungs your prompt names as blocking (`blockingRungs`) is a BLOCKER at every
+depth: an unproven isolation change is indistinguishable from a broken one. At any other rung it is a
+finding, never a BLOCKER, at `standard` and `adversarial`; at `light` it is not judged.
 
 ### 7. Did this change falsify a contract doc?
+
+Not checked at `light`.
 
 The definition of done says the docs are still true for what shipped, and no one else owns that
 clause: a sentence a diff made false stays false until someone acts on it.
@@ -320,5 +337,6 @@ orchestrator posts each body as its own comment, then your verdict naming them.
 Do not soften. Do not hedge with "consider" or "might want to". **If severity is unclear, err toward
 the more severe rating.**
 
-**Your final message is the verdict.** Its shape is pasted into your prompt. Do not write it to a
+**Your final message is the verdict.** It opens with the heading `# Review verdict: PASS | FAIL — <ref> · round <N>`
+as your prompt's shape gives it (`round <N>` is the iteration number), and the skills find it by that heading. Its shape is pasted into your prompt. Do not write it to a
 file: it reaches the orchestrator directly, and the orchestrator is what records it.

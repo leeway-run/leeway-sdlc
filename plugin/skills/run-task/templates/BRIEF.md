@@ -104,6 +104,12 @@ human will read it:
 - **Meanwhile:** what you did before stopping, and what stays untouched until the answer. You stop implementing
   the blocked part; you do not guess.
 
+## Friction
+
+A tooling, test-data, local-setup or process gap that cost this round time, one line each: what it cost and what
+would have saved it. You only propose it; the orchestrator files it on the friction collector, and only on a
+human yes. Write "none" when there is none.
+
 ## Verification
 
 Verbatim, not summarised. You stage; the orchestrator commits afterwards, so this is the staged state:
@@ -183,6 +189,10 @@ None.
 ## Uncertainties and cut corners
 
 None.
+
+## Friction
+
+none
 
 ## Verification
 

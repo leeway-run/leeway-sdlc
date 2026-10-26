@@ -46,3 +46,28 @@ test('no agent frontmatter names an MCP tool', () => {
   });
   assert.deepEqual(offenders.map(rel), []);
 });
+
+const read = (path) => readFileSync(path, 'utf8').replace(/\r\n/g, '\n');
+const templateText = (name) => read(templates.find((path) => path.endsWith(name)));
+const contractFiles = [...agents, ...templates, join(plugin, 'PROCESS.md')];
+
+test('a brief and a verdict open with one heading everywhere', () => {
+  const stale = contractFiles.filter((path) => /(Brief|Verdict) · /.test(read(path)));
+  assert.deepEqual(stale.map(rel), []);
+  const process = read(join(plugin, 'PROCESS.md'));
+  assert.ok(process.includes('# Handoff brief — <ref> · round <N>'), 'PROCESS.md lacks the brief heading');
+  assert.ok(process.includes('# Review verdict: PASS | FAIL — <ref> · round <N>'), 'PROCESS.md lacks the verdict heading');
+  assert.ok(templateText('BRIEF.md').includes('\n# Handoff brief — <ref> · round <N>\n'));
+  assert.ok(templateText('VERDICT.md').includes('\n# Review verdict: PASS | FAIL — <ref> · round <N>\n'));
+});
+
+test('the brief and the verdict both carry a Friction section', () => {
+  for (const name of ['BRIEF.md', 'VERDICT.md']) {
+    assert.ok(templateText(name).includes('\n## Friction\n'), `${name} has no Friction section`);
+  }
+});
+
+test('every agent says it never writes to Leeway', () => {
+  const silent = agents.filter((path) => !/never \*write\* to Leeway|never writes to Leeway/.test(read(path)));
+  assert.deepEqual(silent.map(rel), []);
+});

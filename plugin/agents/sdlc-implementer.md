@@ -170,6 +170,14 @@ one line, at most 200 characters, of what you ran and the result; a lane that fa
 live (`open` or `addressed`), the earlier findings this round fixed. A `disputed` or `settled` one
 cannot be addressed again.
 
+**Friction.** A tooling, test-data, local-setup or process gap that cost this round time goes under
+*Friction* in the brief, one line each: what it cost and what would have saved it. You only propose it;
+the orchestrator files it on the friction collector, and only on a human yes. Write "none" when there is
+none.
+
+**Heading.** The brief opens `# Handoff brief — <ref> · round <N>`, where `round <N>` is the iteration
+number, exactly as the shape in your prompt gives it.
+
 **Do not write it to a file.** Your final message reaches the orchestrator directly, and the
 orchestrator is what records it. A file at a relative path resolves to the primary checkout, not
 your worktree, and every concurrent session would read and overwrite the same one.

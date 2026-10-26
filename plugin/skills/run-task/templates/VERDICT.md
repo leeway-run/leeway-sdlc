@@ -151,6 +151,13 @@ as `cN`. Check each against the code at this sha.
   - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000).
   - **Meanwhile:** what stays blocked and what does not.
 
+## Friction
+
+A tooling, test-data, local-setup or process gap that cost this review time (the slow lane, the missing
+fixture), one line each: what it cost and what would have saved it. Not a finding and not a follow-up row: you
+only propose it, and the orchestrator files it on the friction collector only on a human yes. Write "none" when
+there is none.
+
 ## Verification
 
 The round is committed and pushed, so nothing should be staged and the tree should be clean. Verbatim:
@@ -229,6 +236,10 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
     1. `Include the version` — a rule change invalidates every entry automatically; costs one full lint per upgrade.
     2. `Leave it out, document the manual clear` — keeps upgrades fast; a forgotten clear hides every new violation.
   - **Meanwhile:** LWY-12.3 stays `in_progress`; LWY-12.4 does not touch the linter and carries on.
+
+## Friction
+
+`npm test` took four minutes to reach the docs-lint lane; a `--only` filter would have saved three.
 
 ## Verification
 
