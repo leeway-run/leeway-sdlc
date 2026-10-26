@@ -30,7 +30,7 @@ Raising, all together, once steps 0 to 2 have found which copies need an answer:
    (`PROCESS.md`, "Questions to the human are escalations").
 
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
-`question` to its copy by that opening name. An answered one is acted on in step 3. An open one with no
+`question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3. An open one with no
 answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
 remain open. Never write a copy on an unanswered question.
 
@@ -44,9 +44,11 @@ remain open. Never write a copy on an unanswered question.
   If `claude plugin list --json` shows a newer `leeway-sdlc` installed, this session has not
   restarted since `/leeway-sdlc:update`: say so and stop, or you would sync to the old release.
 - **Nobody is doing it already.** The Leeway CLI cannot list pull requests, so look in git:
-  `git ls-remote --heads origin` for a branch whose name carries `sync`, and, where `gh` is
-  installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. One exists: link it
-  and stop. No `gh` and no matching branch is not proof; say that you could not check the PR list.
+  `git ls-remote --heads origin` for a branch named exactly as in step 4, and, where `gh` is
+  installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. A branch whose
+  `## Repo copies` already reads `Synced to <version>` and has an open PR is someone else's finished
+  sync: link it and stop. The same branch with open escalations of this version on the named issue is
+  this repo's own sync in progress: check it out and resume. No `gh` and no matching branch is not proof; say that you could not check the PR list.
 - **The working tree is clean** (`git status --short`), so the branch carries only the sync.
 - **Then be on the sync branch** (step 4 names it): create it, or on a resume check out the one that
   exists. Nothing below is written anywhere else.
@@ -78,7 +80,7 @@ against the filled-in template. Each copy is one of:
 - **different otherwise** → ask in step 3. A `Kept` row whose hash no longer matches means the plugin
   changed that file again: show the new diff, and say what the team kept last time and why.
 
-**The Kept hash** is the first 12 characters of `tr -d '' < <file> | git hash-object --stdin`: the
+**The Kept hash** is the first 12 characters of `tr -d '\r' < <file> | git hash-object --stdin`: the
 file with CRs stripped, so a CRLF and an LF checkout of one release give the same hash. `<file>` is the
 plugin copy; for the contract block it is the template file (`CLAUDE-BLOCK.md.tmpl`, unfilled); a
 `.gitignore` line has no plugin file, so its `Kept` row carries `-`, and is kept until the line is added.
@@ -101,8 +103,8 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
   outside the span is untouched. A second compare then says "the same".
-- **Keep** → ask for the reason in one line. It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
-- **Merge** → the user edits; you write their result. Record a `Kept` row too, since the repo copy
+- **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
+- **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
   `CLAUDE.local.md`, account ids and local paths the contract block sends there get committed; without
@@ -114,7 +116,7 @@ a matching hash, is not asked.
 
 ## 4. One branch, one pull request
 
-Everything goes on **one branch**, named by the repo's convention, and **one pull request** titled
+Everything goes on **one branch**, named `chore/sync-leeway-sdlc-<version>` (the repo's convention is `<type>/<slug>`; a repo may prefix it per its own convention, but the slug `sync-leeway-sdlc-<version>` stays), and **one pull request** titled
 `chore: sync leeway-sdlc <version>` (opened with `gh` where it is installed, otherwise committed for
 the human to push). In the same change, update `## Repo copies`:
 
