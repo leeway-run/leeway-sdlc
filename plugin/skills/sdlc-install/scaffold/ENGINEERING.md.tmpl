@@ -1,0 +1,56 @@
+# Engineering — how this codebase works
+
+**This is the floor: it binds all work in this repo.** The delegated-work process sits on top of it
+and is opt-in; nothing here depends on it.
+
+## The docs, and when to read them
+
+| Read | When |
+|---|---|
+| {{VISION_PATH}} | **Before designing** anything non-trivial. If your change cuts against a rule, say which rule and why |
+| {{ARCH_PATH}} | Finding your way around. Ends with "Known limitations" |
+| {{INV_PATH}} | Writing code. The decisions you cannot infer from a neighbouring file |
+| {{TESTING_PATH}} | Deciding which lane a change owes a test to |
+| {{EVIDENCE_PATH}} | Deciding what a change must *prove*, and where the proof goes |
+| {{GOTCHAS_PATH}} | Something fails in a way that makes no sense — read it **before** debugging further |
+| {{RECIPES_PATH}} | Doing one of the recurring change types |
+
+@{{CRAFT_PATH}}
+
+## What a change owes
+
+A test **in the right lane**, the docs it touches still true for what shipped, and nothing disabled
+or deleted to make a diff clean.
+
+## Repo layout
+
+{{LAYOUT}}
+
+## Build and test
+
+{{COMMANDS}}
+
+**The gate:** `{{GATE_COMMAND}}`
+
+{{CI_NOTE}}
+
+## Branches and commits
+
+{{BRANCH_NOTES}}
+
+## Secrets
+
+{{SECRETS_NOTE}}
+
+**Never a secret value in code, in a tracked file, or in chat.**
+
+## Ports and running services
+
+{{PORTS}}
+
+## Gotchas that prevent damage
+
+These are here, rather than in the gotchas registry, because by the time you would look them up the
+damage is done. Everything else: {{GOTCHAS_PATH}}.
+
+Add only traps whose cost is irreversible. Keep this list short; a long one gets skimmed.

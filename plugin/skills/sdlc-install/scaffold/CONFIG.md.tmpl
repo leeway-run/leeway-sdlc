@@ -1,0 +1,80 @@
+# leeway-sdlc wiring for this repo
+
+<!-- Machine-maintained by the installer, human-editable. The loop and its subagents read this.
+     If a row here is wrong, the loop is confidently wrong. Repo facts only: the process itself
+     (types, steps, caps, review depth, blocking rungs) lives in Leeway and is read with
+     `process get`; the server, product and CLI command are in .sdlc/leeway.md. -->
+
+Generated {{DATE}} by leeway-sdlc {{VERSION}}.
+
+## Doc map
+
+The subagents never resolve these paths themselves — the orchestrator pastes this table into their
+prompts. **State is load-bearing: a `stub` or `absent` doc must not be cited.** A reviewer needing a
+rule from one says *"no rule exists for this"* instead.
+
+| Role | Path | State | Notes |
+|---|---|---|---|
+| intent | {{VISION_PATH}} | {{VISION_STATE}} | |
+| architecture | {{ARCH_PATH}} | {{ARCH_STATE}} | |
+| invariants | {{INV_PATH}} | {{INV_STATE}} | |
+| testing | {{TESTING_PATH}} | {{TESTING_STATE}} | |
+| evidence | {{EVIDENCE_PATH}} | {{EVIDENCE_STATE}} | |
+| gotchas | {{GOTCHAS_PATH}} | {{GOTCHAS_STATE}} | |
+| recipes | {{RECIPES_PATH}} | {{RECIPES_STATE}} | |
+
+## Required reading
+
+The files a change under a path owes, beyond the doc map: the skills and rule files that hold this
+repo's conventions for that area. **The subagents have no Skill tool**, so "load the frontend skill"
+in a task reaches nobody; this table is how those files reach them. The plugin's `SubagentStart`
+hook injects it into the implementer and the reviewer at start, and the run-task gate checks each
+brief's and verdict's *Rules read* section against it. A row is owed when any changed path matches
+its glob (repo-relative, `**` across folders). No rows: the hook and the gate do nothing.
+
+| Paths | Read | Why |
+|---|---|---|
+{{REQUIRED_READING_ROWS}}
+
+## Lanes
+
+| Lane | Command | Needs | In CI? | Owns which changes |
+|---|---|---|---|---|
+{{LANE_ROWS}}
+
+**Gate command:** `{{GATE_COMMAND}}` — what must pass before a story merges.
+
+**Known-red here and unrelated to any diff:** {{KNOWN_RED}}
+
+## Topology
+
+| | |
+|---|---|
+| Integration branch | {{INTEGRATION_BRANCH}} |
+| Plan branch | {{PLAN_BRANCH}} |
+| Plans directory | {{PLANS_DIR}} — design docs written as `<dir>/<ref lower>-<slug>.md` |
+| Per-worktree setup | {{WORKTREE_SETUP}} |
+| Evidence directory | {{EVIDENCE_DIR}} {{EVIDENCE_GITIGNORED}} |
+| Per-story budget | {{PER_STORY_BUDGET}} |
+| Ticket templates | `.sdlc/templates/` — `STORY.md`, `TASK.md` |
+
+<!-- Per-story budget: what one run-story may spend on one story, summed across runs, before it stops
+     for a human. Three dimensions, whichever is hit first: subagent usage as the harness reports it,
+     rounds (round-0 attempts included), and wall-clock. "none" for a dimension means it is not
+     enforced - say so rather than leave it blank. -->
+
+Branch names come from the process (each type's branch prefix) and are `<prefix>/<ref lower>-<slug>`,
+the slug at most 40 characters, written back with `issue update --branch`.
+
+## Repo copies
+
+<!-- Written by sdlc-install and sync-repo; read by update and by the session-start notice. A Kept row
+     stops the next sync asking about that copy until the plugin's copy changes (its hash no longer
+     matches). Keep the Synced to row exactly in this form. -->
+
+| | |
+|---|---|
+| Synced to | {{VERSION}} |
+
+| Kept | Plugin copy hash | Why | Decided |
+|---|---|---|---|

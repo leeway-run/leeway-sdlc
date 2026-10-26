@@ -1,0 +1,23 @@
+# Leeway binding for this repo
+
+Generated {{DATE}} by leeway-sdlc {{VERSION}}. Read before any Leeway call. Never synced by
+`sync-repo`: it is this repo's own.
+
+server: {{SERVER_URL}}
+product: {{PRODUCT_KEY}}
+cli: {{CLI_COMMAND}}
+friction-collector: {{FRICTION_COLLECTOR}}
+
+`cli:` is the command every skill runs in place of `leeway`: `leeway` when it is on the PATH, else a
+path such as `node /path/to/leeway.js`. No credential belongs in this file or anywhere else in the
+repo: `leeway login` keeps the sign-in on the machine.
+
+`friction-collector:` is the issue of type `chore` that friction is filed under, as a ref such as
+`{{PRODUCT_KEY}}-12`, or `n/a` and why. It is the product's, not a project's.
+
+## Nit collectors
+
+One row per project, appended by `plan-work` when it creates or adopts a project. Empty at install.
+
+| Project id | Nit collector |
+|---|---|
