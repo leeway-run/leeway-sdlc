@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -45,9 +45,28 @@ test('equal: silent', () => silent(start(repoWith(table(PLUGIN)).root)))
 
 test('ahead: silent', () => silent(start(repoWith(table('99.0.0')).root)))
 
-test('numeric, not lexical, comparison: 0.10.0 is ahead of 0.9.0', () => {
-  const { root } = repoWith(table('0.10.0'))
-  silent(start(root))
+// The hook reads plugin.json relative to its own file, so a copy of it in a temp tree sees whatever
+// plugin version the test writes there.
+const asPlugin = (version) => {
+  const tree = mkdtempSync(join(tmpdir(), 'version-notice-plugin-'))
+  mkdirSync(join(tree, 'hooks'))
+  mkdirSync(join(tree, '.claude-plugin'))
+  copyFileSync(HOOK, join(tree, 'hooks', 'version-notice.mjs'))
+  writeFileSync(join(tree, '.claude-plugin', 'plugin.json'), JSON.stringify({ name: 'leeway-sdlc', version }))
+  return (cwd) =>
+    spawnSync(process.execPath, [join(tree, 'hooks', 'version-notice.mjs')], {
+      input: JSON.stringify({ hook_event_name: 'SessionStart', cwd }),
+      encoding: 'utf8',
+    })
+}
+
+test('numeric, not lexical, comparison', () => {
+  // As strings '0.9.0' sorts after '0.10.0'; as numbers it is behind it.
+  const plugin = asPlugin('0.10.0')
+  const behind = plugin(repoWith(table('0.9.0')).root)
+  assert.match(behind.stdout, /0\.9\.0/)
+  silent(asPlugin('0.9.0')(repoWith(table('0.10.0')).root))
+  silent(plugin(repoWith(table('0.10.0')).root))
 })
 
 test('no CONFIG above cwd: silent', () => {

@@ -10,14 +10,27 @@
 // Contract: read the tool call as JSON on stdin, exit 0 to allow, exit 2 to block with the reason
 // on stderr. No dependencies. Tests: `node --test plugin/hooks/leeway-guard.test.mjs`.
 //
-// The lexer below (lex, commandName, wrappedScript) is copied from git-guard.mjs, not shared: each
+// The lexer below (lex, wrappedScript; commandName also strips .cmd/.bat/.ps1) is copied from git-guard.mjs, not shared: each
 // hook stays one self-contained file that can be read, tested and run on its own. A fix to one
 // belongs in the other.
 //
-// What this is not: a sandbox. A script file the agent wrote and then runs, or an interpreter
-// (`node -e`) calling the CLI, are out of reach. It closes the direct forms and the common wrappers.
+// What this is not: a sandbox. It closes the direct forms (`leeway`, `leeway.js`, `.cmd`, `.ps1`,
+// `npx @leeway/cli`) and the common wrappers (`sh -c`, `eval`, `env -S`, `pwsh -c`, `cmd /c`, a shell
+// reading its script from a pipe or here-string, `xargs leeway`). Out of reach: a script file the
+// agent wrote and then runs, an interpreter (`node -e`, `python -c`) calling the CLI, a variable or
+// alias standing for the program (`$L`, `alias`, `eval $CMD`), an ANSI-C escape spelling the name
+// (`$'\x6ceeway'`), and an unquoted Windows path (the shell would eat its backslashes).
+//
+// Bound: a command is judged in at most MAX_SCRIPTS nested scripts (each `sh -c`, `eval`,
+// `$(...)` body counts one, chain depth at most MAX_DEPTH). A command past either limit is
+// BLOCKED, not allowed: nothing legitimate nests that deep, and failing open would let a long
+// `eval eval ...` chain carry a write past the guard. Each script is lexed once, in linear time.
 
 const GOVERNED_AGENT_PREFIX = 'leeway-sdlc:'
+
+const MAX_SCRIPTS = 200
+const MAX_DEPTH = 8
+class TooComplex extends Error {}
 
 // Verbs (the second word, after the resource) that only read.
 const READ_VERBS = new Set(['get', 'list', 'whoami', 'help', 'version'])
@@ -67,7 +80,9 @@ const lex = (src) => {
   let i = 0
   while (i < src.length) {
     const ch = src[i]
-    if (ch === "'") {
+    if (ch === '$' && (src[i + 1] === "'" || src[i + 1] === '"')) {
+      i++ // `$'...'` and `$"..."` quote like `'...'` and `"..."`; the `$` is not part of the word.
+    } else if (ch === "'") {
       inWord = true
       const end = src.indexOf("'", i + 1)
       const stop = end === -1 ? src.length : end
@@ -120,9 +135,9 @@ const lex = (src) => {
   return { segments, nested }
 }
 
-// `C:\Program Files\Git\bin\git.exe` and `/usr/bin/git` are both git.
+// `C:\Program Files\...\leeway.cmd` and `/usr/bin/leeway` are both leeway.
 const commandName = (word) =>
-  word.split(/[\\/]/).pop().toLowerCase().replace(/\.exe$/, '')
+  word.split(/[\\/]/).pop().toLowerCase().replace(/\.(exe|cmd|bat|ps1)$/, '')
 
 // For a shell-wrapper word at `words[i]`, the nested script it runs, or null.
 const wrappedScript = (words, i) => {
@@ -160,31 +175,53 @@ const wrappedScript = (words, i) => {
   return null
 }
 
-// The leeway CLI is `leeway` on PATH or `node <path>/leeway.js`.
+// The leeway CLI is `leeway` on PATH, `node <path>/leeway.js`, or the package `@leeway/cli`
+// (`npx @leeway/cli`, `npx @leeway/cli@1.2.3`).
 const isLeeway = (word) => {
   const name = commandName(word)
-  return name === 'leeway' || name === 'leeway.js'
+  return name === 'leeway' || name === 'leeway.js' || /^@leeway\/cli(@[^/\s]*)?$/i.test(word)
 }
 
-// Every leeway invocation in a command line, as the list of words after the program name,
-// following shell wrappers.
-const leewayInvocations = (command, depth = 0) => {
-  if (depth > 8) return []
+// A POSIX shell with no `-c` and no script operand (or only a `<<<` / `<` redirection) reads its script from stdin.
+const readsStdin = (words, i) => {
+  if (!POSIX_SHELLS.has(commandName(words[i]))) return false
+  let j = i + 1
+  for (; j < words.length && /^[-+]/.test(words[j]); j++) {
+    if (/^-[a-zA-Z]*c[a-zA-Z]*$/.test(words[j])) return false
+    if (/^[-+][oO]$/.test(words[j])) j++
+  }
+  return j >= words.length || words[j].startsWith('<')
+}
+
+// Every leeway invocation in a command line, as { args, fromXargs }, following shell wrappers.
+// `budget` is shared across the whole recursion, so work is bounded however the chain is shaped.
+const leewayInvocations = (command, depth = 0, budget = { left: MAX_SCRIPTS }) => {
+  if (depth > MAX_DEPTH || --budget.left < 0) throw new TooComplex()
   const found = []
   const { segments, nested } = lex(command)
-  for (const script of nested) found.push(...leewayInvocations(script, depth + 1))
+  for (const script of nested) found.push(...leewayInvocations(script, depth + 1, budget))
+  let stdinShell = false
   for (const words of segments) {
+    const xargsAt = words.findIndex((w) => commandName(w) === 'xargs')
     for (let i = 0; i < words.length; i++) {
       const script = wrappedScript(words, i)
-      if (script) found.push(...leewayInvocations(script, depth + 1))
-      if (isLeeway(words[i])) found.push(words.slice(i + 1))
+      if (script) found.push(...leewayInvocations(script, depth + 1, budget))
+      if (readsStdin(words, i)) stdinShell = true
+      if (isLeeway(words[i])) found.push({ args: words.slice(i + 1), fromXargs: xargsAt !== -1 && xargsAt < i })
+    }
+  }
+  if (stdinShell) {
+    // The script arrives on stdin and cannot be seen; judge every multi-word argument as one.
+    for (const words of segments) {
+      for (const w of words) if (/\s/.test(w)) found.push(...leewayInvocations(w, depth + 1, budget))
     }
   }
   return found
 }
 
 // The command's own words once global flags are dropped, then why it is a write, or null.
-const writeReason = (args) => {
+// With `fromXargs` the missing words arrive on stdin, so a call that does not name a read is unknown.
+const writeReason = ({ args, fromXargs }) => {
   if (args.some((a) => HELP_FLAGS.has(a))) return null
   const positionals = []
   for (let k = 0; k < args.length; k++) {
@@ -192,9 +229,12 @@ const writeReason = (args) => {
     else if (!args[k].startsWith('-')) positionals.push(args[k])
   }
   const [first, second] = positionals
-  if (first === undefined || READ_COMMANDS.has(first)) return null
+  if (first !== undefined && READ_COMMANDS.has(first)) return null
   if (first === 'login' || first === 'logout') return `\`${first}\` changes the stored credential`
-  if (second === undefined || READ_VERBS.has(second)) return null
+  if (fromXargs && (first === undefined || second === undefined)) {
+    return 'the arguments come from xargs and cannot be judged'
+  }
+  if (first === undefined || second === undefined || READ_VERBS.has(second)) return null
   return `\`${first} ${second}\` writes`
 }
 
@@ -214,11 +254,15 @@ const main = async () => {
   let invocations
   try {
     invocations = leewayInvocations(command)
-  } catch {
+  } catch (err) {
+    if (err instanceof TooComplex) {
+      console.error('Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.')
+      process.exit(2)
+    }
     process.exit(0) // A lexer bug must not turn into a block the agent cannot explain.
   }
-  for (const args of invocations) {
-    const reason = writeReason(args)
+  for (const call of invocations) {
+    const reason = writeReason(call)
     if (!reason) continue
     console.error(
       `Blocked: ${reason}, and the orchestrator is the only writer to Leeway.\n` +

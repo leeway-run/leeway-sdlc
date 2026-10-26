@@ -186,3 +186,27 @@ test('a payload without a command string fails open', () => {
   assert.equal(run(JSON.stringify({ tool_name: 'Bash', tool_input: {}, agent_type: IMPLEMENTER })).status, 0)
   assert.equal(run(JSON.stringify({ tool_name: 'Bash', tool_input: { command: 7 }, agent_type: IMPLEMENTER })).status, 0)
 })
+
+test('an eval chain is bounded: judged fast, and blocked rather than allowed past the limit', () => {
+  const chain = (n) => Array(n).fill('eval').join(' ')
+  for (const [command, code] of [
+    [`${chain(30)} git status`, 2],
+    [`${chain(30)} git commit -m x`, 2],
+    [`${chain(3)} git commit -m x`, 2],
+    [`${chain(3)} git status`, 0],
+    [`${chain(Math.floor((10 * 1024) / 5))} git commit -m x`, 2],
+  ]) {
+    const started = Date.now()
+    expectExit(command, code)
+    assert.ok(Date.now() - started < 1000, `took over a second: ${command.length} bytes`)
+  }
+})
+
+test("$'...' quoting does not hide git", () => expectExit("$'git' commit -m x", 2))
+
+test('more nested scripts than the budget allows are blocked, fewer are judged', () => {
+  const subs = (n) => `echo "${'$(true)'.repeat(n)}"`
+  expectExit(`${subs(250)} && git status`, 2)
+  expectExit(`${subs(50)} && git status`, 0)
+  expectExit(`${subs(50)} && git commit -m x`, 2)
+})

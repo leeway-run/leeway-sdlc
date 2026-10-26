@@ -27,6 +27,14 @@
 // never this hook's business even though it sees their Bash calls.
 const GOVERNED_AGENT_PREFIX = 'leeway-sdlc:'
 
+// Bound: a command is judged in at most MAX_SCRIPTS nested scripts (each `sh -c`, `eval`, `$(...)`
+// body counts one, chain depth at most MAX_DEPTH). A command past either limit is BLOCKED, not
+// allowed: nothing legitimate nests that deep, and failing open would let a long `eval eval ...`
+// chain carry a commit past the guard. Each script is lexed once, in linear time.
+const MAX_SCRIPTS = 200
+const MAX_DEPTH = 8
+class TooComplex extends Error {}
+
 const TOPOLOGY = 'branch topology belongs to the orchestrator'
 const DISCARDS = 'this can silently discard uncommitted work'
 
@@ -148,7 +156,9 @@ const lex = (src) => {
   let i = 0
   while (i < src.length) {
     const ch = src[i]
-    if (ch === "'") {
+    if (ch === '$' && (src[i + 1] === "'" || src[i + 1] === '"')) {
+      i++ // `$'...'` and `$"..."` quote like `'...'` and `"..."`; the `$` is not part of the word.
+    } else if (ch === "'") {
       inWord = true
       const end = src.indexOf("'", i + 1)
       const stop = end === -1 ? src.length : end
@@ -244,15 +254,15 @@ const wrappedScript = (words, i) => {
 // Every git invocation in a command line, as { verb, args, globals }, following shell wrappers.
 // A `git` word anywhere in a segment counts, which is what catches `env X=1 git ...`,
 // `command git ...`, `xargs -n1 git ...`, `timeout 5 git ...` without listing each wrapper.
-const gitInvocations = (command, depth = 0) => {
-  if (depth > 8) return []
+const gitInvocations = (command, depth = 0, budget = { left: MAX_SCRIPTS }) => {
+  if (depth > MAX_DEPTH || --budget.left < 0) throw new TooComplex()
   const found = []
   const { segments, nested } = lex(command)
-  for (const script of nested) found.push(...gitInvocations(script, depth + 1))
+  for (const script of nested) found.push(...gitInvocations(script, depth + 1, budget))
   for (const words of segments) {
     for (let i = 0; i < words.length; i++) {
       const script = wrappedScript(words, i)
-      if (script) found.push(...gitInvocations(script, depth + 1))
+      if (script) found.push(...gitInvocations(script, depth + 1, budget))
       if (commandName(words[i]) !== 'git') continue
       const globals = []
       let j = i + 1
@@ -342,15 +352,21 @@ const main = async () => {
   const agentType = input?.agent_type
   if (typeof agentType !== 'string' || !agentType.startsWith(GOVERNED_AGENT_PREFIX)) process.exit(0)
 
-  let invocations
+  let call
+  let reason
   try {
-    invocations = gitInvocations(command)
-  } catch {
+    for (call of gitInvocations(command)) {
+      reason = blockReason(call)
+      if (reason) break
+    }
+  } catch (err) {
+    if (err instanceof TooComplex) {
+      console.error('Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.')
+      process.exit(2)
+    }
     process.exit(0) // A lexer bug must not turn into a block the agent cannot explain.
   }
-  for (const call of invocations) {
-    const reason = blockReason(call)
-    if (!reason) continue
+  if (reason) {
     console.error(
       `Blocked: \`git ${call.verb}\` is not available to this subagent -- ${reason}.\n` +
         `You may \`git add <paths>\` to stage your work, and read history with status, diff, log and show.\n` +

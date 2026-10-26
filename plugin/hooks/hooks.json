@@ -4,8 +4,8 @@
       {
         "matcher": "Bash",
         "hooks": [
-          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/git-guard.mjs" },
-          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/leeway-guard.mjs" }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/git-guard.mjs\"" },
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/leeway-guard.mjs\"" }
         ]
       }
     ],
@@ -13,14 +13,14 @@
       {
         "matcher": "^leeway-sdlc:sdlc-(implementer|reviewer)$",
         "hooks": [
-          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/required-reading.mjs" }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/required-reading.mjs\"" }
         ]
       }
     ],
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/version-notice.mjs" }
+          { "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/version-notice.mjs\"" }
         ]
       }
     ]

@@ -10,8 +10,9 @@
 // the verdict's *Rules read* section; this hook only delivers the table.
 //
 // WIRED VIA hooks.json, scoped by matcher there and by `agent_type` here. Measured 2026-10-20 on
-// Claude Code 2.1.304: a plugin-level SubagentStart hook matched on `leeway-sdlc:sdlc-implementer` fired
-// with that `agent_type`, and its `additionalContext` appeared in the subagent's own transcript.
+// Claude Code 2.1.304 (with the plugin this one derives from): a plugin-level SubagentStart hook
+// matched on the full agent type fired with that `agent_type`, and its `additionalContext` appeared
+// in the subagent's own transcript. Not re-measured under this plugin's name.
 //
 // Contract: read the SubagentStart payload as JSON on stdin; print one JSON object with
 // `hookSpecificOutput.additionalContext`, or print nothing. Always exit 0: a SubagentStart hook

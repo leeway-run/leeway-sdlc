@@ -117,3 +117,59 @@ test('a 10 KiB command is judged quickly and correctly', () => {
     assert.ok(Date.now() - started < 1000, 'took over a second')
   }
 })
+
+test('an eval chain is bounded: judged fast, and blocked rather than allowed past the limit', () => {
+  const chain = (n) => Array(n).fill('eval').join(' ')
+  for (const [command, code] of [
+    [`${chain(30)} leeway issue get X`, 2],
+    [`${chain(30)} leeway comment add X y`, 2],
+    [`${chain(3)} leeway comment add X y`, 2],
+    [`${chain(3)} leeway issue get X`, 0],
+    [`${chain(Math.floor((10 * 1024) / 5))} leeway comment add X y`, 2],
+  ]) {
+    const started = Date.now()
+    expectExit(command, code)
+    assert.ok(Date.now() - started < 1000, `took over a second: ${command.length} bytes`)
+  }
+})
+
+test('the npx package form is the CLI', () => {
+  expectExit('npx @leeway/cli comment add LWY-1 --stdin body', 2)
+  expectExit('npx -y @leeway/cli@1.2.3 comment add LWY-1', 2)
+  expectExit('npx @leeway/cli issue get LWY-1', 0)
+  expectExit('npx @leeway/cli --help', 0)
+  expectExit('npm install -g @leeway/cli', 0)
+  expectExit('npx @leeway/cli comment add LWY-1', 0, null)
+})
+
+test('quoting and extension forms are the CLI', () => {
+  expectExit("$'leeway' comment add LWY-1 body", 2)
+  expectExit('$"leeway" comment add LWY-1 body', 2)
+  expectExit("$'leeway' issue get LWY-1", 0)
+  expectExit('leeway.cmd comment add LWY-1 body', 2)
+  expectExit(String.raw`"C:\tools\leeway.ps1" comment add LWY-1 body`, 2)
+  expectExit('leeway.cmd issue get LWY-1', 0)
+})
+
+test('a shell reading its script from stdin is a wrapper', () => {
+  expectExit('echo "leeway comment add LWY-1 body" | sh', 2)
+  expectExit('echo "leeway comment add LWY-1 body" | bash -s', 2)
+  expectExit('bash <<< "leeway comment add LWY-1 body"', 2)
+  expectExit('echo "leeway issue get LWY-1" | sh', 0)
+  expectExit('echo "leeway comment add LWY-1 body" | sh', 0, null)
+})
+
+test('xargs feeding leeway: judged by what the command names, unknown is blocked', () => {
+  expectExit('echo comment add | xargs leeway', 2)
+  expectExit('echo LWY-1 | xargs leeway issue', 2)
+  expectExit('echo LWY-1 | xargs -n1 leeway comment add', 2)
+  expectExit('echo LWY-1 | xargs -n1 leeway issue get', 0)
+  expectExit('echo comment add | xargs leeway', 0, null)
+})
+
+test('more nested scripts than the budget allows are blocked, fewer are judged', () => {
+  const subs = (n) => `echo "${'$(true)'.repeat(n)}"`
+  expectExit(`${subs(250)} && leeway issue get X`, 2)
+  expectExit(`${subs(50)} && leeway issue get X`, 0)
+  expectExit(`${subs(50)} && leeway comment add X y`, 2)
+})
