@@ -1,0 +1,56 @@
+name: Release
+
+# A v* tag push tests, checks the tag against plugin.json and creates the GitHub release.
+# workflow_dispatch runs the tests and the manifest parse only and never creates a release.
+# There is no pull_request trigger, so a pull request cannot run this workflow.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Tests
+        run: node --test "plugin/hooks/*.test.mjs" "plugin/test/*.test.mjs"
+
+      - name: Manifests parse and agree
+        run: node .github/scripts/check-manifests.mjs
+
+      - name: Tag must equal the plugin version
+        if: github.event_name == 'push'
+        run: node .github/scripts/check-tag.mjs "$GITHUB_REF"
+
+  release:
+    needs: verify
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Notes for this version
+        run: node .github/scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > "$RUNNER_TEMP/notes.md"
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "leeway-sdlc ${GITHUB_REF_NAME#v}" --notes-file "$RUNNER_TEMP/notes.md" --verify-tag
