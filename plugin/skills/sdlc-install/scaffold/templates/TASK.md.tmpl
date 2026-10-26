@@ -1,0 +1,39 @@
+Notes for the writer, not part of the description: the description starts at the `## What to build` line below the
+rule, and nothing above the rule is written to Leeway.
+
+`plan-work` writes every task description in this shape. Every heading is filled: "nothing unbounded here" is an
+answer, a missing Bounds is not. A description holds at most 5,000 characters, and Leeway shows raw HTML as text,
+so the description carries no HTML comment or other marker.
+
+---
+
+## What to build
+The types, columns, endpoints and constraints. Name files.
+
+## Serves
+The criteria this task delivers, acceptance and technical, by number and story —
+`AC-2, TC-1 (<story id>)` — and the hazards it owns. A task that can name neither is scope drift or a criterion the story forgot.
+
+## Bounds
+What unbounded thing does this touch — a connection, a result set, a parse over remote output, a
+pool? Name the ceiling and who enforces it, or write "nothing unbounded here" and mean it.
+
+## Parity
+Which sibling already does this, and what must match it. Name the file. Deviating is allowed;
+deviating without noticing is what produces behaviour nobody asked for.
+When the sibling does the same job as the new code, not just looks like it, write **extract** (a
+shared component or function, both call sites move to it) or **copy**, and why. Decided at the plan
+gate, by a human when it changes the scope.
+
+## Negative case
+What must be proven NOT to happen. A caller that must see nothing, an input that must be refused,
+a state that must not be reachable.
+
+## Evidence
+The rung, and the specific proof it owes.
+
+## Out of scope
+What this task must not touch, especially files another task in this story owns.
+
+## Done when
+Outcomes, at least one of which is something PROVEN FALSE — not only things that pass.
