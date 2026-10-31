@@ -1,6 +1,6 @@
 {
   "name": "leeway-sdlc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An agent SDLC on Leeway: roles, a plan gate, the implement-review loop, the gates, and the evidence ladder, with the process read from Leeway at runtime.",
   "keywords": [
     "sdlc",
@@ -12,6 +12,6 @@
   ],
   "author": {
     "name": "Shiny Ventures",
-    "url": "https://github.com/shinyventures"
+    "url": "https://github.com/leeway-run"
   }
 }

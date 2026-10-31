@@ -12,14 +12,14 @@ contract the skills execute.
 Requires Claude Code, `node` on `PATH` (the hooks are Node) and the `leeway` CLI.
 
 **Step 0: get the `leeway` CLI.** Today it is built from the Leeway repository: in a checkout of
-`shinyventures/leeway`, run `npm install` and `npm run build:cli`, which produce `apps/cli/dist/leeway.js`.
+`leeway-run/leeway`, run `npm install` and `npm run build:cli`, which produce `apps/cli/dist/leeway.js`.
 Run it as `node <repo>/apps/cli/dist/leeway.js`, or put a `leeway` on your `PATH` that does. The command
-you use is recorded as `cli:` in `.sdlc/leeway.md`, which `/leeway-sdlc:sdlc-install` writes. Publishing the
-CLI as an npm package is a later decision.
+you use is recorded as `cli:` in `.sdlc/leeway.md`, which `/leeway-sdlc:sdlc-install` writes. Once the CLI is
+published to npm as `@leeway-run/cli`, `npm i -g @leeway-run/cli` replaces this step.
 
 ```sh
 leeway login --server <url>
-claude plugin marketplace add shinyventures/leeway-sdlc
+claude plugin marketplace add leeway-run/leeway-sdlc
 claude plugin install leeway-sdlc@leeway --scope project
 ```
 

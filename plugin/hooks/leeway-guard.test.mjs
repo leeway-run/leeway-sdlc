@@ -134,6 +134,10 @@ test('an eval chain is bounded: judged fast, and blocked rather than allowed pas
 })
 
 test('the npx package form is the CLI', () => {
+  expectExit('npx @leeway-run/cli comment add LWY-1 --stdin body', 2)
+  expectExit('npx -y @leeway-run/cli@1.2.3 comment add LWY-1', 2)
+  expectExit('npx @leeway-run/cli issue get LWY-1', 0)
+  expectExit('npm install -g @leeway-run/cli', 0)
   expectExit('npx @leeway/cli comment add LWY-1 --stdin body', 2)
   expectExit('npx -y @leeway/cli@1.2.3 comment add LWY-1', 2)
   expectExit('npx @leeway/cli issue get LWY-1', 0)
