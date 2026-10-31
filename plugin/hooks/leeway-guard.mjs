@@ -15,7 +15,7 @@
 // belongs in the other.
 //
 // What this is not: a sandbox. It closes the direct forms (`leeway`, `leeway.js`, `.cmd`, `.ps1`,
-// `npx @leeway/cli`) and the common wrappers (`sh -c`, `eval`, `env -S`, `pwsh -c`, `cmd /c`, a shell
+// `npx @leeway-run/cli`) and the common wrappers (`sh -c`, `eval`, `env -S`, `pwsh -c`, `cmd /c`, a shell
 // reading its script from a pipe or here-string, `xargs leeway`). Out of reach: a script file the
 // agent wrote and then runs, an interpreter (`node -e`, `python -c`) calling the CLI, a variable or
 // alias standing for the program (`$L`, `alias`, `eval $CMD`), an ANSI-C escape spelling the name
@@ -175,11 +175,11 @@ const wrappedScript = (words, i) => {
   return null
 }
 
-// The leeway CLI is `leeway` on PATH, `node <path>/leeway.js`, or the package `@leeway/cli`
-// (`npx @leeway/cli`, `npx @leeway/cli@1.2.3`).
+// The leeway CLI is `leeway` on PATH, `node <path>/leeway.js`, or the package `@leeway-run/cli`
+// (`npx @leeway-run/cli`, `npx @leeway-run/cli@1.2.3`). `@leeway/cli`, its placeholder name, still counts.
 const isLeeway = (word) => {
   const name = commandName(word)
-  return name === 'leeway' || name === 'leeway.js' || /^@leeway\/cli(@[^/\s]*)?$/i.test(word)
+  return name === 'leeway' || name === 'leeway.js' || /^@leeway(-run)?\/cli(@[^/\s]*)?$/i.test(word)
 }
 
 // A POSIX shell with no `-c` and no script operand (or only a `<<<` / `<` redirection) reads its script from stdin.
