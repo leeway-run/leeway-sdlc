@@ -11,19 +11,16 @@ contract the skills execute.
 
 Requires Claude Code, `node` on `PATH` (the hooks are Node) and the `leeway` CLI.
 
-**Step 0: get the `leeway` CLI.** Today it is built from the Leeway repository: in a checkout of
-`leeway-run/leeway`, run `npm install` and `npm run build:cli`, which produce `apps/cli/dist/leeway.js`.
-Run it as `node <repo>/apps/cli/dist/leeway.js`, or put a `leeway` on your `PATH` that does. The command
-you use is recorded as `cli:` in `.sdlc/leeway.md`, which `/leeway-sdlc:sdlc-install` writes. Once the CLI is
-published to npm as `@leeway-run/cli`, `npm i -g @leeway-run/cli` replaces this step.
-
 ```sh
-leeway login --server <url>
+npm i -g @leeway-run/cli    # the `leeway` CLI
+leeway login                # signs in to https://app.leeway.run
 claude plugin marketplace add leeway-run/leeway-sdlc
 claude plugin install leeway-sdlc@leeway --scope project
 ```
 
-Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions.
+Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions. It records the server and the CLI
+command in `.sdlc/leeway.md` (`server:` and `cli:`). For a server other than `app.leeway.run`, log in with
+`leeway login --server <url>`.
 
 ## Status
 

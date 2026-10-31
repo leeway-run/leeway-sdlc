@@ -65,11 +65,13 @@ decided", not "not detected".
 
 ## Step 3 — bind to Leeway
 
-1. **The command.** `command -v leeway`. On the PATH: `cli: leeway`. Otherwise **ask for the command** (for
-   example `node /path/to/apps/cli/dist/leeway.js`), run `<command> --version` to prove it runs, and write it
-   as `cli:`. An existing `.sdlc/leeway.md` already names it: use it.
+1. **The command.** `command -v leeway`. On the PATH: `cli: leeway`. Otherwise **ask for the command**,
+   pre-filled with installing the CLI from npm (`npm i -g @leeway-run/cli`, which the human runs, then `cli:
+   leeway`); a path such as `node /path/to/apps/cli/dist/leeway.js` is the other answer. Run `<command>
+   --version` to prove it runs, and write it as `cli:`. An existing `.sdlc/leeway.md` already names it: use it.
 2. **Who and where.** `<cli> whoami`. It names the account and the server. Not signed in: stop and tell the
-   human to run `<cli> login --server <url>` themselves, then re-run. **Never ask for, read, print or write a
+   human to run `<cli> login` themselves (it signs in to `https://app.leeway.run`; `--server <url>` for
+   another server), then re-run. **Never ask for, read, print or write a
    token.** The server in `whoami`'s answer is `<server>`.
 3. **The product.** `<cli> product list`. Pick the one that matches this repo (the human's answer to question
    1 below), or create it: `<cli> product create --name "<name>" --key <2 to 5 uppercase letters> --color

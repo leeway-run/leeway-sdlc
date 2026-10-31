@@ -1,5 +1,23 @@
 # Release notes
 
+## 0.1.2
+
+The `leeway` CLI is published to npm as `@leeway-run/cli` and signs in to `https://app.leeway.run` by default. The
+README's install is now `npm i -g @leeway-run/cli` and `leeway login`, in place of building the CLI from the Leeway
+repository. `sdlc-install` offers the npm install when `leeway` is not on the `PATH`, and tells the human to run
+`<cli> login`, with `--server <url>` only for another server. `PROCESS.md` notes that `server:` in `.sdlc/leeway.md`
+is still passed on every call.
+
+### Upgrading a repo
+
+Nothing a repo copied from the plugin changed. The version notice will point at `/leeway-sdlc:sync-repo`, which only
+moves the `Synced to` row to 0.1.2. A repo whose `cli:` is a path to a local build keeps working; to switch, install
+the package and set `cli: leeway`.
+
+### How it was checked
+
+- E2 hooks: `node --test plugin/hooks/*.test.mjs` passes (no hook changed).
+
 ## 0.1.1
 
 The repositories moved to the `leeway-run` GitHub organization, and the `leeway` CLI's npm name is `@leeway-run/cli`. `leeway-guard` now recognises `npx @leeway-run/cli` and `npx @leeway-run/cli@<version>` as the CLI, so a governed agent's write through the package is denied as it is through `leeway`; `@leeway/cli` still counts. The marketplace is added as `leeway-run/leeway-sdlc`, and the manifests' URLs point at the organization.

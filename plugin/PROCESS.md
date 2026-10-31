@@ -59,8 +59,9 @@ the one failure that corrupts everything downstream.**
 - **The `leeway` CLI**, not an MCP server. The plugin ships no `.mcp.json`. Attribution needs a different
   `--as <alias>/<role>` on each call (the brief as the implementer, the verdict as the reviewer), which
   one configured MCP connection cannot give.
-- **The command is configurable.** `.sdlc/leeway.md` carries `cli: leeway` by default, or a path such as
-  `node /path/to/leeway.js`.
+- **The command is configurable.** `.sdlc/leeway.md` carries `cli: leeway` by default (the npm package
+  `@leeway-run/cli`), or a path such as `node /path/to/leeway.js`. Its `server:` is passed as `--server` on every
+  call; the CLI's own default, `https://app.leeway.run`, is only what `leeway login` uses without one.
 - **No token in any repo file.** `leeway login` keeps it on the machine. A subagent is never handed a
   token, and `leeway-guard` stops its writes.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
