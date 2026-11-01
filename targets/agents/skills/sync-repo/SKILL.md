@@ -70,11 +70,12 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 
 Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill the contract block:
 
-- **The line is there** → it is settled; never ask it again.
+- **The line is there** → it is settled; never ask it again. **Legacy value:** `filing-work: plan-work`, written
+  before the skill was renamed, is the same answer as `plan-project`; fill the block with it and leave the line as it is.
 - **No `.sdlc/leeway.md` at all** → use `manual` and ask nothing: a repo with no binding files no work
   in Leeway, and the `manual` fill is the block as it was before 0.3.0. Nothing is written.
 - **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
-  `plan-work` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
+  `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
   named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
   <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
 

@@ -229,8 +229,8 @@ removing the skip marker, nothing else.
 - **A frozen test that is wrong is a spec amendment.** Stop. Show the criterion's owner the test, the criterion,
   and why one of them is wrong: **the product owner for an `AC-n`, the developer for a `TC-n`**. That is an
   escalation on the sub-issue; their decision goes into the thread before the implementer may touch the test, and
-  the reviewer prompt then carries it. A changed `AC-n` is the product owner's through `shape-work`, a changed
-  `TC-n` the developer's through `plan-work`. **The implementer never weakens or deletes an assertion to reach
+  the reviewer prompt then carries it. A changed `AC-n` is the product owner's through `shape-project`, a changed
+  `TC-n` the developer's through `plan-project`. **The implementer never weakens or deletes an assertion to reach
   green.**
 - **At the PASS that closes the task no `red-test-` skip marker remains** in the frozen files. A test still skipped
   is a criterion nobody delivered.

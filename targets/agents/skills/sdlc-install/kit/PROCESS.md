@@ -2,7 +2,7 @@
 
 **Status at this version.** `0.2.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
 `version-notice`, and the adapters that run the guards in other agents), the three agents, the templates and the
-skills (`sdlc-install`, `sdlc-tune`, `shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo`).
+skills (`sdlc-install`, `sdlc-tune`, `shape-project`, `plan-project`, `run-task`, `run-story`, `update`, `sync-repo`).
 
 **This file is the same in every agent; `HARNESS.md` is not.** It sits beside this file and says how the agent
 running the loop delegates to a named agent, how the guards know a subagent's call from the orchestrator's,
@@ -91,7 +91,7 @@ nothing else:
 
 | Step kind | What the plugin does for it |
 |---|---|
-| `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-work` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-work` takes the issue as written |
+| `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-project` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-project` takes the issue as written |
 | `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
 | `gate` | The plan gate (below). A type without `gate` goes from plan to ready with no gate |
 | `build` | The loop (below), run by `run-task` for each sub-issue and by `run-story` for a whole story. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended` |
@@ -109,8 +109,8 @@ its own, `red-tests` and `implementing`, and is `in_review` while the reviewer h
 ## Before the plan: shaping
 
 A story is shaped before it is planned, and by someone else, when its type has a `shape` step. The
-**product owner** runs `shape-work` and writes the story body: scope, acceptance criteria, design link,
-out of scope, and the questions left for a developer. A developer then runs `plan-work`, whose first
+**product owner** runs `shape-project` and writes the story body: scope, acceptance criteria, design link,
+out of scope, and the questions left for a developer. A developer then runs `plan-project`, whose first
 step is a **product check**. A story that passes gets its **technical criteria** (`TC-n`) from the
 developer, at the end of the same body, unless the change is small or trivial: the `AC-n` say what the
 user gets, the `TC-n` what the build must hold to. Together they are final, and the tasks, the red tests
@@ -120,9 +120,9 @@ one wins, and every reader reads it with the body.
 
 | Part of the story | Owner | Written through |
 |---|---|---|
-| The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-work`, or by hand in the same shape |
-| *Technical criteria* (`TC-n`) | the planner | `plan-work`, after the product check; the overflow comment when the body would not fit |
-| The design doc, the tasks, the dependencies | the planner | `plan-work` |
+| The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |
+| *Technical criteria* (`TC-n`) | the planner | `plan-project`, after the product check; the overflow comment when the body would not fit |
+| The design doc, the tasks, the dependencies | the planner | `plan-project` |
 | A change to a frozen test | the criterion's owner: the product owner for an `AC-n`, the planner for a `TC-n` | the round record, then the body |
 
 **This does not break single-writer.** Shaping is not delegated work: no subagent runs. From the first
