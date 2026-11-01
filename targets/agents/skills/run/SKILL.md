@@ -895,8 +895,9 @@ relaxes it.
      the session which issue and which precondition, and take the next runnable issue. It is skipped as an issue
      whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
      skipped for the rest of this run (step 3). A failed Leeway call is not a refusal: it is stop 10.
-   - **Nothing runnable left** (issues remain, and each is blocked, in a blocking cycle, or already skipped in this
-     run): the run ends there, and step 5 reports what it ran, what it skipped and why, naming the blockers.
+   - **Nothing runnable left** (issues remain and none is runnable: each is blocked, in a blocking cycle, waiting at a
+     step after `build`, or already skipped in this run; the Plan record aside): the run ends there, and step 5
+     reports what it ran, what it skipped and why, naming the blockers.
    - **Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so, and stop.
 3. **Run the next issue**, as "Run an issue" from its preconditions to its end or its stop, with fresh subagents.
    **Re-read the list before each issue**: Leeway, not this session's memory, says what is left, except the issues

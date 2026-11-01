@@ -64,7 +64,17 @@ test('a refused issue stays skipped for the rest of the run, past the re-read', 
   assert.match(bullet('Skip an issue its issue run refuses'), /It stays skipped for the rest of this run \(step 3\)\./);
   assert.match(step('Run the next issue'),
     /Leeway, not this session's memory, says what is left, except the issues this run has already skipped because their issue run refused them\. Those stay skipped for the rest of this run/);
-  assert.match(bullet('Nothing runnable left'), /each is blocked, in a blocking cycle, or already skipped in this run/);
+  assert.match(bullet('Nothing runnable left'),
+    /each is blocked, in a blocking cycle, waiting at a step after `build`, or already skipped in this run;/);
+});
+
+test('an issue waiting at a step after `build`, and the Plan record, leave nothing runnable', () => {
+  const nothingRunnable = bullet('Nothing runnable left');
+  assert.match(nothingRunnable, /issues remain and none is runnable: /);
+  assert.match(nothingRunnable, /waiting at a step after `build`/);
+  assert.match(nothingRunnable, /; the Plan record aside\)/);
+  assert.match(bullet('Skip every issue `done` or `cancelled`'), /a step after `build`.*waits for a person: skip it too\./);
+  assert.match(bullet('Nothing left'), /the Plan record aside/);
 });
 
 test('when nothing runnable is left, the run ends and reports what it ran and what it skipped', () => {

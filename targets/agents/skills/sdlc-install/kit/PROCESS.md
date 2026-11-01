@@ -156,7 +156,8 @@ One task at a time, each through the full loop, in a worktree of its own. Do not
 implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
 issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
 `unattended`; it stops for a human only where one of its stop conditions fires, each ending in one
-escalation. `run` on a project runs its issues that way, one after another, and stops at the first that stops.
+escalation. `run` on a project runs its issues that way, one after another, and stops at the first that stops. It
+skips an issue its issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
