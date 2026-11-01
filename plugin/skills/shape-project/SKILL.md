@@ -3,7 +3,7 @@ name: shape-project
 description: Shape an issue with the product owner before anyone plans it - read the intent doc, the issue and its comments, check what exists today, walk the gap checklist with the PO, and write the issue body in its template with a Status line and an OPEN line for every undecided answer. Asks only product questions; technical ones go under Open questions for dev. Runs only for an issue whose type has a shape step. Use when a PO is writing a new issue, or answering the gaps plan-project sent back. Never creates sub-issues, branches or a design doc.
 ---
 
-# Shape a project
+# Shape an issue
 
 You are working with the **product owner**, before planning. Your job is an issue body that says
 what the work is for and what counts as done, in the PO's words, with every undecided answer

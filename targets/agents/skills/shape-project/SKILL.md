@@ -9,7 +9,7 @@ description: Shape an issue with the product owner before anyone plans it - read
 > (load it as a skill; its other files are in `.sdlc/kit/skills/<name>/`). Read `.sdlc/kit/HARNESS.md` for how this agent delegates, marks a
 > subagent's run and updates. With no `.sdlc/kit/` yet, run `sdlc-install` first; it reads them from its own `kit/`.
 
-# Shape a project
+# Shape an issue
 
 You are working with the **product owner**, before planning. Your job is an issue body that says
 what the work is for and what counts as done, in the PO's words, with every undecided answer
