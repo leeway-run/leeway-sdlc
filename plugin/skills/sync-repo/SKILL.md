@@ -38,7 +38,7 @@ step 1 reads its escalation itself, before step 2, and never raises it twice. Th
 
 ## 0. Before anything
 
-- **Not in the middle of a run.** If a `run-story` or `run-task` is in progress in this session,
+- **Not in the middle of a run.** If a `run` is in progress in this session,
   stop: a new template or floor between rounds reviews a task under rules it was not built under.
 - **This repo has `.sdlc/CONFIG.md`.** Without it there is nothing to sync; point at
   the sdlc-install skill and stop.
@@ -64,11 +64,12 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 
 Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill the contract block:
 
-- **The line is there** → it is settled; never ask it again.
+- **The line is there** → it is settled; never ask it again. **Legacy value:** `filing-work: plan-work`, written
+  before the skill was renamed, is the same answer as `plan-project`; fill the block with it and leave the line as it is.
 - **No `.sdlc/leeway.md` at all** → use `manual` and ask nothing: a repo with no binding files no work
   in Leeway, and the `manual` fill is the block as it was before 0.3.0. Nothing is written.
 - **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
-  `plan-work` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
+  `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
   named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
   <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
 
@@ -100,7 +101,7 @@ Then the friction line of `.sdlc/leeway.md`:
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes"), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
+| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes", and `{{RUN_SKILL}}` from its **commands**), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
 | the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
@@ -145,7 +146,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. A second compare then says "the same".
+  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
+  `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
+  compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.

@@ -1,5 +1,5 @@
 name = "sdlc-divergence-reviewer"
-description = "Independently checks a plan before any code is written - that every acceptance and technical criterion is delivered by a task and proven by a check, and that every task serves one. Returns a coverage table, tagged findings and a PASS / PASS WITH DECISIONS / RETURN verdict. Use once per plan, at the end of plan-work, and again after every RETURN. Never edits anything, never writes to Leeway, never takes the gate decision."
+description = "Independently checks a plan before any code is written - that every acceptance and technical criterion is delivered by a task and proven by a check, and that every task serves one. Returns a coverage table, tagged findings and a PASS / PASS WITH DECISIONS / RETURN verdict. Use once per plan, at the end of plan-project, and again after every RETURN. Never edits anything, never writes to Leeway, never takes the gate decision."
 developer_instructions = '''
 # Divergence reviewer
 

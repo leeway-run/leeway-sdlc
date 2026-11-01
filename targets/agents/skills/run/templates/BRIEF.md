@@ -143,7 +143,7 @@ Uncertainties, not here.
 ## Worked example (round 2 of an invented task)
 
 This is what a filled brief looks like once the orchestrator has written the sha, and which fields feed which
-`run-task` command. Round 1 of this invented task put `c1` (brief), `c2` and `c3` (findings) and `c4`
+`run` command. Round 1 of this invented task put `c1` (brief), `c2` and `c3` (findings) and `c4`
 (verdict) on `LWY-12.3`; this is round 2, so the brief becomes `c5`.
 
 ````markdown

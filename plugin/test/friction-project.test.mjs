@@ -55,13 +55,13 @@ test('the binding template names a friction project, not a collector', () => {
   assert.ok(!binding.includes('friction-collector') && !binding.includes('FRICTION_COLLECTOR'));
 });
 
-test('run-task and run-story file accepted friction as a chore issue in the friction project', () => {
-  for (const skill of ['run-task', 'run-story']) {
-    const text = readFileSync(join(plugin, 'skills', skill, 'SKILL.md'), 'utf8').replace(/\s+/g, ' ');
-    assert.ok(text.includes('issue list <KEY> <friction project>'), `${skill} does not dedupe against the project`);
-    assert.ok(
-      text.includes('issue create <KEY> --projectId <friction project> --type chore'),
-      `${skill} does not file friction as an issue`,
-    );
-  }
+test('run files accepted friction as a chore issue in the friction project, on a sub-issue and on an issue', () => {
+  const text = readFileSync(join(plugin, 'skills', 'run', 'SKILL.md'), 'utf8').replace(/\s+/g, ' ');
+  const count = (needle) => text.split(needle).length - 1;
+  assert.equal(count('issue list <KEY> <friction project>'), 2, 'run does not dedupe against the project in both places');
+  assert.equal(
+    count('issue create <KEY> --projectId <friction project> --type chore'),
+    2,
+    'run does not file friction as an issue in both places',
+  );
 });

@@ -126,24 +126,24 @@ asked in step 5, once the process they compare with has been read.
 4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
    "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
-5. **Unattended.** "`run-story` may run these types without a person between tasks: `<types whose build step
-   is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
-6. **The gate.** "The command that must pass before a story merges: `<command>`. Right?" Propose the
+5. **Unattended.** "`run` on an issue may run these types without a person between sub-issues: `<types whose
+   build step is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
+6. **The gate.** "The command that must pass before an issue merges: `<command>`. Right?" Propose the
    commands CI runs; if its steps live in a template you could not read, say so.
 7. **Lanes CI lacks.** "These lanes need something CI does not have, so the gate does not run them: `<lanes>`.
    Right?" Show each lane's measured duration. Skip when there is no such lane.
 8. **Evidence directory.** Only when non-obvious, or when the directory is gitignored: "Proof that outlives a
-   task is committed under `<dir>`. Right?"
+   sub-issue is committed under `<dir>`. Right?"
 9. **Ambiguous doc mappings.** Batched, one line each: "`<file>` plays the role of `<doc>`. Yes?" **Never
    ask about an exact-name match, and never ask when nothing plausible exists**: generate the stub and say
    so.
 10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
-11. **Filing work.** "Filing work in Leeway (a story with tasks, several issues, anything touching the schema,
-    auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-work for it,
-    even while pairing. Or plan-work stays a manual opt-in?" Pre-filled `plan-work`, or with the
-    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-work` or `manual`.
+11. **Filing work.** "Filing work in Leeway (an issue with sub-issues, several issues, anything touching the
+    schema, auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
+    even while pairing. Or plan-project stays a manual opt-in?" Pre-filled `plan-project`, or with the
+    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-project` or `manual`.
 12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
     filed as one `chore` issue per item in a project of the product. Use `<project>`, or create one?" Propose
     an existing project whose name says developer experience or friction (`<cli> project list <KEY>`);
@@ -170,9 +170,9 @@ asked in step 5, once the process they compare with has been read.
     (the doc's line is noted as superseded)?" When question 2 was (a), add that the doc's answer makes the mvp
     block at those rungs. Pre-filled with the doc's.
 16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
-    `unattended` true and detection ("An existing allow-list") found run-story's entries missing from the
-    place `HARNESS.md`, "Permissions for an unattended run", names. "`run-story` runs `<types>` unattended, and
-    every command it runs prompts until it is allowed. Add run-story's allow-list to `<that place>` now?"
+    `unattended` true and detection ("An existing allow-list") found run's entries missing from the
+    place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
+    every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
     Pre-filled yes.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
@@ -234,10 +234,10 @@ shown as a diff first like every patch.
 - **15, the process's**: the evidence row of `CONFIG.md`'s doc map says, in its *Notes*, that the doc's
   blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
   is not edited. The doc's answer was written in step 5.
-- **16, yes**: merge run-story's allow-list ("Unattended prerequisites", "A permission allow-list") into the
+- **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
   place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
   `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
-  push` stays off it until the pre-push guard run-story names exists. A place outside the repo is not
+  push` stays off it until the pre-push guard run names exists. A place outside the repo is not
   written: print the entries for the human.
 
 ### Generate all seven contract docs, always
@@ -276,7 +276,7 @@ Those three ship as stubs. The others are filled from detection:
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
 - `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-project:`
-  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-project` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
@@ -293,7 +293,7 @@ Those three ship as stubs. The others are filled from detection:
   `HARNESS.md`, "Wiring", lists anything the agent needs the human to do after (trusting hooks, a restart).
 - `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
   `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
-  is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
+  is and is never written to Leeway: `plan-project` strips it. The checked-out files may be CRLF where git stores
   LF; copy them as they are, since `sync-repo` normalises line endings in its compare. **If the
   directory exists, leave it alone** and show its diff against the plugin's copy: a team that edited its
   templates made a decision.
@@ -317,26 +317,36 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   the placeholder line, leave the table with no rows, and say so.
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
-  convention in the history; `plan-work` reads this row.
+  convention in the history; `plan-project` reads this row.
 - **`{{FRICTION_PROJECT}}`** — a project id you have read back from Leeway (`<cli> project list <KEY>
   --json`). **Never invent one.** Creation is one write, only on the human's yes: `<cli> project create <KEY> --name
   "Developer experience" --as <alias>/agent`, then read its id back. No issue is created in it.
-- **`{{FILING_WORK}}`** — `plan-work` or `manual`, the answer to question 11.
-- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-work`, the placeholder
+- **`{{FILING_WORK}}`** — `plan-project` or `manual`, the answer to question 11. **Legacy value:** an existing
+  `filing-work: plan-work` line, written before the skill was renamed, is the same answer as `plan-project`.
+- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-project`, the placeholder
   is replaced by this paragraph, exactly as written here, without the indent:
 
   ```markdown
-  **Filing work in Leeway is planning, even while pairing.** Before creating a story with tasks, more than
-  one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
-  `plan-work`. That includes adding to an existing project, and requests worded "file issues", "write this
+  **Filing work in Leeway is planning, even while pairing.** Before creating an issue with sub-issues, more
+  than one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
+  `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
   up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
-  a one-file fix goes in directly. Running the loop (`run-task`, the reviewers, the merge gates) stays opt-in.
+  a one-file fix goes in directly. Running the loop (`run`, the reviewers, the merge gates) stays opt-in.
   ```
 
   For `manual`, delete the placeholder's line and the blank line after it, so the opt-in paragraph is
   followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
   block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
+- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it. The placeholder is replaced by the text
+  inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is
+  added round it. A space just inside the double backticks is Markdown padding, not part of the fill.
+  - `/leeway-sdlc:<skill>` (Claude Code): `` `/leeway-sdlc:run` ``
+  - `$<skill>` (Codex): `` `$run` ``
+  - `/<skill>` (Copilot, Grok): `` `/run` ``
+  - skills invoked by name (Cursor, Gemini, OpenCode): ``leeway-sdlc's `run` skill``
+
+  It reads the harness, not an answer, so `sync-repo` fills it the same way.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
   (these agents do not expand `@` imports). **But when the instructions file already imports the floor
@@ -365,9 +375,10 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
-  `plan-work` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
-  task of a planned story unattended, `sdlc-tune` to change the process later.
+- Print what to do next: `shape-project` for a product owner to shape an issue (when the type has `shape`),
+  `plan-project` for work spanning more than one sub-issue, `run` for a single sub-issue, a planned issue
+  unattended or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
+  **commands** spells it (`/leeway-sdlc:run` in Claude Code): a bare `run` can reach another skill of that name.
 
 **Then state what this install did not settle**, as facts that need no decision: anything that needed one
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
@@ -375,7 +386,7 @@ detection found untrue (the doc is not edited), the local-notes-file answer, the
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
 cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
 gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
-declined (run-story prompts for every command), an allow-list added without `git push` (each push prompts
+declined (run prompts for every command), an allow-list added without `git push` (each push prompts
 until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
 install: they are theirs, not the install's.
 

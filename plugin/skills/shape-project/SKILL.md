@@ -1,15 +1,15 @@
 ---
-name: shape-work
-description: Shape a story with the product owner before anyone plans it - read the intent doc, the issue and its comments, check what exists today, walk the gap checklist with the PO, and write the story body in the story template with a Status line and an OPEN line for every undecided answer. Asks only product questions; technical ones go under Open questions for dev. Runs only for an issue whose type has a shape step. Use when a PO is writing a new story, or answering the gaps plan-work sent back. Never creates tasks, branches or a design doc.
+name: shape-project
+description: Shape an issue with the product owner before anyone plans it - read the intent doc, the issue and its comments, check what exists today, walk the gap checklist with the PO, and write the issue body in its template with a Status line and an OPEN line for every undecided answer. Asks only product questions; technical ones go under Open questions for dev. Runs only for an issue whose type has a shape step. Use when a PO is writing a new issue, or answering the gaps plan-project sent back. Never creates sub-issues, branches or a design doc.
 ---
 
-# Shape work
+# Shape an issue
 
-You are working with the **product owner**, before planning. Your job is a story body that says
+You are working with the **product owner**, before planning. Your job is an issue body that says
 what the work is for and what counts as done, in the PO's words, with every undecided answer
-visible. `plan-work` reads that body next, in a developer's session, and checks it without editing
+visible. `plan-project` reads that body next, in a developer's session, and checks it without editing
 it; whatever this session leaves vague comes back to the PO as a comment. Once it passes, the
-developer adds the story's *Technical criteria* below your part, and together they are what the work
+developer adds the issue's *Technical criteria* below your part, and together they are what the work
 is built and reviewed against.
 
 **Your part is the body down to *Open questions for dev*, and the first half of the Status line.**
@@ -30,10 +30,10 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
 3. **The process.** `<cli> --json process get <KEY>`: the types and their steps. Then the issue
    (`<cli> --json issue get <ref>`): `issue.type`, `issue.step` (an object: `issue.step.id`, or null), `issue.description`, `comments`, `escalations`.
 4. **Does the type shape?** Only when the issue's type has a step of kind `shape`. A type without one (a bug,
-   a chore) is taken as written by `plan-work` or `run-task`: **say so, change nothing, and stop.**
+   a chore) is taken as written by `plan-project` or `run`: **say so, change nothing, and stop.**
 5. **Start.** Decide from content and status, not from the step alone, whether the story is *unplanned*: it has
    no sub-issues (`subIssues` empty), no comment opening `# Technical criteria`, its `issue.status` is `backlog`,
-   and `issue.step.id` is empty, `shape` or `plan` (a story `plan-work` sent back lands on `shape`).
+   and `issue.step.id` is empty, `shape` or `plan` (a story `plan-project` sent back lands on `shape`).
    - **Unplanned:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.
    - **Done or cancelled:** say so and stop. Change nothing.
    - **Anything else** (tasks, a technical-criteria comment, or a status other than `backlog`, for example a
@@ -67,7 +67,7 @@ line, or becomes a fallback the PO chose. An invented answer looks exactly like 
 - **The intent doc** from the doc map, for the product rules this story could cut against. A
   tension with one is a product decision: name the rule to the PO and write down what they decide.
   Marked `stub` or `absent` → skip it.
-- **The issue, if it exists**: the description and every comment. A comment from `plan-work` addressed to the
+- **The issue, if it exists**: the description and every comment. A comment from `plan-project` addressed to the
   PO lists the gaps a developer sent back. **The latest one is this round's agenda**: start there, and do not
   reopen what the body already answers. Where it proposes wording for a criterion, that is a suggestion: show
   it to the PO, who accepts it, changes it or rejects it. It goes in the body only in the PO's version.
@@ -135,7 +135,7 @@ looked up — how a screen works today, a rule in the intent doc, an existing fl
 (*"as the upload on the Documents page"*, *"VISION.md, Retention"*), not a retelling. The body is
 what the work is checked against, not its background.
 
-**The description holds at most 5,000 characters** (UTF-16 code units of the trimmed text, as the server counts; `plan-work` gives the one-liner), and the developer adds
+**The description holds at most 5,000 characters** (UTF-16 code units of the trimmed text, as the server counts; `plan-project` gives the one-liner), and the developer adds
 *Technical criteria* to the same body, so leave room. A body over the cap is first cut — verbose rules, restated
 context, anything a pointer can carry — and only then, if it still does not fit, a story that should be two:
 say so to the PO and let them split it. Never truncate.
@@ -166,11 +166,11 @@ reviewer and the divergence reviewer all read.
 
 **Changing criteria of a story that is already planned** — it has *Technical criteria*, a `# Technical criteria`
 comment, or tasks — changes what the tasks were built against. Say so in the question before the yes, and after
-writing, post one comment for the developer: which `AC-n` changed. Their next `plan-work` rechecks the technical
+writing, post one comment for the developer: which `AC-n` changed. Their next `plan-project` rechecks the technical
 criteria and the tasks that serve it.
 
 If this round answered gaps a developer sent back, **reply to that comment** (`comment add <ref> --parent cN
---stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The developer re-runs `plan-work`;
+--stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The developer re-runs `plan-project`;
 the reply tells them whether that is worth doing yet.
 
 ## 6. A new story, or several
@@ -184,7 +184,7 @@ A story is created in a project, with a type that has a shape step:
 An issue cannot be created outside a project, a title is at most 200 characters, and the summary at most 280: what
 the story is and why, in plain words. For several stories, find or create the project that holds them (`project
 list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most 280 characters>" --stdin
-description`, the description at most 5,000 characters); `plan-work` adopts it and adds what planning needs. Each story
+description`, the description at most 5,000 characters); `plan-project` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
 **You never create tasks, branches or a design doc**, and the only step you set is `shape`, in step 0, and only for an unplanned story. A status

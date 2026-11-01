@@ -1,6 +1,6 @@
 ---
-name: plan-work
-description: Use whenever work is filed in Leeway - a story with tasks, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each story's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and the story's technical criteria, creates the Leeway project, its stories, their tasks and the dependencies, reads back the branch names, and passes the plan gate (when the type has one) - an independent coverage review and a human decision. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
+name: plan-project
+description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and passes the plan gate (when the type has one) - an independent coverage review and a human decision. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
 ---
 
 > **leeway-sdlc for agents other than Claude Code.** This plugin's files (`PROCESS.md`, `HARNESS.md`, `craft/`,
@@ -9,7 +9,7 @@ description: Use whenever work is filed in Leeway - a story with tasks, more tha
 > (load it as a skill; its other files are in `.sdlc/kit/skills/<name>/`). Read `.sdlc/kit/HARNESS.md` for how this agent delegates, marks a
 > subagent's run and updates. With no `.sdlc/kit/` yet, run `sdlc-install` first; it reads them from its own `kit/`.
 
-# Plan work
+# Plan a project
 
 **Read `PROCESS.md` and `HARNESS.md` in this plugin first** (`HARNESS.md`: how this agent delegates, and whether
 you write the governed-agent marker around it). Of `PROCESS.md`: "The cast", "How the plugin reaches Leeway", "The process, read at
@@ -37,7 +37,7 @@ whatever happened.
 
    | The type has | So |
    |---|---|
-   | no `plan` step | **Say so and stop.** Create no project, issue, comment or step; point at `run-task` for a type with `build`. Never plan a type the process does not plan |
+   | no `plan` step | **Say so and stop.** Create no project, issue, comment or step; point at `run` for a type with `build`. Never plan a type the process does not plan |
    | a `shape` step | step 1, the product check, runs |
    | a `plan` step with `params.designDoc: true` | step 3 writes the design doc |
    | a `gate` step | step 8 runs the plan gate |
@@ -58,30 +58,30 @@ whatever happened.
 
 **Yes** if it spans more than one task, or touches a stated rule in the intent doc, the schema, auth, or an
 ownership boundary. **No** for a one-file fix with an obvious test — create the sub-issue (step 5) and run
-`run-task`. The trigger is the shape of the work, not its size in lines: a two-line change to an isolation
+`run` on it. The trigger is the shape of the work, not its size in lines: a two-line change to an isolation
 predicate needs a plan; a 200-line UI component usually does not.
 
 ## 1. Product check, every story, every time (only when the type has `shape`)
 
 **Before planning a story, check that it says what the work is for and what counts as done.** Whether it was
-shaped with `shape-work`, written by hand, or shaped months ago and gone stale, the check is the same. A type
+shaped with `shape-project`, written by hand, or shaped months ago and gone stale, the check is the same. A type
 without `shape` skips this step: its issue is taken as written.
 
 **This step writes nothing to the story body and answers no product question.** The PO's part is theirs, through
-`shape-work`. Yours is the *Technical criteria* at its end, written in step 3 once this check passes.
+`shape-project`. Yours is the *Technical criteria* at its end, written in step 3 once this check passes.
 
 **On a story planned before**, it already has *Technical criteria* — in the body, or in the latest `# Technical
 criteria` comment — or tasks. Check the PO's part as usual, then read the comments since the *planned by* date: an
 `AC-n` the PO changed since makes every `TC-n` and task that serves it stale, and step 3 rechecks them.
 
-**No body yet** (an empty description) → nothing to check. Stop and point the developer at `shape-work` with the
+**No body yet** (an empty description) → nothing to check. Stop and point the developer at `shape-project` with the
 PO. You do not write criteria.
 
 ### Read the story against its template
 
 The story template: `STORY.md` in the directory *Ticket templates* names (`.sdlc/templates/`); without that row,
 `skills/sdlc-install/scaffold/templates/STORY.md.tmpl` in this plugin. The gap checklist:
-`skills/shape-work/references/gap-checklist.md` in this plugin. **Read both now — this skill repeats neither.**
+`skills/shape-project/references/gap-checklist.md` in this plugin. **Read both now — this skill repeats neither.**
 Read the description and every comment, the intent doc, and the surfaces the story touches in the code.
 
 ### List the gaps
@@ -108,11 +108,11 @@ Carry on. **Do not re-ask anything the body answers**, and do not re-litigate a 
 Post the gap list as **one comment on the story**, addressed to the PO: each gap with the heading it belongs to
 and the question the PO has to answer, in product terms; hidden scope with your rough size of each option. Where a
 technical finding has a consequence the user will see, say what it is and **propose wording for the criterion**,
-marked as a proposal. End with: *"Answer these with `shape-work` on `<ref>`, then re-run plan-work."* Re-read the
+marked as a proposal. End with: *"Answer these with `shape-project` on `<ref>`, then re-run plan-project."* Re-read the
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
-has N product gaps: how do we proceed?"*, with the options *Hold; the PO answers with shape-work*, *Split the story
+has N product gaps: how do we proceed?"*, with the options *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
 into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then stop. The answer has to
 reach the body before planning: planning on a comment makes a second source that drifts from the first.
@@ -276,7 +276,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 3. **The stories**, in the project, one issue each. A story that exists is adopted; when its `issue.summary` is
    empty, fill one in with `issue update <story> --summary "<at most 280 characters>"`, naming only that field (an
    update replaces the fields it names). One the work needs and nobody wrote is created here only for a type
-   without `shape`; for a type with `shape` it is a step 1 gap (`shape-work` creates it). Pass the type explicitly:
+   without `shape`; for a type with `shape` it is a step 1 gap (`shape-project` creates it). Pass the type explicitly:
 
    ```sh
    <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "<story>" --summary "<at most 280 characters>" --status backlog --stdin description <story.md
@@ -423,7 +423,7 @@ story.
 
 On resume, read the answer on the story:
 
-- **PASS** → `issue update <story> --status ready`. No step: `run-task` sets the build step when it starts, so a
+- **PASS** → `issue update <story> --status ready`. No step: `run` sets the build step when it starts, so a
   story is never `in_progress` with nobody on it.
 - **PASS WITH DECISIONS** → raise one escalation per QUESTION (the options the report gives, 2 to 5), and stop.
   When every one is answered, change what an answer changes in a description or a task, then `--status ready`.

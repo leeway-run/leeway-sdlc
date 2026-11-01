@@ -32,7 +32,7 @@ write to Leeway with it on. It expires on its own after two hours, so a crashed 
 
 ## Required reading
 
-run-task pastes the *Required reading* rows into each brief; no hook injects them here.
+run pastes the *Required reading* rows into each brief; no hook injects them here.
 
 ## Instructions and local notes
 
@@ -50,7 +50,7 @@ After writing them: Nothing to trust: Cursor runs `.cursor/hooks.json` from the 
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in `.cursor/cli.json` (`permissions.allow`) for the CLI; the agent settings for the editor.
+run's allow-list goes in `.cursor/cli.json` (`permissions.allow`) for the CLI; the agent settings for the editor.
 
 ## Installed version, update and restart
 
