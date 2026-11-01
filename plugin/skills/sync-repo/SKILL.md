@@ -32,11 +32,13 @@ Raising, all together, once steps 0 to 2 have found which copies need an answer:
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
 `question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3. An open one with no
 answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
-remain open. Never write a copy on an unanswered question.
+remain open. Never write a copy on an unanswered question. The `filing-work:` question is the exception:
+step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
+(step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`.
 
 ## 0. Before anything
 
-- **Not in the middle of a run.** If a `run-story` or `run-task` is in progress in this session,
+- **Not in the middle of a run.** If a `run` is in progress in this session,
   stop: a new template or floor between rounds reviews a task under rules it was not built under.
 - **This repo has `.sdlc/CONFIG.md`.** Without it there is nothing to sync; point at
   the sdlc-install skill and stop.
@@ -60,6 +62,37 @@ remain open. Never write a copy on an unanswered question.
 `## Repo copies` in `.sdlc/CONFIG.md`: the `Synced to` row, and one `Kept` row per copy the team
 decided to keep. No such section: treat every copy as never synced, and add the section in step 4.
 
+Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill the contract block:
+
+- **The line is there** → it is settled; never ask it again. **Legacy value:** `filing-work: plan-work`, written
+  before the skill was renamed, is the same answer as `plan-project`; fill the block with it and leave the line as it is.
+- **No `.sdlc/leeway.md` at all** → use `manual` and ask nothing: a repo with no binding files no work
+  in Leeway, and the `manual` fill is the block as it was before 0.3.0. Nothing is written.
+- **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
+  `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
+  named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
+  <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
+
+This is the one question raised before the others, because the block cannot be compared without its
+answer; the copies are compared, and their questions raised, once it is answered. The answer fills the
+block in step 2 and is written in step 4.
+
+Then the friction line of `.sdlc/leeway.md`:
+
+- **`friction-project:` is there, or there is no `.sdlc/leeway.md`** → nothing to ask.
+- **A legacy binding with `friction-collector: n/a` and no `friction-project:`** → nothing to ask: the team
+  already chose to file no friction. Step 4 replaces the legacy line with `friction-project: n/a` and the same
+  reason.
+- **A legacy binding with `friction-collector: <ref>` and no `friction-project:`** (installed before 0.3.0) →
+  offer the migration once, as one question asked with the copies in step 3 (its escalation's question begins
+  `Sync friction-project: to <this version>:`): the project friction is filed into from now on, as
+  sdlc-install's question 12 proposes it (an existing project whose name says developer experience or
+  friction, or create "Developer experience", or `n/a` and why). Before creating, read `project list <KEY>`
+  again: a "Developer experience" project already there (a sync interrupted after the create) is used, not
+  made twice. A project is created only on that answer, as sdlc-install's `{{FRICTION_PROJECT}}` says, and
+  its id is read back from Leeway; never invent one. The answer replaces the legacy line in step 4. The old
+  issue is left as it is: nothing is written to it, and it is not closed.
+
 ## 2. Compare each copy
 
 **At most the copies in this table. There is no scan of the repo for others.**
@@ -68,7 +101,7 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes") |
+| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes", and `{{RUN_SKILL}}` from its **commands**), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
 | the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
@@ -95,8 +128,14 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
 
 **Never synced, never compared, never opened for writing:**
 
-- `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, friction collector, the project
-  to nit-collector table), not a copy, and a template change never reaches it.
+- `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, `friction-project:`, `filing-work:`,
+  the project to nit-collector table), not a copy, and a template change never reaches it. **One narrow
+  exception:** a binding key the file lacks (`filing-work:` or `friction-project:`, step 1) is asked for once
+  (a legacy friction `n/a` is carried over without asking), and its answer written as one `<key>: <answer>`
+  line in the key block at the top of the file. `filing-work:` is added directly after the friction line,
+  whichever of the two keys it carries. `friction-project:`
+  replaces the legacy `friction-collector:` line in place: that one key is renamed and given the new value.
+  Nothing else in the file is touched.
 - `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4).
 - The contract docs under the doc map (`VISION.md`, `TESTING.md` and the rest): they belong to the
   repo from the moment they are generated. If a release needs a change there, its notes say so.
@@ -107,7 +146,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. A second compare then says "the same".
+  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
+  `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
+  compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.
@@ -117,8 +158,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   governs every clone. Declined → record it as `Kept` with the reason, and
   say so in the summary.
 
-One question per differing copy and per missing line, no more. A copy that is the same, or kept with
-a matching hash, is not asked.
+One question per differing copy and per missing line, step 1's `filing-work:` question when the
+binding lacks the line, and step 1's friction migration for a legacy binding with a ref, no more. A copy
+that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
 
@@ -139,10 +181,13 @@ the human to push). In the same change, update `## Repo copies`:
 ```
 
 The `Synced to` row is the stamp the session notice reads. Drop a `Kept` row whose copy was taken
-this time. Write nothing to the repo without the answer for that copy, and nothing outside the branch.
+this time. A `filing-work:` or `friction-project:` answer from step 1 goes into `.sdlc/leeway.md` on this
+branch, as the exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing
+outside the branch.
 
 ## Done when
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
-version; `.sdlc/leeway.md` is byte-identical to before; and the pull request is open, or the user said
-why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.
+version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
+none and a legacy friction line replaced by `friction-project:`; and the pull request is open, or the
+user said why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.

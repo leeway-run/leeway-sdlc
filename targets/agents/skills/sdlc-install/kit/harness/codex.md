@@ -32,7 +32,7 @@ write to Leeway with it on. It expires on its own after two hours, so a crashed 
 
 ## Required reading
 
-run-task pastes the *Required reading* rows into each brief; no hook injects them here.
+run pastes the *Required reading* rows into each brief; no hook injects them here.
 
 ## Instructions and local notes
 
@@ -50,7 +50,7 @@ After writing them: Open `/hooks` and trust the leeway-sdlc hook in `.codex/hook
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in `.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person.
+run's allow-list goes in `.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person.
 
 ## Installed version, update and restart
 

@@ -32,7 +32,7 @@ write to Leeway with it on. It expires on its own after two hours, so a crashed 
 
 ## Required reading
 
-run-task pastes the *Required reading* rows into each brief; no hook injects them here.
+run pastes the *Required reading* rows into each brief; no hook injects them here.
 
 ## Instructions and local notes
 
@@ -50,7 +50,7 @@ After writing them: Nothing to trust. If your account was moved to Antigravity C
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in `.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run.
+run's allow-list goes in `.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run.
 
 ## Installed version, update and restart
 

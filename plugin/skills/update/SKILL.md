@@ -17,8 +17,8 @@ installs skills with `npx skills`, for example), give the user its replacement f
 
 ## 0. Not in the middle of a run
 
-If a `run-story` or `run-task` is in progress in this session, stop and say so. A new version
-changes the agents and templates between one round and the next, so a task would be reviewed under
+If a `run` is in progress in this session, stop and say so. A new version
+changes the agents and templates between one round and the next, so a sub-issue would be reviewed under
 rules it was not built under. Finish the run, or stop it, first.
 
 ## 1. What is installed
@@ -67,7 +67,8 @@ version, numerically by major, minor, patch:
   spells it). The session notice reads the same row.
 
 This line is a statement, not a question, so it is the same wherever the repo's contract sends
-questions.
+questions. The same goes for a binding key `.sdlc/leeway.md` lacks, such as `filing-work:`: sync-repo
+asks for it, once, and this skill never does.
 
 **Never diff, offer or write a repo file here.** When everyone who updates is offered the same
 diffs, two people open the same PR, and a copy the team decided to keep is asked about at every

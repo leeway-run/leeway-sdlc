@@ -7,9 +7,11 @@
 {{IMPORT_FLOOR}}
 
 **The process is opt-in.** Roles, subagents, the review loop and the merge gates apply only to
-**delegated** work, broken into tasks and handed off, and load when you invoke `plan-work`,
-`run-task` or `run-story`. The process itself is read from Leeway (`.sdlc/leeway.md` names the
+**delegated** work, broken into sub-issues and handed off, and load when you invoke `plan-project`
+or {{RUN_SKILL}}. The process itself is read from Leeway (`.sdlc/leeway.md` names the
 server, the product and the CLI command).
+
+{{FILING_WORK_RULE}}
 
 Pairing turn by turn is a first-class way to work, not a shortcut around the process: the human in
 the loop is the review. The floor still applies.
@@ -25,8 +27,8 @@ Which file depends on **who it is true for**:
   developer: `{{LOCAL_NOTES_FILE}}`, **never committed**. **Never one of these in a shared file.**
 - **True for this user in every project** — their style, their tooling: their own user-level
   config, which is theirs to edit, not yours.
-- **Cost you time, and a tool, helper, seed or script would have saved it** — a comment on the
-  friction collector named in `.sdlc/leeway.md`, proposed to the human and filed on their yes. Paired
+- **Cost you time, and a tool, helper, seed or script would have saved it** — an issue of type `chore`
+  in the friction project named in `.sdlc/leeway.md`, proposed to the human and filed on their yes. Paired
   sessions too, not only the loop. A trap a sentence fixes goes in the floor; one only a tool fixes
   goes here.
 

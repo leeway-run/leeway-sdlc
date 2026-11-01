@@ -35,7 +35,8 @@ pre-filled answer as the first option and 2 to 5 options in all, and stop the tu
 Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
 sentence or two) at most 1,000, and the question at most 500.
 
-- **Yes/no questions** (6, 7, 8, 10 and any "Right?"): two options, the pre-filled one first.
+- **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16 and any "Right?"): two options, the pre-filled one
+  first.
 - **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
   note" as the fifth.
 - **Question 9** is a batch of yes/no lines: raise one escalation per ambiguous mapping, or post the batch as
@@ -92,9 +93,11 @@ decided", not "not detected".
 
 ## Step 4 — the interview
 
-**At most eleven questions, in this order, each pre-filled from detection or from what the product
+**At most sixteen questions, in this order, each pre-filled from detection or from what the product
 already holds.** Confirm-or-correct, never open-ended. A question whose answer detection settled is shown as
-a finding and not asked.
+a finding and not asked. Questions 13 to 16 are asked **only when detection found the divergence each one
+names**; a repo without it never sees them. Questions 14 to 16 compare with the process itself, so they are
+asked in step 5, once the process they compare with has been read.
 
 1. **Product.** "This repo is bound to `<KEY>` (`<name>`) on `<server>`. Right, or pick another or create
    one?" Pre-fill with the only product, or the one whose key or name matches the repo.
@@ -106,7 +109,8 @@ a finding and not asked.
 
    **When step 3.4 found a process (`version` of 1 or more), the pre-filled answer is (d) keep what is
    there**, and the question says so: "`<KEY>` already has a process (version N): `<one line per type>`. Keep
-   it, or replace it with (a), (b) or (c)?" On (d) make **no** `process update` call and skip questions 3 to 5.
+   it, or replace it with (a), (b) or (c)?" On (d) skip questions 3 to 5 and make **no** `process update` call
+   but the one an answer to question 14 or 15 asks for.
    **A process is never overwritten without this answer**; on a re-run, never replace it by default.
    Without a stored process, pre-fill (a) for a new project and a repo with no CI and no tests, and (b) when
    detection found CI that runs tests.
@@ -116,25 +120,54 @@ a finding and not asked.
 4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
    "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
-5. **Unattended.** "`run-story` may run these types without a person between tasks: `<types whose build step
-   is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
-6. **The gate.** "The command that must pass before a story merges: `<command>`. Right?" Propose the
+5. **Unattended.** "`run` on an issue may run these types without a person between sub-issues: `<types whose
+   build step is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
+6. **The gate.** "The command that must pass before an issue merges: `<command>`. Right?" Propose the
    commands CI runs; if its steps live in a template you could not read, say so.
 7. **Lanes CI lacks.** "These lanes need something CI does not have, so the gate does not run them: `<lanes>`.
    Right?" Show each lane's measured duration. Skip when there is no such lane.
 8. **Evidence directory.** Only when non-obvious, or when the directory is gitignored: "Proof that outlives a
-   task is committed under `<dir>`. Right?"
+   sub-issue is committed under `<dir>`. Right?"
 9. **Ambiguous doc mappings.** Batched, one line each: "`<file>` plays the role of `<doc>`. Yes?" **Never
    ask about an exact-name match, and never ask when nothing plausible exists**: generate the stub and say
    so.
 10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
-11. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
-    filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
-    the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
-    ids, then `<cli> issue list <KEY> <projectId>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
+11. **Filing work.** "Filing work in Leeway (an issue with sub-issues, several issues, anything touching the
+    schema, auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
+    even while pairing. Or plan-project stays a manual opt-in?" Pre-filled `plan-project`, or with the
+    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-project` or `manual`.
+12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
+    filed as one `chore` issue per item in a project of the product. Use `<project>`, or create one?" Propose
+    an existing project whose name says developer experience or friction (`<cli> project list <KEY>`);
+    otherwise offer to create the project "Developer experience". No "Friction" issue is created. None
     wanted: `n/a` and why.
+13. **What the block repeats.** Asked only when detection ("Collisions", "What the managed block would
+    repeat") found, outside the markers and with no managed block yet, an import of the floor or a section the
+    block repeats. "Your `<instructions-file>` already has `<each, by heading or line>`, which the managed block
+    repeats. Remove yours (the block replaces them), or keep both?" For each section, say what in it the block
+    does **not** carry, quoting at most three lines. Pre-filled remove only when the block carries all of it,
+    keep both otherwise. **Never a second import of the floor**, whichever the answer: `{{IMPORT_FLOOR}}`
+    follows the file, not the answer (step 6).
+14. **Branch prefixes.** Asked in step 5, only when detection ("Branch pattern") found a branch-prefix
+    divergence: a type whose work the repo names with another prefix. "The repo names `<type>` branches
+    `<pattern>` (`<count>` of the last 200 branches, and `<floor>`), the process `<branchPrefix>/<ref
+    lower>-<slug>`. Use the repo's `<prefix>` (change the process's prefix now), or the process's
+    `<branchPrefix>/…` (and say so in the floor)?" One line per diverging type, naming the mapping it
+    proposes (`feature` → the `feature` type); only the prefix can change, so say so when the repo's pattern
+    differs after it too. Pre-filled with the repo's.
+15. **Blocking rungs.** Asked in step 5, only when detection ("Existing contract docs", "Blocking rungs in an
+    existing evidence doc") found a blocking-rung divergence. "`<evidence doc>` says evidence blocks at
+    `<doc's rungs>`; the process blocks at `<blockingRungs, per type when they differ>`, and the process is what
+    the loop follows. Block at `<doc's>` (set the process for `<types whose set differs>`), or at `<process's>`
+    (the doc's line is noted as superseded)?" When question 2 was (a), add that the doc's answer makes the mvp
+    block at those rungs. Pre-filled with the doc's.
+16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
+    `unattended` true and detection ("An existing allow-list") found run's entries missing from the
+    place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
+    every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
+    Pre-filled yes.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
@@ -146,10 +179,14 @@ A human edits `CONFIG.md` to change it.
 
 ## Step 5 — set the process
 
-Skipped when question 2 was (d). Otherwise, and only after the human has answered 2 to 5:
+When question 2 was (d), skip the preset (1) and make no change for questions 3 to 5: ask 14 and 15 against
+the process step 3.4 read, make only the change their answers ask for (3), and read it back (4). Otherwise,
+and only after the human has answered 2 to 5:
 
 1. `<cli> process update <KEY> --preset mvp` (or `maintained`: the answer to question 2).
-2. **Adjustments**, when questions 3 to 5 changed anything. Read the stored definition
+2. **Questions 14 and 15.** Read the stored definition (`<cli> process get <KEY> --json`) and ask them,
+   each only on the divergence it names, against what it holds.
+3. **Adjustments**, when questions 3 to 5, 14 or 15 changed anything. Read the stored definition
    (`<cli> process get <KEY> --json`), edit only its `process` value, and send the whole definition back:
    `<cli> process update <KEY> --stdin process < <file outside the repo>`.
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
@@ -157,20 +194,45 @@ Skipped when question 2 was (d). Otherwise, and only after the human has answere
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
      unattended}`; a `plan` step `params {designDoc}`.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
-     reorders steps. Question 5 sets `unattended` on `build` steps. Change nothing else.
+     reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
+     `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,
+     and keep the process's). Question 15, answered with the doc's, sets `blockingRungs` on the `build` step
+     of each type whose set differs from the doc's, and on no other. Change nothing else.
    - **The body stays under 16384 bytes** (`wc -c <file>`); the server refuses more as `invalid_process`.
    - `process_in_use` (an open issue would be stranded) is not an install problem: say which refs it names,
      and leave the process as it was.
-3. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
+4. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
    (labels joined with →). The files you write next describe this, so never write them from the answers.
+   Then ask question 16 against it.
 
 ## Step 6 — show the plan, then write
 
 Print every path with `create`, `map` or `patch` and **ask once**. `patch` is only ever the instructions file,
-`.gitignore`, and an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
-`opencode.json`), always as a marked block, appended lines or added entries, always shown as a diff first.
+`.gitignore`, an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
+`opencode.json`), the allow-list's file on a yes to question 16, and an existing floor on question 14's
+process answer, always as a marked block, appended lines or added entries, always shown as a diff first. The
+one removal is question 13's: the sections and the import it named, from the instructions file, on remove,
+shown as a diff first like every patch.
 
 **Never rewrite a doc that already exists.** A mapping is a row in `CONFIG.md`, not an edit.
+
+**What the conditional questions write**, each only on its answer:
+
+- **13, remove**: delete the named sections and the floor import outside the markers. **Keep both**: leave
+  them. Either way `{{IMPORT_FLOOR}}` is then filled from the file as it stands (below), so the floor is
+  imported exactly once.
+- **14, the process's**: say so in the floor's *Branches and commits* section, one line: "Branches are named
+  `<branchPrefix>/<ref lower>-<slug>`, from the process; branches named `<pattern>` before leeway-sdlc keep
+  their names." In a generated floor that line is `{{BRANCH_NOTES}}`; in an existing one it is appended,
+  only when the floor does not already carry it. The repo's answer was written in step 5.
+- **15, the process's**: the evidence row of `CONFIG.md`'s doc map says, in its *Notes*, that the doc's
+  blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
+  is not edited. The doc's answer was written in step 5.
+- **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
+  place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
+  `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
+  push` stays off it until the pre-push guard run names exists. A place outside the repo is not
+  written: print the entries for the human.
 
 ### Generate all seven contract docs, always
 
@@ -207,12 +269,12 @@ Those three ship as stubs. The others are filled from detection:
 
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
-- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-collector:` and an
-  empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-project:`
+  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-project` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
-  and `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
+  and `leeway-sdlc:end`, `{{FILING_WORK_RULE}}` filled from the `filing-work:` just written. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
 - `.gitignore` lines `.worktrees/`, the local-notes file and `.sdlc/.governed/`, each only if absent.
 - **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
@@ -225,7 +287,7 @@ Those three ship as stubs. The others are filled from detection:
   `HARNESS.md`, "Wiring", lists anything the agent needs the human to do after (trusting hooks, a restart).
 - `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
   `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
-  is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
+  is and is never written to Leeway: `plan-project` strips it. The checked-out files may be CRLF where git stores
   LF; copy them as they are, since `sync-repo` normalises line endings in its compare. **If the
   directory exists, leave it alone** and show its diff against the plugin's copy: a team that edited its
   templates made a decision.
@@ -249,15 +311,43 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   the placeholder line, leave the table with no rows, and say so.
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
-  convention in the history; `plan-work` reads this row.
-- **`{{FRICTION_COLLECTOR}}`** — a ref you have read back from Leeway. **Never invent one.** Creation is two
-  writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
-  `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
+  convention in the history; `plan-project` reads this row.
+- **`{{FRICTION_PROJECT}}`** — a project id you have read back from Leeway (`<cli> project list <KEY>
+  --json`). **Never invent one.** Creation is one write, only on the human's yes: `<cli> project create <KEY> --name
+  "Developer experience" --as <alias>/agent`, then read its id back. No issue is created in it.
+- **`{{FILING_WORK}}`** — `plan-project` or `manual`, the answer to question 11. **Legacy value:** an existing
+  `filing-work: plan-work` line, written before the skill was renamed, is the same answer as `plan-project`.
+- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-project`, the placeholder
+  is replaced by this paragraph, exactly as written here, without the indent:
+
+  ```markdown
+  **Filing work in Leeway is planning, even while pairing.** Before creating an issue with sub-issues, more
+  than one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
+  `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
+  up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
+  a one-file fix goes in directly. Running the loop (`run`, the reviewers, the merge gates) stays opt-in.
+  ```
+
+  For `manual`, delete the placeholder's line and the blank line after it, so the opt-in paragraph is
+  followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
+  block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
+- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it. The placeholder is replaced by the text
+  inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is
+  added round it. A space just inside the double backticks is Markdown padding, not part of the fill.
+  - `/leeway-sdlc:<skill>` (Claude Code): `` `/leeway-sdlc:run` ``
+  - `$<skill>` (Codex): `` `$run` ``
+  - `/<skill>` (Copilot, Grok): `` `/run` ``
+  - skills invoked by name (Cursor, Gemini, OpenCode): ``leeway-sdlc's `run` skill``
+
+  It reads the harness, not an answer, so `sync-repo` fills it the same way.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
-  (these agents do not expand `@` imports). Where it also names a settings entry (OpenCode's `instructions`
-  in `opencode.json`), add the path there too.
+  (these agents do not expand `@` imports). **But when the instructions file already imports the floor
+  outside the markers** (after question 13's write), the read-first line in every agent: a second import is
+  never written. The rule reads the file, not an answer, so `sync-repo` fills it the same way. Where
+  `HARNESS.md` also names a settings entry (OpenCode's `instructions` in `opencode.json`), add the path there
+  too.
 - **`{{LOCAL_NOTES_FILE}}`** — `HARNESS.md`'s **local-notes-file**. Run `git check-ignore -q <it> && echo
   ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Never claim it is ignored
   when it is not.
@@ -279,13 +369,27 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- If the evidence directory is gitignored, say that evidence has nowhere durable to live and let the human
-  decide.
-- Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
-  `plan-work` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
-  task of a planned story unattended, `sdlc-tune` to change the process later.
+- Print what to do next: `shape-project` for a product owner to shape an issue (when the type has `shape`),
+  `plan-project` for work spanning more than one sub-issue, `run` for a single sub-issue, a planned issue
+  unattended or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
+  **commands** spells it (`/leeway-sdlc:run` in Claude Code): a bare `run` can reach another skill of that name.
 
-**Then state what this install did not settle.** Which docs are stubs, which CI claims are unverified, the
-local-notes-file answer, the trust or restart steps `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
-cast") and anything the human declined. That list is the honest starting position, and it is more useful
-than a success message.
+**Then state what this install did not settle**, as facts that need no decision: anything that needed one
+was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
+detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
+`HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
+cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
+gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
+declined (run prompts for every command), an allow-list added without `git push` (each push prompts
+until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
+install: they are theirs, not the install's.
+
+Write each item for a reader who does not know the loop's terms, in plain words: **what it is, what it means
+for them, and what to do, if anything.** That list is the honest starting position, and it is more useful
+than a success message. The shape:
+
+```markdown
+- **Two docs are empty for now: RECIPES.md and GOTCHAS.md.** The agents will not quote them until they
+  have an entry. Nothing to do yet: each file says what its first entry should be.
+- **Restart Claude Code.** This session still has the old skills, so the loop starts in the next one.
+```
