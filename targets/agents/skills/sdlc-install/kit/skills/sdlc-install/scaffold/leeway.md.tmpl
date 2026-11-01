@@ -7,6 +7,7 @@ server: {{SERVER_URL}}
 product: {{PRODUCT_KEY}}
 cli: {{CLI_COMMAND}}
 friction-collector: {{FRICTION_COLLECTOR}}
+filing-work: {{FILING_WORK}}
 
 `cli:` is the command every skill runs in place of `leeway`: `leeway` when it is on the PATH, else a
 path such as `node /path/to/leeway.js`. No credential belongs in this file or anywhere else in the
@@ -14,6 +15,10 @@ repo: `leeway login` keeps the sign-in on the machine.
 
 `friction-collector:` is the issue of type `chore` that friction is filed under, as a ref such as
 `{{PRODUCT_KEY}}-12`, or `n/a` and why. It is the product's, not a project's.
+
+`filing-work:` is `plan-work` when filing work in Leeway counts as planning, so the managed block tells the
+agent to invoke `plan-work` for it even while pairing, or `manual` when `plan-work` stays an opt-in;
+`sync-repo` asks for it when this line is absent.
 
 ## Nit collectors
 
