@@ -438,7 +438,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 
 | The follow-up is | What you do |
 |---|---|
-| Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway --as <alias>/agent issue create <KEY> --projectId <project.id> --title "…" --status backlog --stdin description <desc.md`, in the task's project |
+| Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway --as <alias>/agent issue create <KEY> --projectId <project.id> --title "…" --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`, in the task's project |
 | Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and under `run-story` that the run stops here (its stop 4). On a yes, `issue create` as above, quoting the answer's `option` and `note`; on a no it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway --as <alias>/agent comment add <collector> --stdin body <nit.md` |
 
@@ -489,8 +489,8 @@ On a PASS of a code round.
    sub-issue, as `<alias>/agent` (options "File them" and "File none", the lines in the question's context
    comment), `--meanwhile` saying nothing waits. Only on a yes, file each accepted line as its own issue, the line
    with its task and round as the description: `leeway --as <alias>/agent issue create <KEY> --projectId <friction
-   project> --type chore --title "…" --status backlog --stdin description <desc.md`. `n/a` there: the proposal is
-   still made, nothing is filed.
+   project> --type chore --title "…" --summary "<at most 280 characters>" --status backlog --stdin description
+   <desc.md`. `n/a` there: the proposal is still made, nothing is filed.
    **Legacy binding**, `friction-collector:` (a ref, or `n/a`) and no `friction-project:` (installed before
    0.3.0): dedupe against the comments on that issue and file each accepted line as a comment on it, as before;
    with `n/a` the proposal is still made and nothing is filed. Say once, in the escalation's context comment, that

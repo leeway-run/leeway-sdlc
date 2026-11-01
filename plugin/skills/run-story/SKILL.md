@@ -212,8 +212,8 @@ that was written down; this is where it leaves them.
    has ended.
 5. **File only on a human yes**, each accepted line as its own issue, the line with its task and round as the
    description: `leeway --as <alias>/agent issue create <KEY> --projectId <friction project> --type chore --title "…"
-   --status backlog --stdin description <desc.md`. Nothing is filed on silence. With `n/a` in `.sdlc/leeway.md` the
-   proposal is still made and nothing is filed.
+   --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`. Nothing is filed on silence.
+   With `n/a` in `.sdlc/leeway.md` the proposal is still made and nothing is filed.
 6. **Legacy binding**, `friction-collector:` (a ref, or `n/a`) and no `friction-project:` (installed before
    0.3.0): dedupe against the comments on that issue and file each accepted line as a comment on it, as before;
    with `n/a` the proposal is still made and nothing is filed. Say once, in the finished status comment, that
