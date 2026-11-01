@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const [oldShape, oldPlan] = ['shape', 'plan'].map((verb) => `${verb}-work`);
-const oldName = new RegExp(`${oldShape}|${oldPlan}`);
+const [oldTask, oldStory] = ['task', 'story'].map((noun) => `run-${noun}`);
+const oldName = new RegExp([oldShape, oldPlan, oldTask, oldStory].join('|'));
 const legacySentence = new RegExp(`\\*\\*Legacy value:\\*\\* [^.]*\`filing-work: ${oldPlan}\`[^.]*\\.`, 'g');
 const legacyFiles = ['plugin/skills', 'targets/agents/skills'].flatMap((dir) =>
   ['sdlc-install', 'sync-repo'].map((skill) => `${dir}/${skill}/SKILL.md`),
@@ -32,11 +33,11 @@ function withoutLegacySentence(file) {
 
 test('no skill directory keeps an old name', () => {
   for (const dir of ['plugin/skills', 'targets/agents/skills', 'targets/agents/skills/sdlc-install/kit/skills']) {
-    for (const name of [oldShape, oldPlan]) {
+    for (const name of [oldShape, oldPlan, oldTask, oldStory]) {
       assert.ok(!existsSync(join(root, dir, name)), `${dir}/${name} still exists`);
     }
   }
-  for (const name of ['shape-project', 'plan-project']) {
+  for (const name of ['shape-project', 'plan-project', 'run']) {
     assert.ok(existsSync(join(root, 'plugin', 'skills', name, 'SKILL.md')), `plugin/skills/${name} is missing`);
   }
 });
@@ -58,4 +59,10 @@ test('install and sync-repo still read the old filing-work value as plan-project
 test('taking the kit removes what only the repo copy has, so a renamed skill directory goes', () => {
   const take = read(join(root, 'plugin', 'skills', 'sync-repo', 'SKILL.md')).match(/- \*\*Take\*\* → .*?A second compare then says "the same"\./)?.[0] ?? '';
   assert.ok(take.includes('remove each file or directory the diff reports as only in `.sdlc/kit/`'), take);
+});
+
+test('the brief and verdict templates moved with the run skill', () => {
+  for (const name of ['BRIEF.md', 'VERDICT.md']) {
+    assert.ok(existsSync(join(root, 'plugin', 'skills', 'run', 'templates', name)), `plugin/skills/run/templates/${name} is missing`);
+  }
 });

@@ -28,7 +28,7 @@ rule from one says *"no rule exists for this"* instead.
 The files a change under a path owes, beyond the doc map: the skills and rule files that hold this
 repo's conventions for that area. **The subagents have no Skill tool**, so "load the frontend skill"
 in a task reaches nobody; this table is how those files reach them. The plugin's `SubagentStart`
-hook injects it into the implementer and the reviewer at start, and the run-task gate checks each
+hook injects it into the implementer and the reviewer at start, and the run gate checks each
 brief's and verdict's *Rules read* section against it. A row is owed when any changed path matches
 its glob (repo-relative, `**` across folders). No rows: the hook and the gate do nothing.
 
@@ -58,7 +58,7 @@ its glob (repo-relative, `**` across folders). No rows: the hook and the gate do
 | Per-story budget | {{PER_STORY_BUDGET}} |
 | Ticket templates | `.sdlc/templates/` — `STORY.md`, `TASK.md` |
 
-<!-- Per-story budget: what one run-story may spend on one story, summed across runs, before it stops
+<!-- Per-story budget: what one run of an issue may spend on one story, summed across runs, before it stops
      for a human. Three dimensions, whichever is hit first: subagent tokens as the harness reports them,
      rounds (round-0 attempts included), and wall-clock. "none" for a dimension means it is not
      enforced - say so rather than leave it blank. -->

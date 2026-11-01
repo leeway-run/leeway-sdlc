@@ -38,7 +38,7 @@ step 1 reads its escalation itself, before step 2, and never raises it twice. Th
 
 ## 0. Before anything
 
-- **Not in the middle of a run.** If a `run-story` or `run-task` is in progress in this session,
+- **Not in the middle of a run.** If a `run` is in progress in this session,
   stop: a new template or floor between rounds reviews a task under rules it was not built under.
 - **This repo has `.sdlc/CONFIG.md`.** Without it there is nothing to sync; point at
   the sdlc-install skill and stop.

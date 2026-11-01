@@ -32,7 +32,7 @@ write to Leeway with it on. It expires on its own after two hours, so a crashed 
 
 ## Required reading
 
-run-task pastes the *Required reading* rows into each brief; no hook injects them here.
+run pastes the *Required reading* rows into each brief; no hook injects them here.
 
 ## Instructions and local notes
 
@@ -50,7 +50,7 @@ After writing them: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in `opencode.json` (`permission.bash`).
+run's allow-list goes in `opencode.json` (`permission.bash`).
 
 ## Installed version, update and restart
 

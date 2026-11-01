@@ -120,7 +120,7 @@ asked in step 5, once the process they compare with has been read.
 4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
    "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
-5. **Unattended.** "`run-story` may run these types without a person between tasks: `<types whose build step
+5. **Unattended.** "`run` on an issue may run these types without a person between tasks: `<types whose build step
    is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
 6. **The gate.** "The command that must pass before a story merges: `<command>`. Right?" Propose the
    commands CI runs; if its steps live in a template you could not read, say so.
@@ -164,9 +164,9 @@ asked in step 5, once the process they compare with has been read.
     (the doc's line is noted as superseded)?" When question 2 was (a), add that the doc's answer makes the mvp
     block at those rungs. Pre-filled with the doc's.
 16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
-    `unattended` true and detection ("An existing allow-list") found run-story's entries missing from the
-    place `HARNESS.md`, "Permissions for an unattended run", names. "`run-story` runs `<types>` unattended, and
-    every command it runs prompts until it is allowed. Add run-story's allow-list to `<that place>` now?"
+    `unattended` true and detection ("An existing allow-list") found run's entries missing from the
+    place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
+    every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
     Pre-filled yes.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
@@ -228,10 +228,10 @@ shown as a diff first like every patch.
 - **15, the process's**: the evidence row of `CONFIG.md`'s doc map says, in its *Notes*, that the doc's
   blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
   is not edited. The doc's answer was written in step 5.
-- **16, yes**: merge run-story's allow-list ("Unattended prerequisites", "A permission allow-list") into the
+- **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
   place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
   `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
-  push` stays off it until the pre-push guard run-story names exists. A place outside the repo is not
+  push` stays off it until the pre-push guard run names exists. A place outside the repo is not
   written: print the entries for the human.
 
 ### Generate all seven contract docs, always
@@ -325,7 +325,7 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
   `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
   up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
-  a one-file fix goes in directly. Running the loop (`run-task`, the reviewers, the merge gates) stays opt-in.
+  a one-file fix goes in directly. Running the loop (`run`, the reviewers, the merge gates) stays opt-in.
   ```
 
   For `manual`, delete the placeholder's line and the blank line after it, so the opt-in paragraph is
@@ -361,8 +361,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
 - Print what to do next: `shape-project` for a product owner to shape a story (when the type has `shape`),
-  `plan-project` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
-  task of a planned story unattended, `sdlc-tune` to change the process later.
+  `plan-project` for work spanning more than one task, `run` for a single task (a sub-issue), a planned story
+  unattended (an issue) or a project, `sdlc-tune` to change the process later.
 
 **Then state what this install did not settle**, as facts that need no decision: anything that needed one
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
@@ -370,7 +370,7 @@ detection found untrue (the doc is not edited), the local-notes-file answer, the
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
 cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
 gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
-declined (run-story prompts for every command), an allow-list added without `git push` (each push prompts
+declined (run prompts for every command), an allow-list added without `git push` (each push prompts
 until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
 install: they are theirs, not the install's.
 
