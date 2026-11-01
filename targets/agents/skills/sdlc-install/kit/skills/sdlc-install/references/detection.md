@@ -29,11 +29,25 @@ one when a repo sits inside another.
 ### Branch pattern
 
 Branch names come from the process (each type's branch prefix), so the installer does not choose a
-pattern. It reports what the remote already uses, so a mismatch with the process's prefixes is visible:
+pattern. It reports what the repo already uses, so a mismatch with the process's prefixes is visible.
+**Read a bounded slice:** the 200 most recently committed branch refs, local and remote, and the subjects of
+the last 200 merge commits:
 
 ```sh
-git branch -r --format='%(refname:lstrip=3)' | grep / | sed 's#/.*##' | sort | uniq -c | sort -rn
+git for-each-ref --sort=-committerdate --count=200 --format='%(refname)' refs/heads refs/remotes \
+  | sed -E 's#^refs/heads/##; s#^refs/remotes/[^/]+/##' | grep / | sed 's#/.*##' | sort | uniq -c | sort -rn
+git log --merges -200 --format=%s | grep -oE "from [^/ ]+/[^ ]+|branch '[^']+'" \
+  | sed -E "s#^from [^/]+/##; s#^branch '##; s#'\$##" | grep / | sed 's#/.*##' | sort | uniq -c | sort -rn
 ```
+
+Then the floor (an existing `ENGINEERING.md`, or the file mapped as the floor): the branch names its
+branches section prescribes, for example `feature/<story>-NN-<task>`. Ignore bot prefixes (`dependabot`,
+`renovate`).
+
+**A branch-prefix divergence** is a prefix the floor prescribes, or one carried by at least three of the
+counted refs and merges together, that is no type's `branchPrefix` in the process. It is what
+sdlc-install's question 14 asks about. Only the prefix is the process's to change: the rest of a branch name
+is always `<ref lower>-<slug>`. No branches, no merges and no prescribing floor: no divergence.
 
 **Trunk on `main` with no long-lived second branch is a valid topology, not a gap.** Do not propose
 git-flow to a repo that has never had a `develop` branch.
@@ -140,6 +154,19 @@ near-synonyms, which are where the real matches usually are:
 
 **An exact-name match is never a question.** Map it and move on.
 
+**Blocking rungs in an existing evidence doc.** An evidence doc that exists (not one the install will
+generate) may say which rungs block, for example "evidence blocks at R3 and above":
+
+```sh
+grep -niE 'block(s|ing)?( only)? (at|on|from)|R[1-5] and above' <evidence doc>
+```
+
+Read the line it finds and write the rungs it names as a set (`R3 and above` is `[R3, R4, R5]`). **A
+blocking-rung divergence** is a set that differs from a `build` step's `blockingRungs` in the process; it is
+what sdlc-install's question 15 asks about. No such line, a line that names no rung, a line that defers to the
+process (the plugin's own template says "the rungs the `build` step ... lists as `blockingRungs`"), or no
+existing evidence doc: no divergence.
+
 ## Collisions
 
 An existing contract file (the instructions file `HARNESS.md` names: `CLAUDE.md`, `AGENTS.md` or
@@ -152,6 +179,25 @@ skills (`.claude/skills`, `.agents/skills`, `.github/skills`, `.gemini/skills`, 
 definition and a plugin-provided one with the same name is a confusion worth naming before it happens.
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
 re-run, and a re-run changes only what the human asks to change.
+
+**What the managed block would repeat.** Outside the `leeway-sdlc:begin` and `leeway-sdlc:end` markers, read
+the instructions file for:
+
+- **an import of the floor**: an `@` line, or a "read it first" line, naming the floor's path;
+- **sections the block repeats**: a heading that reads as one of the block's ("Two ways of working, one
+  floor", "Where a new fact goes") or a near-synonym of one ("The floor", "Engineering rules", "Where facts
+  go", "Where to write things down").
+
+```sh
+grep -nE '^@|^#+ ' <instructions-file>
+```
+
+Record each by line number. Either found is what sdlc-install's question 13 asks about; neither found,
+nothing is asked.
+
+**An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
+run-story's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the
+missing ones.
 
 ## Leeway
 
