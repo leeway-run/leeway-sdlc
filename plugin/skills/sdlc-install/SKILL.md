@@ -120,22 +120,22 @@ asked in step 5, once the process they compare with has been read.
 4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
    "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
-5. **Unattended.** "`run` on an issue may run these types without a person between tasks: `<types whose build step
-   is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
-6. **The gate.** "The command that must pass before a story merges: `<command>`. Right?" Propose the
+5. **Unattended.** "`run` on an issue may run these types without a person between sub-issues: `<types whose
+   build step is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
+6. **The gate.** "The command that must pass before an issue merges: `<command>`. Right?" Propose the
    commands CI runs; if its steps live in a template you could not read, say so.
 7. **Lanes CI lacks.** "These lanes need something CI does not have, so the gate does not run them: `<lanes>`.
    Right?" Show each lane's measured duration. Skip when there is no such lane.
 8. **Evidence directory.** Only when non-obvious, or when the directory is gitignored: "Proof that outlives a
-   task is committed under `<dir>`. Right?"
+   sub-issue is committed under `<dir>`. Right?"
 9. **Ambiguous doc mappings.** Batched, one line each: "`<file>` plays the role of `<doc>`. Yes?" **Never
    ask about an exact-name match, and never ask when nothing plausible exists**: generate the stub and say
    so.
 10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
-11. **Filing work.** "Filing work in Leeway (a story with tasks, several issues, anything touching the schema,
-    auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
+11. **Filing work.** "Filing work in Leeway (an issue with sub-issues, several issues, anything touching the
+    schema, auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
     even while pairing. Or plan-project stays a manual opt-in?" Pre-filled `plan-project`, or with the
     `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-project` or `manual`.
 12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
@@ -321,8 +321,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   is replaced by this paragraph, exactly as written here, without the indent:
 
   ```markdown
-  **Filing work in Leeway is planning, even while pairing.** Before creating a story with tasks, more than
-  one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
+  **Filing work in Leeway is planning, even while pairing.** Before creating an issue with sub-issues, more
+  than one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
   `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
   up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
   a one-file fix goes in directly. Running the loop (`run`, the reviewers, the merge gates) stays opt-in.
@@ -369,9 +369,9 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- Print what to do next: `shape-project` for a product owner to shape a story (when the type has `shape`),
-  `plan-project` for work spanning more than one task, `run` for a single task (a sub-issue), a planned story
-  unattended (an issue) or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
+- Print what to do next: `shape-project` for a product owner to shape an issue (when the type has `shape`),
+  `plan-project` for work spanning more than one sub-issue, `run` for a single sub-issue, a planned issue
+  unattended or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
   **commands** spells it (`/leeway-sdlc:run` in Claude Code): a bare `run` can reach another skill of that name.
 
 **Then state what this install did not settle**, as facts that need no decision: anything that needed one
