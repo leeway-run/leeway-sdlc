@@ -861,8 +861,9 @@ task 2 reaches task 5 only if a round record wrote it down.
 ## Run a project
 
 `run` on a project runs its issues one after another, **each as an issue run** ("Run an issue"), in the order
-their blocking relations allow, and stops at the first issue that stops. It adds only the order and that stop; each
-issue's run is "Run an issue", word for word, and nothing here relaxes it.
+their blocking relations allow, skips an issue its issue run refuses, and stops at the first issue that stops. It
+adds only the order, the skip and that stop; each issue's run is "Run an issue", word for word, and nothing here
+relaxes it.
 
 1. **Read the project and its issues.**
 
@@ -884,25 +885,32 @@ issue's run is "Run an issue", word for word, and nothing here relaxes it.
    - **Refuse an issue whose blockers are not done**, including a blocker outside the project: skip it and take the
      next runnable one. If issues remain and none is runnable, or the relation has a cycle, stop and say so in the
      session, naming the blockers.
+   - **Skip an issue its issue run refuses**: one that a precondition of "Run an issue" refuses, which writes nothing
+     (its type is not unattended, it is not planned, an earlier `# Run status` is unanswered, or any other). Say in
+     the session which issue and which precondition, and take the next runnable issue. It is skipped as an issue
+     whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. A failed
+     Leeway call is not a refusal: it is stop 10. When nothing runnable is left, the run ends there, and step 5
+     reports what it ran and what it skipped.
    - **Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so, and stop.
 3. **Run the next issue**, as "Run an issue" from its preconditions to its end or its stop, with fresh subagents.
    **Re-read the list before each issue**: Leeway, not this session's memory, says what is left.
-4. **Stop at the first issue that stops**: a precondition it refuses (that writes nothing), a hard stop or a stop of
-   the sub-issue run (each with its own `# Run status` comment and one escalation, as the issue run raises them).
-   Start no further issue. An issue whose story gate ends at a `manual` next step has ended, not stopped: go on with
-   the next runnable issue, and the issues it blocks wait until a person moves it. In a project run, the stop's
-   `# Run status` comment names the project in its *Next human action*: "Then invoke <`run`, as `HARNESS.md`'s
-   **commands** spells it> on project <project id> again", in place of the story ref, so the human who answers it
-   goes on with the project, not only that issue.
+4. **Stop at the first issue that stops**: a hard stop or a stop of the sub-issue run (each with its own `# Run
+   status` comment and one escalation, as the issue run raises them). Start no further issue. A precondition it
+   refuses is not a stop: step 2 skips that issue and the run goes on. An issue whose story gate ends at a `manual`
+   next step has ended, not stopped: go on with the next runnable issue, and the issues it blocks wait until a
+   person moves it. In a project run, the stop's `# Run status` comment names the project in its *Next human
+   action*: "Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on project <project id> again", in place
+   of the story ref, so the human who answers it goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
-   status` comment's `cN` and the escalation id), and the issues not started, in the order they would have run.
+   status` comment's `cN` and the escalation id), every issue it skipped and why (the precondition that refused it,
+   or the blockers not done), and the issues not started, in the order they would have run.
 
 **Bounds.** The per-story budget (*Per-story budget* in `.sdlc/CONFIG.md`) applies to each issue as it does to an
 issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway:
 the records, the status comments and the escalations are its issue runs'. **Re-invoking it is the human's**: once the
 stopped issue's escalation is answered, `run` on the project again goes on from there. A project run has no
 unattended mode of its own: an issue whose type does not say unattended is refused by its precondition 1, and the
-project run stops there.
+project run skips it and goes on. A skipped issue costs nothing: it runs no round and spends none of any budget.
 
 ## Done when
 
@@ -911,6 +919,6 @@ project run stops there.
 status` comment naming the condition, what landed and the exact next human action, with one escalation, and every
 worktree and branch where the run left it.
 
-**On a project:** every issue other than the Plan record is `done`, `cancelled` or waiting at a `manual` step or
-on a blocker, or the run stopped at the first issue that stopped, and the session says which, where each issue ended,
-and what was not started.
+**On a project:** every issue other than the Plan record is `done`, `cancelled`, waiting at a `manual` step or on a
+blocker, or skipped because its issue run refused it, or the run stopped at the first issue that stopped, and the
+session says which, where each issue ended, what it skipped and why, and what was not started.
