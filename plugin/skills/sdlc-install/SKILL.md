@@ -334,7 +334,7 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
 - **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it. The placeholder is replaced by the text
   inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is
-  added round it.
+  added round it. A space just inside the double backticks is Markdown padding, not part of the fill.
   - `/leeway-sdlc:<skill>` (Claude Code): `` `/leeway-sdlc:run` ``
   - `$<skill>` (Codex): `` `$run` ``
   - `/<skill>` (Copilot, Grok): `` `/run` ``

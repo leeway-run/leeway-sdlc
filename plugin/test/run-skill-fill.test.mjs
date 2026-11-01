@@ -34,7 +34,7 @@ function fillsFromSkill() {
     if (!item) continue;
     const span = /^``(.*)``$/.exec(item[2]);
     assert.ok(span, `the fill for ${item[1]} is not one double-backtick code span: ${item[2]}`);
-    const text = /^ .* $/.test(span[1]) ? span[1].slice(1, -1) : span[1];
+    const text = span[1].replace(/^ | $/g, '');
     const code = /^`([^`]+)`/.exec(item[1]);
     fills.push({ form: code ? code[1] : /^skills invoked by name\b/.test(item[1]) ? 'by name' : item[1], text });
   }
@@ -60,6 +60,15 @@ const expected = {
 
 test('the block template carries {{RUN_SKILL}} with no markup of its own', () => {
   assert.ok(block.includes('\nor {{RUN_SKILL}}. The process itself'));
+});
+
+test('the entry says how a fill is read from its double backticks, padding included', () => {
+  const start = skill.indexOf('- **`{{RUN_SKILL}}`**');
+  const prose = skill.slice(start, skill.indexOf('\n  - ', start)).replace(/\s+/g, ' ');
+  for (const rule of [
+    'The placeholder is replaced by the text inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is added round it.',
+    'A space just inside the double backticks is Markdown padding, not part of the fill.',
+  ]) assert.ok(prose.includes(rule), `the {{RUN_SKILL}} entry does not say: ${rule}`);
 });
 
 test('every harness has an expected line, and every commands form one fill', () => {
