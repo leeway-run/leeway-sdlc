@@ -270,13 +270,13 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
      it holds an id and a ref and nothing else; stage it for the orchestrator's commit;
    - post the plan's first status line: `comment add <ref> --stdin body`.
 
-   Adopting a project that already has a row there: use that collector, and create nothing.
+   Adopting a project that already has a row there: use that collector, and create nothing; when its
+   `issue.summary` is empty, fill one in the same way as an adopted story's (step 3).
 
 3. **The stories**, in the project, one issue each. A story that exists is adopted; when its `issue.summary` is
    empty, fill one in with `issue update <story> --summary "<at most 280 characters>"`, naming only that field (an
-   update replaces the fields it names). One the work needs and nobody
-   wrote is created here only for a type without `shape`; for a type with `shape` it is a step 1 gap (`shape-work`
-   creates it). Pass the type explicitly:
+   update replaces the fields it names). One the work needs and nobody wrote is created here only for a type
+   without `shape`; for a type with `shape` it is a step 1 gap (`shape-work` creates it). Pass the type explicitly:
 
    ```sh
    <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "<story>" --summary "<at most 280 characters>" --status backlog --stdin description <story.md
@@ -301,7 +301,9 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    skips this step; say which.
 
 5. **The tasks**, each under its story, with `--parent` **set explicitly on every one**, never relying on
-   inheritance; a sub-issue has no children:
+   inheritance; a sub-issue has no children. A task that exists (a re-plan keeps it) is not created again; when
+   its `issue.summary` is empty, fill one in with `issue update <ref> --summary "<at most 280 characters>"`, naming
+   only that field:
 
    ```sh
    <cli> --server <server> --as <alias>/planner --json issue create <KEY> --parent <story> --title "<task>" --summary "<at most 280 characters>" --status backlog --stdin description <task.md
@@ -450,5 +452,6 @@ Plus: **every hazard names an owning task**, or the doc says which one does not 
 names at least one thing that must be proven false. Every story passed the product check — or its gaps went back
 to the PO as one comment and it has no tasks. Every planned story's description is at most 5,000 characters, with
 its *Technical criteria* in the body or, pointed to from it, in the `# Technical criteria` comment, and a *planned
-by* half on its Status line. And, for a type with a gate, the report is posted and a human's PASS — or their
+by* half on its Status line. Every story and task, and the Plan record, has a summary.
+And, for a type with a gate, the report is posted and a human's PASS — or their
 answer to every QUESTION — is on the story, and the story is `--status ready`.

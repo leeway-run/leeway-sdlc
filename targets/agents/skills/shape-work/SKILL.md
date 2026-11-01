@@ -150,8 +150,9 @@ say so to the PO and let them split it. Never truncate.
 
 Post one comment on the story with the current description (or "none yet"), the proposed body, and what is
 still `OPEN:`; when `issue.summary` is empty, a proposed summary too (at most 280 characters: what the story is and
-why, in plain words). Then raise one escalation, *Write this body to `<ref>`?*, with the options *Write it*, *Write it
-with the changes in my note* and *Do not write*, and stop. **Write nothing without the PO's yes.** The Status line's name is the PO's: the answerer's name on the escalation (`escalations[].answer.by.userName`), or the one the PO gave.
+why, in plain words). Then raise one escalation, *Write this body to `<ref>`?* (*Write this body and summary to
+`<ref>`?* when a summary is proposed), with the options *Write it*, *Write it with the changes in my note* and *Do
+not write*, and stop. **Write nothing without the PO's yes.** The Status line's name is the PO's: the answerer's name on the escalation (`escalations[].answer.by.userName`), or the one the PO gave.
 
 On a yes, **re-read the issue first and stop if `issue.description` is not the one the proposal comment
 showed**: replacing a description silently clobbers an edit made in the UI in between. Show the new version and
@@ -187,9 +188,9 @@ A story is created in a project, with a type that has a shape step:
 ```
 
 An issue cannot be created outside a project, a title is at most 200 characters, and the summary at most 280: what
-the story is and why, in plain words. For several stories, find
-or create the project that holds them (`project list <KEY>`; `project create <KEY> --name "<the PO's title>"
---stdin description`, at most 5,000 characters); `plan-work` adopts it and adds what planning needs. Each story
+the story is and why, in plain words. For several stories, find or create the project that holds them (`project
+list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most 280 characters>" --stdin
+description`, the description at most 5,000 characters); `plan-work` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
 **You never create tasks, branches or a design doc**, and the only step you set is `shape`, in step 0, and only for an unplanned story. A status
