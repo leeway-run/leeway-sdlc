@@ -34,8 +34,8 @@ const all = files(plugin).flatMap((path) =>
   sentences(readFileSync(path, 'utf8')).map((sentence) => ({ at: relative(plugin, path), sentence })),
 );
 
-test('friction-collector is named only in a sentence labelled legacy', () => {
-  const named = all.filter(({ sentence }) => sentence.includes('friction-collector'));
+test('the friction collector is named only in a sentence labelled legacy', () => {
+  const named = all.filter(({ sentence }) => /friction[- ]collector/i.test(sentence));
   assert.ok(named.length > 0, 'no legacy path names friction-collector');
   const unlabelled = named.filter(({ sentence }) => !/legacy/i.test(sentence));
   assert.deepEqual(unlabelled, []);

@@ -79,13 +79,18 @@ block in step 2 and is written in step 4.
 Then the friction line of `.sdlc/leeway.md`:
 
 - **`friction-project:` is there, or there is no `.sdlc/leeway.md`** → nothing to ask.
-- **A legacy binding: `friction-collector: <ref>` and no `friction-project:`** (installed before 0.3.0) → offer
-  the migration once, as one question asked with the copies in step 3 (its escalation's question begins `Sync
-  friction-project: to <this version>:`): the project friction is filed into from now on, as sdlc-install's
-  question 12 proposes it (an existing project whose name says developer experience or friction, or create
-  "Developer experience", or `n/a` and why). A created project is created only on that answer, as sdlc-install's
-  `{{FRICTION_PROJECT}}` says, and its id is read back from Leeway; never invent one. The answer replaces the
-  legacy line in step 4. The old issue is left as it is: nothing is written to it, and it is not closed.
+- **A legacy binding with `friction-collector: n/a` and no `friction-project:`** → nothing to ask: the team
+  already chose to file no friction. Step 4 replaces the legacy line with `friction-project: n/a` and the same
+  reason.
+- **A legacy binding with `friction-collector: <ref>` and no `friction-project:`** (installed before 0.3.0) →
+  offer the migration once, as one question asked with the copies in step 3 (its escalation's question begins
+  `Sync friction-project: to <this version>:`): the project friction is filed into from now on, as
+  sdlc-install's question 12 proposes it (an existing project whose name says developer experience or
+  friction, or create "Developer experience", or `n/a` and why). Before creating, read `project list <KEY>`
+  again: a "Developer experience" project already there (a sync interrupted after the create) is used, not
+  made twice. A project is created only on that answer, as sdlc-install's `{{FRICTION_PROJECT}}` says, and
+  its id is read back from Leeway; never invent one. The answer replaces the legacy line in step 4. The old
+  issue is left as it is: nothing is written to it, and it is not closed.
 
 ## 2. Compare each copy
 
@@ -124,10 +129,12 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
 
 - `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, `friction-project:`, `filing-work:`,
   the project to nit-collector table), not a copy, and a template change never reaches it. **One narrow
-  exception:** a binding key the file lacks (`filing-work:` or `friction-project:`, step 1) is asked for once,
-  and its answer written as one `<key>: <answer>` line in the key block at the top of the file. `filing-work:`
-  is added directly after the friction line, whichever of the two keys it carries. `friction-project:` replaces the legacy `friction-collector:` line in place: that one key
-  is renamed and given the new value. Nothing else in the file is touched.
+  exception:** a binding key the file lacks (`filing-work:` or `friction-project:`, step 1) is asked for once
+  (a legacy friction `n/a` is carried over without asking), and its answer written as one `<key>: <answer>`
+  line in the key block at the top of the file. `filing-work:` is added directly after the friction line,
+  whichever of the two keys it carries. `friction-project:`
+  replaces the legacy `friction-collector:` line in place: that one key is renamed and given the new value.
+  Nothing else in the file is touched.
 - `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4).
 - The contract docs under the doc map (`VISION.md`, `TESTING.md` and the rest): they belong to the
   repo from the moment they are generated. If a release needs a change there, its notes say so.
@@ -149,7 +156,8 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   say so in the summary.
 
 One question per differing copy and per missing line, step 1's `filing-work:` question when the
-binding lacks the line, and step 1's friction migration for a legacy binding, no more. A copy that is the same, or kept with a matching hash, is not asked.
+binding lacks the line, and step 1's friction migration for a legacy binding with a ref, no more. A copy
+that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
 
@@ -178,5 +186,5 @@ outside the branch.
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
 version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
-none and a legacy friction line replaced by `friction-project:`; and the pull request is open, or the user said why not. End with one line: the version synced
-to, and each copy as taken, kept or unchanged.
+none and a legacy friction line replaced by `friction-project:`; and the pull request is open, or the
+user said why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.

@@ -497,9 +497,10 @@ On a PASS of a code round.
    with its task and round as the description: `leeway --as <alias>/agent issue create <KEY> --projectId <friction
    project> --type chore --title "…" --status backlog --stdin description <desc.md`. `n/a` there: the proposal is
    still made, nothing is filed.
-   **Legacy binding**, `friction-collector: <ref>` and no `friction-project:` (installed before 0.3.0): dedupe
-   against the comments on that issue and file each accepted line as a comment on it, as before, and say once
-   that sync-repo migrates the line to a friction project.
+   **Legacy binding**, `friction-collector:` (a ref, or `n/a`) and no `friction-project:` (installed before
+   0.3.0): dedupe against the comments on that issue and file each accepted line as a comment on it, as before;
+   with `n/a` the proposal is still made and nothing is filed. Say once, in the escalation's context comment, that
+   sync-repo migrates the line to a friction project.
 6. **Was it the story's last task?** Every sub-issue of the story `done` or `cancelled` → "The story gate".
    Otherwise the story stays at `build`; nothing is written. The nit collector is an issue of the project, not a
    task: it never counts.
