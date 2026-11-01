@@ -150,21 +150,25 @@ asked in step 5, once the process they compare with has been read.
     otherwise offer to create the project "Developer experience". No "Friction" issue is created. None
     wanted: `n/a` and why.
 13. **What the block repeats.** Asked only when detection ("Collisions", "What the managed block would
-    repeat") found, outside the markers, an import of the floor or a section the block repeats. "Your
-    `<instructions-file>` already has `<each, by heading or line>`, and the managed block carries the same.
-    Remove yours (the block replaces them), or keep both?" Pre-filled remove. **Never a second import of the
-    floor**, whichever the answer (step 6).
+    repeat") found, outside the markers and with no managed block yet, an import of the floor or a section the
+    block repeats. "Your `<instructions-file>` already has `<each, by heading or line>`, which the managed block
+    repeats. Remove yours (the block replaces them), or keep both?" For each section, say what in it the block
+    does **not** carry, quoting at most three lines. Pre-filled remove only when the block carries all of it,
+    keep both otherwise. **Never a second import of the floor**, whichever the answer: `{{IMPORT_FLOOR}}`
+    follows the file, not the answer (step 6).
 14. **Branch prefixes.** Asked in step 5, only when detection ("Branch pattern") found a branch-prefix
-    divergence from the process. "The repo names branches `<pattern>` (`<count>` of the last 200 refs and
-    merges, and `<floor>`), the process `<branchPrefix>/<ref lower>-<slug>`. Use the repo's `<prefix>`
-    (change the process's prefixes now), or the process's `<branchPrefix>/…` (and say so in the floor)?"
-    One line per type whose prefix differs; only the prefix can change, so say so when the repo's pattern
+    divergence: a type whose work the repo names with another prefix. "The repo names `<type>` branches
+    `<pattern>` (`<count>` of the last 200 branches, and `<floor>`), the process `<branchPrefix>/<ref
+    lower>-<slug>`. Use the repo's `<prefix>` (change the process's prefix now), or the process's
+    `<branchPrefix>/…` (and say so in the floor)?" One line per diverging type, naming the mapping it
+    proposes (`feature` → the `feature` type); only the prefix can change, so say so when the repo's pattern
     differs after it too. Pre-filled with the repo's.
 15. **Blocking rungs.** Asked in step 5, only when detection ("Existing contract docs", "Blocking rungs in an
     existing evidence doc") found a blocking-rung divergence. "`<evidence doc>` says evidence blocks at
-    `<doc's rungs>`; the process blocks at `<blockingRungs>`, and the process is what the loop follows. Block at
-    `<doc's>` (set the process), or at `<process's>` (the doc's line is noted as superseded)?" Pre-filled with
-    the doc's.
+    `<doc's rungs>`; the process blocks at `<blockingRungs, per type when they differ>`, and the process is what
+    the loop follows. Block at `<doc's>` (set the process for `<types whose set differs>`), or at `<process's>`
+    (the doc's line is noted as superseded)?" When question 2 was (a), add that the doc's answer makes the mvp
+    block at those rungs. Pre-filled with the doc's.
 16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
     `unattended` true and detection ("An existing allow-list") found run-story's entries missing from the
     place `HARNESS.md`, "Permissions for an unattended run", names. "`run-story` runs `<types>` unattended, and
@@ -198,8 +202,8 @@ and only after the human has answered 2 to 5:
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
      reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
      `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,
-     and keep the process's). Question 15, answered with the doc's, sets `blockingRungs` on every `build`
-     step. Change nothing else.
+     and keep the process's). Question 15, answered with the doc's, sets `blockingRungs` on the `build` step
+     of each type whose set differs from the doc's, and on no other. Change nothing else.
    - **The body stays under 16384 bytes** (`wc -c <file>`); the server refuses more as `invalid_process`.
    - `process_in_use` (an open issue would be stranded) is not an install problem: say which refs it names,
      and leave the process as it was.
@@ -213,21 +217,23 @@ Print every path with `create`, `map` or `patch` and **ask once**. `patch` is on
 `.gitignore`, an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
 `opencode.json`), the allow-list's file on a yes to question 16, and an existing floor on question 14's
 process answer, always as a marked block, appended lines or added entries, always shown as a diff first. The
-one removal is question 13's: the sections and the import it named, from the instructions file, on remove.
+one removal is question 13's: the sections and the import it named, from the instructions file, on remove,
+shown as a diff first like every patch.
 
 **Never rewrite a doc that already exists.** A mapping is a row in `CONFIG.md`, not an edit.
 
 **What the conditional questions write**, each only on its answer:
 
-- **13, remove**: delete the named sections and the floor import outside the markers; the block's import is
-  then the only one. **Keep both**: leave them, and fill `{{IMPORT_FLOOR}}` with the read-first line (below)
-  instead of a second `@` line, since the floor is already imported.
-- **14, the process's**: say so in the floor's *Branches and commits* section, one line naming the process's
-  pattern and that branches named `<pattern>` before the install keep their names. In a generated floor that
-  line is `{{BRANCH_NOTES}}`; in an existing one it is an appended line. The repo's answer was written in step 5.
+- **13, remove**: delete the named sections and the floor import outside the markers. **Keep both**: leave
+  them. Either way `{{IMPORT_FLOOR}}` is then filled from the file as it stands (below), so the floor is
+  imported exactly once.
+- **14, the process's**: say so in the floor's *Branches and commits* section, one line: "Branches are named
+  `<branchPrefix>/<ref lower>-<slug>`, from the process; branches named `<pattern>` before leeway-sdlc keep
+  their names." In a generated floor that line is `{{BRANCH_NOTES}}`; in an existing one it is appended,
+  only when the floor does not already carry it. The repo's answer was written in step 5.
 - **15, the process's**: the evidence row of `CONFIG.md`'s doc map says, in its *Notes*, that the doc's
-  blocking line (quote it) is superseded by the process's `blockingRungs`. The doc is not edited. The doc's
-  answer was written in step 5.
+  blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
+  is not edited. The doc's answer was written in step 5.
 - **16, yes**: merge run-story's allow-list ("Unattended prerequisites", "A permission allow-list") into the
   place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
   `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
@@ -333,9 +339,11 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
-  (these agents do not expand `@` imports). On question 13's keep both, the read-first line in every agent:
-  the floor is already imported, and a second import is never written. Where `HARNESS.md` also names a
-  settings entry (OpenCode's `instructions` in `opencode.json`), add the path there too.
+  (these agents do not expand `@` imports). **But when the instructions file already imports the floor
+  outside the markers** (after question 13's write), the read-first line in every agent: a second import is
+  never written. The rule reads the file, not an answer, so `sync-repo` fills it the same way. Where
+  `HARNESS.md` also names a settings entry (OpenCode's `instructions` in `opencode.json`), add the path there
+  too.
 - **`{{LOCAL_NOTES_FILE}}`** — `HARNESS.md`'s **local-notes-file**. Run `git check-ignore -q <it> && echo
   ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Never claim it is ignored
   when it is not.
@@ -357,8 +365,6 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- If the evidence directory is gitignored, say that evidence has nowhere durable to live and let the human
-  decide.
 - Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
   `plan-work` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
   task of a planned story unattended, `sdlc-tune` to change the process later.
@@ -367,8 +373,11 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
 detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
-cast"), and what follows from an answer the human gave (allow-list declined: run-story prompts). Leave out
-changes the human made before the install: they are theirs, not the install's.
+cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
+gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
+declined (run-story prompts for every command), an allow-list added without `git push` (each push prompts
+until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
+install: they are theirs, not the install's.
 
 Write each item for a reader who does not know the loop's terms, in plain words: **what it is, what it means
 for them, and what to do, if anything.** That list is the honest starting position, and it is more useful
