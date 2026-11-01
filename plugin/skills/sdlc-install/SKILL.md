@@ -332,6 +332,9 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
   block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
+- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it (`/leeway-sdlc:run` in Claude Code, `$run`
+  in Codex), or "leeway-sdlc's `run` skill" where it names skills in words. It reads the harness, not an answer, so
+  `sync-repo` fills it the same way.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
   (these agents do not expand `@` imports). **But when the instructions file already imports the floor
@@ -362,7 +365,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
 - Print what to do next: `shape-project` for a product owner to shape a story (when the type has `shape`),
   `plan-project` for work spanning more than one task, `run` for a single task (a sub-issue), a planned story
-  unattended (an issue) or a project, `sdlc-tune` to change the process later.
+  unattended (an issue) or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
+  **commands** spells it (`/leeway-sdlc:run` in Claude Code): a bare `run` can reach another skill of that name.
 
 **Then state what this install did not settle**, as facts that need no decision: anything that needed one
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that

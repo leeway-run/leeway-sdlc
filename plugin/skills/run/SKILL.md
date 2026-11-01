@@ -765,7 +765,7 @@ Do these, in this order, and nothing else:
    - **Landed:** <task ref> <title>, commit <sha>; one per line, or "nothing yet".
    - **Stopped on:** <task ref> <title>: what fired and why, in one or two sentences, and the `cN` or escalation id that shows it.
    - **Not started:** <task refs, in the order they would have run>.
-   - **Next human action:** <one action, imperative, saying where the answer goes>. Then invoke `run` on <story ref> again.
+   - **Next human action:** <one action, imperative, saying where the answer goes>. Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on <story ref> again.
    - **Left in place:** <story worktree path>, <task worktree path>, <branch names>.
    - **Spend:** <rounds> of <budget> rounds · <tokens> of <budget> subagent tokens · <elapsed> of <budget> wall-clock.
    - **Friction so far:** <one line each, with task and round, harvested per "The friction harvest">; or "none".
@@ -777,9 +777,11 @@ Do these, in this order, and nothing else:
    Where the sub-issue run raised it, add its id to the status comment, not a second escalation.
 6. **Tell the user the same thing** in the session, with the comment's `cN` and the escalation id, and stop the turn.
 
-**The next human action is one action, and it is exact.** "Answer the escalation e2 on DRY-2.1, then invoke `run` on
-DRY-2 again", not "review the findings". A stop whose next step the human has to work out costs them the
-investigation the run already did. For a `debt` stop the proposals follow the template, one line each.
+**The next human action is one action, and it is exact.** "Answer the escalation e2 on DRY-2.1, then invoke
+`/leeway-sdlc:run` on DRY-2 again", not "review the findings". A stop whose next step the human has to work out costs
+them the investigation the run already did. The skill is named as `HARNESS.md`'s **commands** spells it
+(`/leeway-sdlc:run` in Claude Code), or as "leeway-sdlc's run skill" where it names skills in words: a bare `run`
+can reach another skill of that name. For a `debt` stop the proposals follow the template, one line each.
 
 ### The end
 
@@ -888,7 +890,10 @@ issue's run is "Run an issue", word for word, and nothing here relaxes it.
 4. **Stop at the first issue that stops**: a precondition it refuses (that writes nothing), a hard stop or a stop of
    the sub-issue run (each with its own `# Run status` comment and one escalation, as the issue run raises them).
    Start no further issue. An issue whose story gate ends at a `manual` next step has ended, not stopped: go on with
-   the next runnable issue, and the issues it blocks wait until a person moves it.
+   the next runnable issue, and the issues it blocks wait until a person moves it. In a project run, the stop's
+   `# Run status` comment names the project in its *Next human action*: "Then invoke <`run`, as `HARNESS.md`'s
+   **commands** spells it> on project <project id> again", in place of the story ref, so the human who answers it
+   goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
    status` comment's `cN` and the escalation id), and the issues not started, in the order they would have run.
 
