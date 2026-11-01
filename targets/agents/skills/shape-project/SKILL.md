@@ -1,6 +1,6 @@
 ---
 name: shape-project
-description: Shape a story with the product owner before anyone plans it - read the intent doc, the issue and its comments, check what exists today, walk the gap checklist with the PO, and write the story body in the story template with a Status line and an OPEN line for every undecided answer. Asks only product questions; technical ones go under Open questions for dev. Runs only for an issue whose type has a shape step. Use when a PO is writing a new story, or answering the gaps plan-project sent back. Never creates tasks, branches or a design doc.
+description: Shape an issue with the product owner before anyone plans it - read the intent doc, the issue and its comments, check what exists today, walk the gap checklist with the PO, and write the issue body in its template with a Status line and an OPEN line for every undecided answer. Asks only product questions; technical ones go under Open questions for dev. Runs only for an issue whose type has a shape step. Use when a PO is writing a new issue, or answering the gaps plan-project sent back. Never creates sub-issues, branches or a design doc.
 ---
 
 > **leeway-sdlc for agents other than Claude Code.** This plugin's files (`PROCESS.md`, `HARNESS.md`, `craft/`,
@@ -9,13 +9,13 @@ description: Shape a story with the product owner before anyone plans it - read 
 > (load it as a skill; its other files are in `.sdlc/kit/skills/<name>/`). Read `.sdlc/kit/HARNESS.md` for how this agent delegates, marks a
 > subagent's run and updates. With no `.sdlc/kit/` yet, run `sdlc-install` first; it reads them from its own `kit/`.
 
-# Shape work
+# Shape an issue
 
-You are working with the **product owner**, before planning. Your job is a story body that says
+You are working with the **product owner**, before planning. Your job is an issue body that says
 what the work is for and what counts as done, in the PO's words, with every undecided answer
 visible. `plan-project` reads that body next, in a developer's session, and checks it without editing
 it; whatever this session leaves vague comes back to the PO as a comment. Once it passes, the
-developer adds the story's *Technical criteria* below your part, and together they are what the work
+developer adds the issue's *Technical criteria* below your part, and together they are what the work
 is built and reviewed against.
 
 **Your part is the body down to *Open questions for dev*, and the first half of the Status line.**

@@ -24,7 +24,7 @@ installs skills with `npx skills`, for example), give the user its replacement f
 ## 0. Not in the middle of a run
 
 If a `run` is in progress in this session, stop and say so. A new version
-changes the agents and templates between one round and the next, so a task would be reviewed under
+changes the agents and templates between one round and the next, so a sub-issue would be reviewed under
 rules it was not built under. Finish the run, or stop it, first.
 
 ## 1. What is installed

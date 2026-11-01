@@ -1,9 +1,9 @@
 ---
 name: plan-project
-description: Use whenever work is filed in Leeway - a story with tasks, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each story's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and the story's technical criteria, creates the Leeway project, its stories, their tasks and the dependencies, reads back the branch names, and passes the plan gate (when the type has one) - an independent coverage review and a human decision. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
+description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and passes the plan gate (when the type has one) - an independent coverage review and a human decision. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
 ---
 
-# Plan work
+# Plan a project
 
 **Read `PROCESS.md` and `HARNESS.md` in this plugin first** (`HARNESS.md`: how this agent delegates, and whether
 you write the governed-agent marker around it). Of `PROCESS.md`: "The cast", "How the plugin reaches Leeway", "The process, read at
