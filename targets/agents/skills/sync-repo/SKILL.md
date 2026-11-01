@@ -38,7 +38,8 @@ Raising, all together, once steps 0 to 2 have found which copies need an answer:
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
 `question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3. An open one with no
 answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
-remain open. Never write a copy on an unanswered question.
+remain open. Never write a copy on an unanswered question. The `filing-work:` question is the exception:
+step 1 reads its escalation itself, before step 2, and never raises it twice.
 
 ## 0. Before anything
 
@@ -66,12 +67,19 @@ remain open. Never write a copy on an unanswered question.
 `## Repo copies` in `.sdlc/CONFIG.md`: the `Synced to` row, and one `Kept` row per copy the team
 decided to keep. No such section: treat every copy as never synced, and add the section in step 4.
 
-Then the `filing-work:` line of `.sdlc/leeway.md`. **When it has one, it is settled: never ask it
-again.** When it has none (a repo installed before 0.3.0), ask sdlc-install's question 11, pre-filled
-`plan-work`, with the answers `plan-work` and `manual`; in escalation mode its question begins `Sync
-filing-work: to <version>:`, and the resume matches it like a copy's. The contract block is compared only
-once the answer is known, so in escalation mode raise this one alone and stop the turn; the copies are
-compared on resume. The answer is written in step 4.
+Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill the contract block:
+
+- **The line is there** → it is settled; never ask it again.
+- **No `.sdlc/leeway.md` at all** → use `manual` and ask nothing: a repo with no binding files no work
+  in Leeway, and the `manual` fill is the block as it was before 0.3.0. Nothing is written.
+- **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
+  `plan-work` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
+  named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
+  <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
+
+This is the one question raised before the others, because the block cannot be compared without its
+answer; the copies are compared, and their questions raised, once it is answered. The answer fills the
+block in step 2 and is written in step 4.
 
 ## 2. Compare each copy
 
@@ -111,8 +119,8 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
 - `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, friction collector, `filing-work:`,
   the project to nit-collector table), not a copy, and a template change never reaches it. **One narrow
   exception:** a binding key the file lacks (`filing-work:`, step 1) is asked for once, and its answer is
-  added as one `<key>: <answer>` line after the file's last `key: value` line; nothing else in the file is
-  touched.
+  added as one `<key>: <answer>` line directly after the `friction-collector:` line, in the key block at
+  the top of the file; nothing else in the file is touched.
 - `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4).
 - The contract docs under the doc map (`VISION.md`, `TESTING.md` and the rest): they belong to the
   repo from the moment they are generated. If a release needs a change there, its notes say so.
@@ -133,8 +141,8 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   governs every clone. Declined → record it as `Kept` with the reason, and
   say so in the summary.
 
-One question per differing copy and per missing line, and step 1's `filing-work:` question when the binding lacks the line, no more. A copy that is the same, or kept with
-a matching hash, is not asked.
+One question per differing copy and per missing line, and step 1's `filing-work:` question when the
+binding lacks the line, no more. A copy that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
 
@@ -156,10 +164,12 @@ the human to push). In the same change, update `## Repo copies`:
 
 The `Synced to` row is the stamp the session notice reads. Drop a `Kept` row whose copy was taken
 this time. A `filing-work:` answer from step 1 goes into `.sdlc/leeway.md` on this branch, as the
-exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing outside the branch.
+exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing
+outside the branch.
 
 ## Done when
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
-version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had none; and the pull request is open, or the user said
-why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.
+version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
+none; and the pull request is open, or the user said why not. End with one line: the version synced
+to, and each copy as taken, kept or unchanged.

@@ -33,6 +33,13 @@ test('the block template has the placeholder on its own line after the opt-in pa
   assert.ok(block.includes(`${optIn}{{FILING_WORK_RULE}}\n\nPairing turn by turn`));
 });
 
+test('sync-repo fills the placeholder from the binding when it compares the block', () => {
+  const sync = read(join(install, '..', 'sync-repo', 'SKILL.md'));
+  const row = sync.split('\n').find((line) => line.startsWith('| the contract block |'));
+  assert.ok(row, 'sync-repo has no contract-block row');
+  assert.ok(row.includes('`{{FILING_WORK_RULE}}`') && row.includes('`filing-work:`'), row);
+});
+
 test('filled with plan-work, the block carries the rule', () => {
   const filled = fill(block, 'plan-work');
   assert.ok(!filled.includes('{{FILING_WORK_RULE}}'));
