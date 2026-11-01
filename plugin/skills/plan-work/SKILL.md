@@ -227,7 +227,8 @@ folded into one task lose criteria of their own, and the real tasks no hazard na
 A **project** (the plan) holding **issues** (the stories), each holding **sub-issues** (the tasks), plus the
 **Plan record** issue (the nit collector). Bodies go in with `--stdin <field>` from a file by absolute path
 outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id from the `--json` output:
-`project.id` for a project, `issue.ref` for an issue. A title is at most 200 characters.
+`project.id` for a project, `issue.ref` for an issue. A title is at most 200 characters. Every issue gets a
+`--summary` of at most 280 characters: what it is and why, in plain words.
 
 1. **The project: adopt, or create.** A story that is already in a project (`issue get`: `project.id`) is
    planned in that project; adopt it, never duplicate it. Otherwise:
@@ -244,7 +245,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 2. **The Plan record, now, once, in the project:**
 
    ```sh
-   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "Plan record" --status backlog --stdin description <record.md
+   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "Plan record" --summary "<at most 280 characters>" --status backlog --stdin description <record.md
    ```
 
    `<type>` is `chore` when the process has it and it has no `shape`, `plan` or `gate` step; else the first type in
@@ -265,12 +266,14 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 
    Adopting a project that already has a row there: use that collector, and create nothing.
 
-3. **The stories**, in the project, one issue each. A story that exists is adopted. One the work needs and nobody
+3. **The stories**, in the project, one issue each. A story that exists is adopted; when its `issue.summary` is
+   empty, fill one in with `issue update <story> --summary "<at most 280 characters>"`, naming only that field (an
+   update replaces the fields it names). One the work needs and nobody
    wrote is created here only for a type without `shape`; for a type with `shape` it is a step 1 gap (`shape-work`
    creates it). Pass the type explicitly:
 
    ```sh
-   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "<story>" --status backlog --stdin description <story.md
+   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "<story>" --summary "<at most 280 characters>" --status backlog --stdin description <story.md
    ```
 
    The body is the story template from the rule down (the "Notes for the writer" block above it is never
@@ -295,7 +298,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    inheritance; a sub-issue has no children:
 
    ```sh
-   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --parent <story> --title "<task>" --status backlog --stdin description <task.md
+   <cli> --server <server> --as <alias>/planner --json issue create <KEY> --parent <story> --title "<task>" --summary "<at most 280 characters>" --status backlog --stdin description <task.md
    ```
 
    At most 100 sub-issues per issue: a plan that wants more is two stories. The description is at most 5,000
