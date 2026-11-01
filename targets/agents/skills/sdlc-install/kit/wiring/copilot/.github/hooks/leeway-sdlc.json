@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "node .sdlc/kit/hooks/adapters/guard.mjs copilot",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

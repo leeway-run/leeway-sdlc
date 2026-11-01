@@ -5,7 +5,8 @@ description: Plan a piece of work before any code is written - check each story'
 
 # Plan work
 
-**Read `PROCESS.md` in this plugin first**: "The cast", "How the plugin reaches Leeway", "The process, read at
+**Read `PROCESS.md` and `HARNESS.md` in this plugin first** (`HARNESS.md`: how this agent delegates, and whether
+you write the governed-agent marker around it). Of `PROCESS.md`: "The cast", "How the plugin reaches Leeway", "The process, read at
 runtime", "Before the plan: shaping", "The plan gate", "Questions to the human are escalations" and "Records". It is
 the contract this skill executes, and invoking this skill is what opts the session into it.
 
@@ -359,9 +360,11 @@ step), the end of this skill.
 **A type with one**: `issue update <story> --step gate`. You wrote the plan, so you are the one reader who cannot
 check it: an artifact cannot audit itself. So a fresh context does, and a human decides.
 
-### Spawn the divergence reviewer with ids, not a story
+### Delegate to the divergence reviewer with ids, not a story
 
-Spawn `leeway-sdlc:sdlc-divergence-reviewer`. Pass:
+Delegate to the **sdlc-divergence-reviewer** agent, fresh, as `HARNESS.md` describes; where it says
+`governed-marker: required`, run its `on` command first and its `off` command as soon as the agent returns,
+however it returns. Pass:
 
 - The **project id** and the story refs of the plan, or the story ref when the work has no project of its own.
 - The refs of any stories **held at step 1**, named as held, so it lists them rather than tracing them.

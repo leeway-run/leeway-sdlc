@@ -26,6 +26,9 @@
 // BLOCKED, not allowed: nothing legitimate nests that deep, and failing open would let a long
 // `eval eval ...` chain carry a write past the guard. Each script is lexed once, in linear time.
 
+import { realpathSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
 const GOVERNED_AGENT_PREFIX = 'leeway-sdlc:'
 
 const MAX_SCRIPTS = 200
@@ -238,6 +241,33 @@ const writeReason = ({ args, fromXargs }) => {
   return `\`${first} ${second}\` writes`
 }
 
+// The decision for one command a governed agent wants to run, independent of any agent's hook
+// format: `{ block: false }`, or `{ block: true, message }`. Exported for adapters/guard.mjs.
+export const judge = (command) => {
+  if (typeof command !== 'string') return { block: false }
+  let invocations
+  try {
+    invocations = leewayInvocations(command)
+  } catch (err) {
+    if (err instanceof TooComplex) {
+      return { block: true, message: 'Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.' }
+    }
+    return { block: false } // A lexer bug must not turn into a block the agent cannot explain.
+  }
+  for (const call of invocations) {
+    const reason = writeReason(call)
+    if (!reason) continue
+    return {
+      block: true,
+      message:
+        `Blocked: ${reason}, and the orchestrator is the only writer to Leeway.\n` +
+        `You may read: leeway <resource> get|list, leeway whoami, leeway help, leeway version, and --help on any command.\n` +
+        `If the task needs a write, say so in your brief under Uncertainties, or return BLOCKED.`,
+    }
+  }
+  return { block: false }
+}
+
 const main = async () => {
   let input
   try {
@@ -251,27 +281,20 @@ const main = async () => {
   const agentType = input?.agent_type
   if (typeof agentType !== 'string' || !agentType.startsWith(GOVERNED_AGENT_PREFIX)) process.exit(0)
 
-  let invocations
-  try {
-    invocations = leewayInvocations(command)
-  } catch (err) {
-    if (err instanceof TooComplex) {
-      console.error('Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.')
-      process.exit(2)
-    }
-    process.exit(0) // A lexer bug must not turn into a block the agent cannot explain.
-  }
-  for (const call of invocations) {
-    const reason = writeReason(call)
-    if (!reason) continue
-    console.error(
-      `Blocked: ${reason}, and the orchestrator is the only writer to Leeway.\n` +
-        `You may read: leeway <resource> get|list, leeway whoami, leeway help, leeway version, and --help on any command.\n` +
-        `If the task needs a write, say so in your brief under Uncertainties, or return BLOCKED.`,
-    )
+  const verdict = judge(command)
+  if (verdict.block) {
+    console.error(verdict.message)
     process.exit(2)
   }
   process.exit(0)
 }
 
-main()
+// Run as a hook only when executed directly; importing this file (the adapters do) has no effect.
+const isMain = () => {
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
+  } catch {
+    return false
+  }
+}
+if (isMain()) main()

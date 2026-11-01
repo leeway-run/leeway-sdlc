@@ -9,6 +9,11 @@
       "name": "leeway-sdlc",
       "source": "./plugin",
       "description": "An agent SDLC on Leeway: roles, a plan gate, an adversarial implement-review loop, a risk-based evidence ladder, and a process you read from Leeway at runtime."
+    },
+    {
+      "name": "leeway-sdlc-agents",
+      "source": "./targets/agents",
+      "description": "leeway-sdlc for agents other than Claude Code (Codex, Copilot, Gemini CLI, Cursor, OpenCode, Grok Build). In Claude Code, install leeway-sdlc instead."
     }
   ],
   "description": "Plugins from Shiny Ventures for working with Leeway."

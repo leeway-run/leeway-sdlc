@@ -25,6 +25,9 @@
 
 // Only this plugin's own agents are governed. Another plugin's agents, and the orchestrator, are
 // never this hook's business even though it sees their Bash calls.
+import { realpathSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
+
 const GOVERNED_AGENT_PREFIX = 'leeway-sdlc:'
 
 // Bound: a command is judged in at most MAX_SCRIPTS nested scripts (each `sh -c`, `eval`, `$(...)`
@@ -337,6 +340,34 @@ const blockReason = ({ verb, args, globals }) => {
   return null
 }
 
+// The decision for one command a governed agent wants to run, independent of any agent's hook
+// format: `{ block: false }`, or `{ block: true, message }` with the text to show the agent.
+// Exported so the adapters for other agents (adapters/guard.mjs) judge exactly as this hook does.
+export const judge = (command) => {
+  if (typeof command !== 'string') return { block: false }
+  let call
+  let reason
+  try {
+    for (call of gitInvocations(command)) {
+      reason = blockReason(call)
+      if (reason) break
+    }
+  } catch (err) {
+    if (err instanceof TooComplex) {
+      return { block: true, message: 'Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.' }
+    }
+    return { block: false } // A lexer bug must not turn into a block the agent cannot explain.
+  }
+  if (!reason) return { block: false }
+  return {
+    block: true,
+    message:
+      `Blocked: \`git ${call.verb}\` is not available to this subagent -- ${reason}.\n` +
+      `You may \`git add <paths>\` to stage your work, and read history with status, diff, log and show.\n` +
+      `If the task cannot proceed without it, say so in your brief under Uncertainties, or return BLOCKED.`,
+  }
+}
+
 const main = async () => {
   let input
   try {
@@ -352,29 +383,20 @@ const main = async () => {
   const agentType = input?.agent_type
   if (typeof agentType !== 'string' || !agentType.startsWith(GOVERNED_AGENT_PREFIX)) process.exit(0)
 
-  let call
-  let reason
-  try {
-    for (call of gitInvocations(command)) {
-      reason = blockReason(call)
-      if (reason) break
-    }
-  } catch (err) {
-    if (err instanceof TooComplex) {
-      console.error('Blocked: this command nests shells, eval or substitutions too deeply to judge safely. Write it plainly.')
-      process.exit(2)
-    }
-    process.exit(0) // A lexer bug must not turn into a block the agent cannot explain.
-  }
-  if (reason) {
-    console.error(
-      `Blocked: \`git ${call.verb}\` is not available to this subagent -- ${reason}.\n` +
-        `You may \`git add <paths>\` to stage your work, and read history with status, diff, log and show.\n` +
-        `If the task cannot proceed without it, say so in your brief under Uncertainties, or return BLOCKED.`,
-    )
+  const verdict = judge(command)
+  if (verdict.block) {
+    console.error(verdict.message)
     process.exit(2)
   }
   process.exit(0)
 }
 
-main()
+// Run as a hook only when executed directly; importing this file (the adapters do) has no effect.
+const isMain = () => {
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href
+  } catch {
+    return false
+  }
+}
+if (isMain()) main()

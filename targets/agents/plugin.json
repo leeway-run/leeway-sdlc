@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "leeway-sdlc-agents",
+  "version": "0.2.0",
+  "description": "leeway-sdlc for agents other than Claude Code: the skills, and a kit sdlc-install copies into the repo with the subagents and the guard hooks.",
+  "author": {
+    "name": "Shiny Ventures",
+    "url": "https://github.com/leeway-run"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "node .sdlc/kit/hooks/adapters/guard.mjs cursor"
+      }
+    ]
+  }
+}
