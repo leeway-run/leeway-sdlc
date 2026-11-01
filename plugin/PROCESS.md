@@ -256,6 +256,10 @@ block, and stops. **An escalation never moves an issue**; a status changes only 
 
 Every artifact of the loop is a Leeway record. The orchestrator writes each one.
 
+**An issue the agent files always has a summary**: every `issue create` passes `--summary`, at most 280 characters
+saying what the issue is and why, in plain words. An issue a skill adopts with an empty summary gets one with
+`issue update <ref> --summary "…"`, naming only that field.
+
 | Loop artefact | Record |
 |---|---|
 | plan / story / task | project / issue (its type from the process) / sub-issue |
