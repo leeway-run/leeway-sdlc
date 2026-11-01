@@ -192,22 +192,25 @@ definition and a plugin-provided one with the same name is a confusion worth nam
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
 re-run, and a re-run changes only what the human asks to change.
 
-**What the managed block would repeat.** When the instructions file has no `leeway-sdlc:begin` block yet
-(with one, an earlier install already settled this), read it for:
+**What the managed block would repeat.** Read the instructions file, outside the markers, for:
 
-- **an import of the floor**: an `@` line, or a "read it first" line, naming the floor's path;
+- **an import of the floor**: an `@` line, or a "read it first" line, naming the floor's path. Look for it
+  on every run, a re-run included: it decides `{{IMPORT_FLOOR}}` every time (sdlc-install, "Placeholders to
+  fill with care"), after question 13's write;
 - **sections the block repeats**: a heading that reads as one of the block's ("Two ways of working, one
   floor", "Where a new fact goes") or a near-synonym of one ("The floor", "Engineering rules", "Where facts
   go", "Where to write things down").
 
 ```sh
-grep -nE '^@|^#+ ' <instructions-file>
+awk '/leeway-sdlc:begin/,/leeway-sdlc:end/ { next } /^@|^#+ / { print NR ":" $0 }' <instructions-file>
 ```
 
-Record each by line number, and for each section the lines it carries that the block does not (a repo rule,
-a path, a name): those are what question 13 must show before it offers removal. Either found is what
-sdlc-install's question 13 asks about; neither found, nothing is asked. **The floor import found here also
-decides `{{IMPORT_FLOOR}}`** (sdlc-install, "Placeholders to fill with care"), after question 13's write.
+It prints the file's own line numbers and leaves out the managed block, marker lines included, so an `@` line
+it prints is outside the markers. Record each by line number, and for each section the lines it carries that
+the block does not (a repo rule, a path, a name): those are what question 13 must show before it offers
+removal. With no block yet, either found is what sdlc-install's question 13 asks about; neither found, nothing
+is asked. When the file already has a `leeway-sdlc:begin` block, an earlier install settled question 13, so
+skip only its part: the repeated sections, what the block lacks, and the removal.
 
 **An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
 run-story's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the

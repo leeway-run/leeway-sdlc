@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,6 +54,40 @@ test('the floor is imported once: the fill follows the file, and sync-repo fills
   const row = read('sync-repo', 'SKILL.md').split('\n').find((line) => line.startsWith('| the contract block |'));
   assert.ok(row, 'sync-repo has no contract-block row');
   assert.match(row, /`\{\{IMPORT_FLOOR\}\}` as the read-first line when the instructions file already imports the floor outside the markers/);
+});
+
+test('a re-run still looks for the floor import: only question 13 is skipped on an existing block', () => {
+  const start = detection.indexOf('**What the managed block would repeat.**');
+  assert.ok(start >= 0, 'detection.md has no "What the managed block would repeat"');
+  const section = oneLine(detection.slice(start, detection.indexOf('\n**', start + 1)));
+  const importAt = section.indexOf('- **an import of the floor**');
+  assert.ok(importAt >= 0, 'no floor-import check');
+  assert.doesNotMatch(section.slice(0, importAt), /leeway-sdlc:begin/, 'the import check is under the no-block condition');
+  assert.match(section, /an import of the floor\*\*[^;]*on every run, a re-run included[^;]*`\{\{IMPORT_FLOOR\}\}`/);
+  const sentences = section.replace(/```sh[\s\S]*?```/, '').split(/(?<=\.) /);
+  const skips = sentences.filter((sentence) => sentence.includes('leeway-sdlc:begin'));
+  assert.equal(skips.length, 1, 'expected one sentence that skips on an existing block');
+  assert.match(skips[0], /skip only (question 13's|its) part/);
+  for (const sentence of sentences) {
+    assert.ok(!(/skip/i.test(sentence) && /import/i.test(sentence)), `the import check is skipped: "${sentence}"`);
+  }
+});
+
+test('the floor-import scan leaves out the managed block and keeps the file\'s line numbers', () => {
+  const start = detection.indexOf('**What the managed block would repeat.**');
+  const scan = /```sh\n([^\n]*<instructions-file>)\n```/.exec(detection.slice(start));
+  assert.ok(scan, 'the section has no scan command');
+  const dir = mkdtempSync(join(tmpdir(), 'scan-'));
+  try {
+    const block = read('sdlc-install', 'scaffold', 'AGENT-BLOCK.md.tmpl').replace('{{IMPORT_FLOOR}}', '@ENGINEERING.md');
+    const file = `# Repo\n\n@ENGINEERING.md\n\n${block}\n## After\n`;
+    writeFileSync(join(dir, 'CLAUDE.md'), file);
+    const out = execFileSync('bash', ['-c', scan[1].replace('<instructions-file>', 'CLAUDE.md')], { cwd: dir, encoding: 'utf8' });
+    const after = file.split('\n').indexOf('## After') + 1;
+    assert.deepEqual(out.trim().split('\n'), ['1:# Repo', '3:@ENGINEERING.md', `${after}:## After`]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('the branch-prefix count names each branch once and ignores remote-tracking merges', () => {
