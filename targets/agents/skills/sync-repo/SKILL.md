@@ -152,7 +152,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. A second compare then says "the same".
+  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
+  `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
+  compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.
