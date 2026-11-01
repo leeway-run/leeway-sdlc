@@ -202,14 +202,15 @@ re-run, and a re-run changes only what the human asks to change.
   go", "Where to write things down").
 
 ```sh
-grep -nE '^@|^#+ ' <instructions-file>
+awk '/leeway-sdlc:begin/,/leeway-sdlc:end/ { next } /^@|^#+ / { print NR ":" $0 }' <instructions-file>
 ```
 
-Record each by line number, and for each section the lines it carries that the block does not (a repo rule,
-a path, a name): those are what question 13 must show before it offers removal. Either found is what
-sdlc-install's question 13 asks about; neither found, nothing is asked. When the file already has a
-`leeway-sdlc:begin` block, an earlier install settled question 13, so skip only its part: the repeated
-sections, what the block lacks, and the removal.
+It prints the file's own line numbers and leaves out the managed block, marker lines included, so an `@` line
+it prints is outside the markers. Record each by line number, and for each section the lines it carries that
+the block does not (a repo rule, a path, a name): those are what question 13 must show before it offers
+removal. With no block yet, either found is what sdlc-install's question 13 asks about; neither found, nothing
+is asked. When the file already has a `leeway-sdlc:begin` block, an earlier install settled question 13, so
+skip only its part: the repeated sections, what the block lacks, and the removal.
 
 **An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
 run-story's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the

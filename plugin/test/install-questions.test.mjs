@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -64,10 +64,30 @@ test('a re-run still looks for the floor import: only question 13 is skipped on 
   assert.ok(importAt >= 0, 'no floor-import check');
   assert.doesNotMatch(section.slice(0, importAt), /leeway-sdlc:begin/, 'the import check is under the no-block condition');
   assert.match(section, /an import of the floor\*\*[^;]*on every run, a re-run included[^;]*`\{\{IMPORT_FLOOR\}\}`/);
-  const skips = section.split(/(?<=\.) /).filter((sentence) => sentence.includes('leeway-sdlc:begin'));
+  const sentences = section.replace(/```sh[\s\S]*?```/, '').split(/(?<=\.) /);
+  const skips = sentences.filter((sentence) => sentence.includes('leeway-sdlc:begin'));
   assert.equal(skips.length, 1, 'expected one sentence that skips on an existing block');
   assert.match(skips[0], /skip only (question 13's|its) part/);
-  assert.doesNotMatch(skips[0], /import/, 'the skip on an existing block must not cover the import check');
+  for (const sentence of sentences) {
+    assert.ok(!(/skip/i.test(sentence) && /import/i.test(sentence)), `the import check is skipped: "${sentence}"`);
+  }
+});
+
+test('the floor-import scan leaves out the managed block and keeps the file\'s line numbers', () => {
+  const start = detection.indexOf('**What the managed block would repeat.**');
+  const scan = /```sh\n([^\n]*<instructions-file>)\n```/.exec(detection.slice(start));
+  assert.ok(scan, 'the section has no scan command');
+  const dir = mkdtempSync(join(tmpdir(), 'scan-'));
+  try {
+    const block = read('sdlc-install', 'scaffold', 'AGENT-BLOCK.md.tmpl').replace('{{IMPORT_FLOOR}}', '@ENGINEERING.md');
+    const file = `# Repo\n\n@ENGINEERING.md\n\n${block}\n## After\n`;
+    writeFileSync(join(dir, 'CLAUDE.md'), file);
+    const out = execFileSync('bash', ['-c', scan[1].replace('<instructions-file>', 'CLAUDE.md')], { cwd: dir, encoding: 'utf8' });
+    const after = file.split('\n').indexOf('## After') + 1;
+    assert.deepEqual(out.trim().split('\n'), ['1:# Repo', '3:@ENGINEERING.md', `${after}:## After`]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test('the branch-prefix count names each branch once and ignores remote-tracking merges', () => {
