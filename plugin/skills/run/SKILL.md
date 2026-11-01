@@ -780,7 +780,7 @@ Do these, in this order, and nothing else:
 **The next human action is one action, and it is exact.** "Answer the escalation e2 on DRY-2.1, then invoke
 `/leeway-sdlc:run` on DRY-2 again", not "review the findings". A stop whose next step the human has to work out costs
 them the investigation the run already did. The skill is named as `HARNESS.md`'s **commands** spells it
-(`/leeway-sdlc:run` in Claude Code), or as "leeway-sdlc's run skill" where it names skills in words: a bare `run`
+(`/leeway-sdlc:run` in Claude Code), or as leeway-sdlc's `run` skill where it names skills in words: a bare `run`
 can reach another skill of that name. For a `debt` stop the proposals follow the template, one line each.
 
 ### The end
