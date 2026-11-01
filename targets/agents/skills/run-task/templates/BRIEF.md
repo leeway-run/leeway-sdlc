@@ -112,8 +112,8 @@ human will read it:
 ## Friction
 
 A tooling, test-data, local-setup or process gap that cost this round time, one line each: what it cost and what
-would have saved it. You only propose it; the orchestrator files it on the friction collector, and only on a
-human yes. Write "none" when there is none.
+would have saved it. You only propose it; the orchestrator files it as an issue in the friction project, and
+only on a human yes. Write "none" when there is none.
 
 ## Verification
 
