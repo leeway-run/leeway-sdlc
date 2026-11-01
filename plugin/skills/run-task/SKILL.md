@@ -18,7 +18,8 @@ Then the repo's own wiring:
   this at session start; other agents may not). Carry on: it is a notice, not a stop.
 
 - **`.sdlc/leeway.md`**: `server:`, `product:` (the key, `<KEY>` below), `cli:` and the *Nit collectors* table
-  (project id to collector ref) and `friction-collector:`.
+  (project id to collector ref) and `friction-project:` (or, in a legacy binding, `friction-collector:`: see
+  "Land the task").
 - **`.sdlc/CONFIG.md`**: the doc map (with each doc's `real` / `stub` / `absent` state), *Required reading*, the
   lanes and the **gate command**, *Known-red*, and the topology (integration branch, plan branch, per-worktree
   setup, evidence directory).
@@ -482,10 +483,18 @@ On a PASS of a code round.
 4. **Remove the task worktree** and delete the local task branch.
 5. **Friction, only when `run-task` was invoked on its own** (`run-story` harvests the whole story once, at the
    end). Collect every *Friction* line from this task's briefs and verdicts, round 0 included; drop `none`; dedupe
-   against each other and against the comments already on the friction collector (`.sdlc/leeway.md`,
-   `friction-collector:`). Propose what is left as **one escalation** on the sub-issue, as `<alias>/agent` (options "File them" and "File
-   none", the lines in the question's context comment), `--meanwhile` saying nothing waits. File each accepted line
-   as a comment on the collector, and only on a yes. `n/a` there: the proposal is still made, nothing is filed.
+   against each other and against the open issues of the friction project (`friction-project:` in
+   `.sdlc/leeway.md`; `leeway --json issue list <KEY> <friction project>` is one page, and the dedupe reads its
+   open issues only, not the `done` or `cancelled` ones). Propose what is left as **one escalation** on the
+   sub-issue, as `<alias>/agent` (options "File them" and "File none", the lines in the question's context
+   comment), `--meanwhile` saying nothing waits. Only on a yes, file each accepted line as its own issue, the line
+   with its task and round as the description: `leeway --as <alias>/agent issue create <KEY> --projectId <friction
+   project> --type chore --title "…" --status backlog --stdin description <desc.md`. `n/a` there: the proposal is
+   still made, nothing is filed.
+   **Legacy binding**, `friction-collector:` (a ref, or `n/a`) and no `friction-project:` (installed before
+   0.3.0): dedupe against the comments on that issue and file each accepted line as a comment on it, as before;
+   with `n/a` the proposal is still made and nothing is filed. Say once, in the escalation's context comment, that
+   sync-repo migrates the line to a friction project.
 6. **Was it the story's last task?** Every sub-issue of the story `done` or `cancelled` → "The story gate".
    Otherwise the story stays at `build`; nothing is written. The nit collector is an issue of the project, not a
    task: it never counts.

@@ -160,8 +160,8 @@ applied, or "none owed". The orchestrator compares this with the paths the diff 
 
 A tooling, test-data, local-setup or process gap that cost this review time (the slow lane, the missing
 fixture), one line each: what it cost and what would have saved it. Not a finding and not a follow-up row: you
-only propose it, and the orchestrator files it on the friction collector only on a human yes. Write "none" when
-there is none.
+only propose it, and the orchestrator files it as an issue in the friction project only on a human yes. Write
+"none" when there is none.
 
 ## Verification
 

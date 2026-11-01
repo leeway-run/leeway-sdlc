@@ -265,7 +265,7 @@ Every artifact of the loop is a Leeway record. The orchestrator writes each one.
 | dispute needing a human; `run-story` hard stop | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
-| nits / friction | comments on the project's nit collector / the product's friction collector (type chore) |
+| nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
 | status | always `issue update --step` or `--status`; never by iteration or escalation |
 
 ## Where a finding goes
@@ -277,7 +277,7 @@ Not every finding is open work. **If you cannot name the consequence of leaving 
 | Security, isolation or data exposure — any severity. Or a correctness bug reachable in production | **File it now** as an issue. No approval, no delay |
 | Technical debt — the fix is a design decision, not a chore | **Propose it, and file only on a human yes** |
 | Anything else | **One line, as a comment on the nit collector.** No issue |
-| Friction — a tooling, test-data, local-setup or process gap that cost the task time | **Propose it for the friction collector, and file only on a human yes** |
+| Friction — a tooling, test-data, local-setup or process gap that cost the task time | **Propose it for the friction project, and file only on a human yes**, one issue per item |
 
 Without this bar every finding becomes a ticket: most hang off no story, stay open, and some say in their
 own description that nothing is broken. A ticket costs a human's attention; a nit costs a line. A finding
