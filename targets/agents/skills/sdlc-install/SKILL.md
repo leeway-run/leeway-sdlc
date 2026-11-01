@@ -338,9 +338,15 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
   block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
-- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it (`/leeway-sdlc:run` in Claude Code, `$run`
-  in Codex), or "leeway-sdlc's `run` skill" where it names skills in words. It reads the harness, not an answer, so
-  `sync-repo` fills it the same way.
+- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it. The placeholder is replaced by the text
+  inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is
+  added round it. A space just inside the double backticks is Markdown padding, not part of the fill.
+  - `/leeway-sdlc:<skill>` (Claude Code): `` `/leeway-sdlc:run` ``
+  - `$<skill>` (Codex): `` `$run` ``
+  - `/<skill>` (Copilot, Grok): `` `/run` ``
+  - skills invoked by name (Cursor, Gemini, OpenCode): ``leeway-sdlc's `run` skill``
+
+  It reads the harness, not an answer, so `sync-repo` fills it the same way.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
   (these agents do not expand `@` imports). **But when the instructions file already imports the floor
