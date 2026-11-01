@@ -30,7 +30,7 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
 3. **The process.** `<cli> --json process get <KEY>`: the types and their steps. Then the issue
    (`<cli> --json issue get <ref>`): `issue.type`, `issue.step` (an object: `issue.step.id`, or null), `issue.description`, `comments`, `escalations`.
 4. **Does the type shape?** Only when the issue's type has a step of kind `shape`. A type without one (a bug,
-   a chore) is taken as written by `plan-project` or `run-task`: **say so, change nothing, and stop.**
+   a chore) is taken as written by `plan-project` or `run`: **say so, change nothing, and stop.**
 5. **Start.** Decide from content and status, not from the step alone, whether the story is *unplanned*: it has
    no sub-issues (`subIssues` empty), no comment opening `# Technical criteria`, its `issue.status` is `backlog`,
    and `issue.step.id` is empty, `shape` or `plan` (a story `plan-project` sent back lands on `shape`).

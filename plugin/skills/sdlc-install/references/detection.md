@@ -187,7 +187,7 @@ existing `ENGINEERING.md`. Existing agent definitions named `sdlc-implementer`, 
 `sdlc-divergence-reviewer` (in `.claude/agents`, `.codex/agents`, `.github/agents`, `.gemini/agents`,
 `.cursor/agents`, `.opencode/agents` or `.grok/agents`), existing hook files the wiring would merge into, or
 skills (`.claude/skills`, `.agents/skills`, `.github/skills`, `.gemini/skills`, `.opencode/skills`, `.grok/skills`) named
-`shape-project`, `plan-project`, `run-task`, `run-story`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
+`shape-project`, `plan-project`, `run`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
 definition and a plugin-provided one with the same name is a confusion worth naming before it happens.
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
 re-run, and a re-run changes only what the human asks to change.
@@ -213,7 +213,7 @@ is asked. When the file already has a `leeway-sdlc:begin` block, an earlier inst
 skip only its part: the repeated sections, what the block lacks, and the removal.
 
 **An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
-run-story's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the
+run's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the
 missing ones.
 
 ## Leeway

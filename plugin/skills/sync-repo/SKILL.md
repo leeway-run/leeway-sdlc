@@ -38,7 +38,7 @@ step 1 reads its escalation itself, before step 2, and never raises it twice. Th
 
 ## 0. Before anything
 
-- **Not in the middle of a run.** If a `run-story` or `run-task` is in progress in this session,
+- **Not in the middle of a run.** If a `run` is in progress in this session,
   stop: a new template or floor between rounds reviews a task under rules it was not built under.
 - **This repo has `.sdlc/CONFIG.md`.** Without it there is nothing to sync; point at
   the sdlc-install skill and stop.
@@ -101,7 +101,7 @@ Then the friction line of `.sdlc/leeway.md`:
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes"), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
+| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes", and `{{RUN_SKILL}}` from its **commands**), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
 | the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |

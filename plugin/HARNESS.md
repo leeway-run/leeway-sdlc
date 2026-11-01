@@ -24,7 +24,7 @@ marker.
 ## Required reading
 
 `required-reading` (SubagentStart) also injects the *Required reading* rows into the implementer and the reviewer.
-The brief carries them as well (run-task, "Delegate to the implementer"), so the hook is only reinforcement.
+The brief carries them as well (run, "Delegate to the implementer"), so the hook is only reinforcement.
 
 ## Instructions and local notes
 
@@ -33,7 +33,7 @@ The brief carries them as well (run-task, "Delegate to the implementer"), so the
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`), or in
+run's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`), or in
 `.claude/settings.local.json` for one person.
 
 ## Installed version, update and restart

@@ -32,7 +32,7 @@ write to Leeway with it on. It expires on its own after two hours, so a crashed 
 
 ## Required reading
 
-run-task pastes the *Required reading* rows into each brief; no hook injects them here.
+run pastes the *Required reading* rows into each brief; no hook injects them here.
 
 ## Instructions and local notes
 
@@ -50,7 +50,7 @@ After writing them: Run `/hooks-trust` in Grok so it runs `.grok/hooks/leeway-sd
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in `~/.grok/config.toml` or the project's `.grok/` settings (permission rules).
+run's allow-list goes in `~/.grok/config.toml` or the project's `.grok/` settings (permission rules).
 
 ## Installed version, update and restart
 

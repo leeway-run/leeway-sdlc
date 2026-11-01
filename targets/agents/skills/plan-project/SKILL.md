@@ -37,7 +37,7 @@ whatever happened.
 
    | The type has | So |
    |---|---|
-   | no `plan` step | **Say so and stop.** Create no project, issue, comment or step; point at `run-task` for a type with `build`. Never plan a type the process does not plan |
+   | no `plan` step | **Say so and stop.** Create no project, issue, comment or step; point at `run` for a type with `build`. Never plan a type the process does not plan |
    | a `shape` step | step 1, the product check, runs |
    | a `plan` step with `params.designDoc: true` | step 3 writes the design doc |
    | a `gate` step | step 8 runs the plan gate |
@@ -58,7 +58,7 @@ whatever happened.
 
 **Yes** if it spans more than one task, or touches a stated rule in the intent doc, the schema, auth, or an
 ownership boundary. **No** for a one-file fix with an obvious test — create the sub-issue (step 5) and run
-`run-task`. The trigger is the shape of the work, not its size in lines: a two-line change to an isolation
+`run` on it. The trigger is the shape of the work, not its size in lines: a two-line change to an isolation
 predicate needs a plan; a 200-line UI component usually does not.
 
 ## 1. Product check, every story, every time (only when the type has `shape`)
@@ -423,7 +423,7 @@ story.
 
 On resume, read the answer on the story:
 
-- **PASS** → `issue update <story> --status ready`. No step: `run-task` sets the build step when it starts, so a
+- **PASS** → `issue update <story> --status ready`. No step: `run` sets the build step when it starts, so a
   story is never `in_progress` with nobody on it.
 - **PASS WITH DECISIONS** → raise one escalation per QUESTION (the options the report gives, 2 to 5), and stop.
   When every one is answered, change what an answer changes in a description or a task, then `--status ready`.
