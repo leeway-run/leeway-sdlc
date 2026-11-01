@@ -1,7 +1,7 @@
 # The gap checklist
 
-The questions a story must answer before anyone plans it. `shape-work` walks them with the PO;
-`plan-work` step 0 checks a story against them. One source, two readers: edit it here.
+The questions a story must answer before anyone plans it. `shape-project` walks them with the PO;
+`plan-project` step 0 checks a story against them. One source, two readers: edit it here.
 
 **Not every row applies to every story.** First decide which rows apply, from what the story is —
 a list, a form, a single setting, an API change, a background job — using *Applies when*. Only

@@ -16,13 +16,13 @@ repo: `leeway login` keeps the sign-in on the machine.
 `friction-project:` is the id of the product's project that friction is filed into, one issue of type
 `chore` per item, or `n/a` and why. It is the product's standing project, not a plan's.
 
-`filing-work:` is `plan-work` when filing work in Leeway counts as planning, so the managed block tells the
-agent to invoke `plan-work` for it even while pairing, or `manual` when `plan-work` stays an opt-in;
+`filing-work:` is `plan-project` when filing work in Leeway counts as planning, so the managed block tells the
+agent to invoke `plan-project` for it even while pairing, or `manual` when `plan-project` stays an opt-in;
 `sync-repo` asks for it when this line is absent.
 
 ## Nit collectors
 
-One row per project, appended by `plan-work` when it creates or adopts a project. Empty at install.
+One row per project, appended by `plan-project` when it creates or adopts a project. Empty at install.
 
 | Project id | Nit collector |
 |---|---|

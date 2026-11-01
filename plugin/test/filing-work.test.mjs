@@ -19,7 +19,7 @@ function ruleFromSkill() {
 }
 
 function fill(template, filingWork) {
-  if (filingWork === 'plan-work') return template.replace('{{FILING_WORK_RULE}}', ruleFromSkill());
+  if (filingWork === 'plan-project') return template.replace('{{FILING_WORK_RULE}}', ruleFromSkill());
   return template.replace('{{FILING_WORK_RULE}}\n\n', '');
 }
 
@@ -40,11 +40,11 @@ test('sync-repo fills the placeholder from the binding when it compares the bloc
   assert.ok(row.includes('`{{FILING_WORK_RULE}}`') && row.includes('`filing-work:`'), row);
 });
 
-test('filled with plan-work, the block carries the rule', () => {
-  const filled = fill(block, 'plan-work');
+test('filled with plan-project, the block carries the rule', () => {
+  const filled = fill(block, 'plan-project');
   assert.ok(!filled.includes('{{FILING_WORK_RULE}}'));
   assert.ok(filled.includes(`${optIn}**Filing work in Leeway is planning, even while pairing.**`));
-  for (const words of ['invoke\n`plan-work`', '"turn this feedback into tickets"', 'stays opt-in.\n\nPairing']) {
+  for (const words of ['invoke\n`plan-project`', '"turn this feedback into tickets"', 'stays opt-in.\n\nPairing']) {
     assert.ok(filled.includes(words), `rule lacks ${JSON.stringify(words)}`);
   }
   assert.ok(!filled.includes('\n\n\n'));
@@ -54,7 +54,7 @@ test('filled with manual, the block has no trace of the rule and no blank-line s
   assert.ok(skill.includes('delete the placeholder\'s line and the blank line after it'));
   const filled = fill(block, 'manual');
   assert.ok(!filled.includes('{{FILING_WORK_RULE}}'));
-  assert.ok(!/Filing work|filing work|plan-work`\. That/.test(filled), 'manual fill still carries rule text');
+  assert.ok(!/Filing work|filing work|plan-project`\. That/.test(filled), 'manual fill still carries rule text');
   assert.ok(filled.includes(`${optIn}Pairing turn by turn`));
   assert.ok(!filled.includes('\n\n\n'));
 });

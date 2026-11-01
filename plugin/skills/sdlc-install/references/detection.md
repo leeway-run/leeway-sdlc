@@ -187,7 +187,7 @@ existing `ENGINEERING.md`. Existing agent definitions named `sdlc-implementer`, 
 `sdlc-divergence-reviewer` (in `.claude/agents`, `.codex/agents`, `.github/agents`, `.gemini/agents`,
 `.cursor/agents`, `.opencode/agents` or `.grok/agents`), existing hook files the wiring would merge into, or
 skills (`.claude/skills`, `.agents/skills`, `.github/skills`, `.gemini/skills`, `.opencode/skills`, `.grok/skills`) named
-`shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
+`shape-project`, `plan-project`, `run-task`, `run-story`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
 definition and a plugin-provided one with the same name is a confusion worth naming before it happens.
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
 re-run, and a re-run changes only what the human asks to change.
@@ -242,7 +242,7 @@ ls -d docs/plans docs/design docs/designs docs/rfcs plans 2>/dev/null
 ```
 
 An existing directory of design docs is the *Plans directory*; map it. None → propose `docs/plans/`.
-`plan-work` writes each design doc as `<dir>/<ref lower>-<slug>.md`.
+`plan-project` writes each design doc as `<dir>/<ref lower>-<slug>.md`.
 
 ## Local instructions file
 

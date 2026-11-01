@@ -135,9 +135,9 @@ asked in step 5, once the process they compare with has been read.
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
 11. **Filing work.** "Filing work in Leeway (a story with tasks, several issues, anything touching the schema,
-    auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-work for it,
-    even while pairing. Or plan-work stays a manual opt-in?" Pre-filled `plan-work`, or with the
-    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-work` or `manual`.
+    auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
+    even while pairing. Or plan-project stays a manual opt-in?" Pre-filled `plan-project`, or with the
+    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-project` or `manual`.
 12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
     filed as one `chore` issue per item in a project of the product. Use `<project>`, or create one?" Propose
     an existing project whose name says developer experience or friction (`<cli> project list <KEY>`);
@@ -270,7 +270,7 @@ Those three ship as stubs. The others are filled from detection:
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
 - `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-project:`
-  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-project` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
@@ -287,7 +287,7 @@ Those three ship as stubs. The others are filled from detection:
   `HARNESS.md`, "Wiring", lists anything the agent needs the human to do after (trusting hooks, a restart).
 - `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
   `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
-  is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
+  is and is never written to Leeway: `plan-project` strips it. The checked-out files may be CRLF where git stores
   LF; copy them as they are, since `sync-repo` normalises line endings in its compare. **If the
   directory exists, leave it alone** and show its diff against the plugin's copy: a team that edited its
   templates made a decision.
@@ -311,18 +311,19 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   the placeholder line, leave the table with no rows, and say so.
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
-  convention in the history; `plan-work` reads this row.
+  convention in the history; `plan-project` reads this row.
 - **`{{FRICTION_PROJECT}}`** — a project id you have read back from Leeway (`<cli> project list <KEY>
   --json`). **Never invent one.** Creation is one write, only on the human's yes: `<cli> project create <KEY> --name
   "Developer experience" --as <alias>/agent`, then read its id back. No issue is created in it.
-- **`{{FILING_WORK}}`** — `plan-work` or `manual`, the answer to question 11.
-- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-work`, the placeholder
+- **`{{FILING_WORK}}`** — `plan-project` or `manual`, the answer to question 11. **Legacy value:** an existing
+  `filing-work: plan-work` line, written before the skill was renamed, is the same answer as `plan-project`.
+- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-project`, the placeholder
   is replaced by this paragraph, exactly as written here, without the indent:
 
   ```markdown
   **Filing work in Leeway is planning, even while pairing.** Before creating a story with tasks, more than
   one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
-  `plan-work`. That includes adding to an existing project, and requests worded "file issues", "write this
+  `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
   up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
   a one-file fix goes in directly. Running the loop (`run-task`, the reviewers, the merge gates) stays opt-in.
   ```
@@ -359,8 +360,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
-  `plan-work` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
+- Print what to do next: `shape-project` for a product owner to shape a story (when the type has `shape`),
+  `plan-project` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
   task of a planned story unattended, `sdlc-tune` to change the process later.
 
 **Then state what this install did not settle**, as facts that need no decision: anything that needed one

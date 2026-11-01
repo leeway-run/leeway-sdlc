@@ -70,11 +70,12 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 
 Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill the contract block:
 
-- **The line is there** → it is settled; never ask it again.
+- **The line is there** → it is settled; never ask it again. **Legacy value:** `filing-work: plan-work`, written
+  before the skill was renamed, is the same answer as `plan-project`; fill the block with it and leave the line as it is.
 - **No `.sdlc/leeway.md` at all** → use `manual` and ask nothing: a repo with no binding files no work
   in Leeway, and the `manual` fill is the block as it was before 0.3.0. Nothing is written.
 - **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
-  `plan-work` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
+  `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
   named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
   <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
 
@@ -151,7 +152,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. A second compare then says "the same".
+  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
+  `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
+  compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.
