@@ -889,17 +889,19 @@ relaxes it.
    - **Order by the blocking relation** (`blockedBy`), every blocker before what it blocks, and break ties by the
      order of the breakdown in the design doc, else `position`.
    - **Refuse an issue whose blockers are not done**, including a blocker outside the project: skip it and take the
-     next runnable one. If issues remain and none is runnable, or the relation has a cycle, stop and say so in the
-     session, naming the blockers.
+     next runnable one.
    - **Skip an issue its issue run refuses**: one that a precondition of "Run an issue" refuses, which writes nothing
      (its type is not unattended, it is not planned, an earlier `# Run status` is unanswered, or any other). Say in
      the session which issue and which precondition, and take the next runnable issue. It is skipped as an issue
-     whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. A failed
-     Leeway call is not a refusal: it is stop 10. When nothing runnable is left, the run ends there, and step 5
-     reports what it ran and what it skipped.
+     whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
+     skipped for the rest of this run (step 3). A failed Leeway call is not a refusal: it is stop 10.
+   - **Nothing runnable left** (issues remain, and each is blocked, in a blocking cycle, or already skipped in this
+     run): the run ends there, and step 5 reports what it ran, what it skipped and why, naming the blockers.
    - **Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so, and stop.
 3. **Run the next issue**, as "Run an issue" from its preconditions to its end or its stop, with fresh subagents.
-   **Re-read the list before each issue**: Leeway, not this session's memory, says what is left.
+   **Re-read the list before each issue**: Leeway, not this session's memory, says what is left, except the issues
+   this run has already skipped because their issue run refused them. Those stay skipped for the rest of this run:
+   they are the one thing the session keeps besides Leeway.
 4. **Stop at the first issue that stops**: a hard stop or a stop of the sub-issue run (each with its own `# Run
    status` comment and one escalation, as the issue run raises them). Start no further issue. A precondition it
    refuses is not a stop: step 2 skips that issue and the run goes on. An issue whose story gate ends at a `manual`

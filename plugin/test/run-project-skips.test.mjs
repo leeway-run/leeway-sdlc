@@ -60,9 +60,18 @@ test("a project run still stops on an issue run's real stop", () => {
   assert.match(bullet('Skip an issue its issue run refuses'), /A failed Leeway call is not a refusal: it is stop 10\./);
 });
 
+test('a refused issue stays skipped for the rest of the run, past the re-read', () => {
+  assert.match(bullet('Skip an issue its issue run refuses'), /It stays skipped for the rest of this run \(step 3\)\./);
+  assert.match(step('Run the next issue'),
+    /Leeway, not this session's memory, says what is left, except the issues this run has already skipped because their issue run refused them\. Those stay skipped for the rest of this run/);
+  assert.match(bullet('Nothing runnable left'), /each is blocked, in a blocking cycle, or already skipped in this run/);
+});
+
 test('when nothing runnable is left, the run ends and reports what it ran and what it skipped', () => {
-  assert.match(bullet('Skip an issue its issue run refuses'),
-    /When nothing runnable is left, the run ends there, and step 5 reports what it ran and what it skipped\./);
+  assert.match(bullet('Nothing runnable left'),
+    /the run ends there, and step 5 reports what it ran, what it skipped and why, naming the blockers\./);
+  assert.doesNotMatch(bullet('Refuse an issue whose blockers are not done'), /none is runnable|stop and say so/);
+  assert.doesNotMatch(bullet('Skip an issue its issue run refuses'), /When nothing runnable is left/);
   assert.match(step('Say so in the session'), /every issue it skipped and why \(the precondition that refused it/);
   const done = section('Done when');
   const onProject = done.slice(done.indexOf('**On a project:**'));
