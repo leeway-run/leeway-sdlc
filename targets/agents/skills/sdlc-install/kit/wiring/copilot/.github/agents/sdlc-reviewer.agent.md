@@ -119,7 +119,7 @@ never in the follow-up table and never as a finding.
 
 **Friction.** A tooling, test-data, local-setup or process gap that cost this review time (the slow
 lane, the missing fixture) goes under *Friction* in the verdict, one line each: what it cost and what
-would have saved it. You only propose it. The orchestrator files it on the friction collector, and
+would have saved it. You only propose it. The orchestrator files it as an issue in the friction project, and
 only on a human yes.
 
 **State what you did not examine.** A review with no stated limits reads as exhaustive, and none of

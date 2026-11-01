@@ -134,10 +134,10 @@ a finding and not asked.
     auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-work for it,
     even while pairing. Or plan-work stays a manual opt-in?" Pre-filled `plan-work`, or with the
     `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-work` or `manual`.
-12. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
-    filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
-    the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
-    ids, then `<cli> issue list <KEY> <projectId>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
+12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
+    filed as one `chore` issue per item in a project of the product. Use `<project>`, or create one?" Propose
+    an existing project whose name says developer experience or friction (`<cli> project list <KEY>`);
+    otherwise offer to create the project "Developer experience". No "Friction" issue is created. None
     wanted: `n/a` and why.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
@@ -211,8 +211,8 @@ Those three ship as stubs. The others are filled from detection:
 
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
-- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-collector:`,
-  `filing-work:` (question 11) and an empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-project:`
+  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
@@ -254,9 +254,9 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
   convention in the history; `plan-work` reads this row.
-- **`{{FRICTION_COLLECTOR}}`** — a ref you have read back from Leeway. **Never invent one.** Creation is two
-  writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
-  `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
+- **`{{FRICTION_PROJECT}}`** — a project id you have read back from Leeway (`<cli> project list <KEY>
+  --json`). **Never invent one.** Creation is one write, only on the human's yes: `<cli> project create <KEY> --name
+  "Developer experience" --as <alias>/agent`, then read its id back. No issue is created in it.
 - **`{{FILING_WORK}}`** — `plan-work` or `manual`, the answer to question 11.
 - **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-work`, the placeholder
   is replaced by this paragraph, exactly as written here, without the indent:
