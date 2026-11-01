@@ -41,7 +41,7 @@ pre-filled answer as the first option and 2 to 5 options in all, and stop the tu
 Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
 sentence or two) at most 1,000, and the question at most 500.
 
-- **Yes/no questions** (6, 7, 8, 10 and any "Right?"): two options, the pre-filled one first.
+- **Yes/no questions** (6, 7, 8, 10, 11 and any "Right?"): two options, the pre-filled one first.
 - **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
   note" as the fifth.
 - **Question 9** is a batch of yes/no lines: raise one escalation per ambiguous mapping, or post the batch as
@@ -98,7 +98,7 @@ decided", not "not detected".
 
 ## Step 4 — the interview
 
-**At most eleven questions, in this order, each pre-filled from detection or from what the product
+**At most twelve questions, in this order, each pre-filled from detection or from what the product
 already holds.** Confirm-or-correct, never open-ended. A question whose answer detection settled is shown as
 a finding and not asked.
 
@@ -136,7 +136,11 @@ a finding and not asked.
 10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
-11. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
+11. **Filing work.** "Filing work in Leeway (a story with tasks, several issues, anything touching the schema,
+    auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-work for it,
+    even while pairing. Or plan-work stays a manual opt-in?" Pre-filled `plan-work`, or with the
+    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-work` or `manual`.
+12. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
     filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
     the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
     ids, then `<cli> issue list <KEY> <projectId>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
@@ -213,12 +217,12 @@ Those three ship as stubs. The others are filled from detection:
 
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
-- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-collector:` and an
-  empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-collector:`,
+  `filing-work:` (question 11) and an empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
-  and `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
+  and `leeway-sdlc:end`, `{{FILING_WORK_RULE}}` filled from the `filing-work:` just written. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
 - `.gitignore` lines `.worktrees/`, the local-notes file and `.sdlc/.governed/`, each only if absent.
 - **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
@@ -259,6 +263,21 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **`{{FRICTION_COLLECTOR}}`** — a ref you have read back from Leeway. **Never invent one.** Creation is two
   writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
   `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
+- **`{{FILING_WORK}}`** — `plan-work` or `manual`, the answer to question 11.
+- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-work`, the placeholder
+  is replaced by this paragraph, exactly as written here, without the indent:
+
+  ```markdown
+  **Filing work in Leeway is planning, even while pairing.** Before creating a story with tasks, more than
+  one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
+  `plan-work`. That includes adding to an existing project, and requests worded "file issues", "write this
+  up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
+  a one-file fix goes in directly. Running the loop (`run-task`, the reviewers, the merge gates) stays opt-in.
+  ```
+
+  For `manual`, delete the placeholder's line and the blank line after it, so the opt-in paragraph is
+  followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
+  block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
