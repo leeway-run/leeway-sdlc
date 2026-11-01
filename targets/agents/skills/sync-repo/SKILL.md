@@ -66,6 +66,13 @@ remain open. Never write a copy on an unanswered question.
 `## Repo copies` in `.sdlc/CONFIG.md`: the `Synced to` row, and one `Kept` row per copy the team
 decided to keep. No such section: treat every copy as never synced, and add the section in step 4.
 
+Then the `filing-work:` line of `.sdlc/leeway.md`. **When it has one, it is settled: never ask it
+again.** When it has none (a repo installed before 0.3.0), ask sdlc-install's question 11, pre-filled
+`plan-work`, with the answers `plan-work` and `manual`; in escalation mode its question begins `Sync
+filing-work: to <version>:`, and the resume matches it like a copy's. The contract block is compared only
+once the answer is known, so in escalation mode raise this one alone and stop the turn; the copies are
+compared on resume. The answer is written in step 4.
+
 ## 2. Compare each copy
 
 **At most the copies in this table. There is no scan of the repo for others.**
@@ -74,7 +81,7 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes") |
+| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes"), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md` (sdlc-install, "Placeholders to fill with care") |
 | the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
@@ -101,8 +108,11 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
 
 **Never synced, never compared, never opened for writing:**
 
-- `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, friction collector, the project
-  to nit-collector table), not a copy, and a template change never reaches it.
+- `.sdlc/leeway.md`. It is the binding (server, product key, `cli:`, friction collector, `filing-work:`,
+  the project to nit-collector table), not a copy, and a template change never reaches it. **One narrow
+  exception:** a binding key the file lacks (`filing-work:`, step 1) is asked for once, and its answer is
+  added as one `<key>: <answer>` line after the file's last `key: value` line; nothing else in the file is
+  touched.
 - `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4).
 - The contract docs under the doc map (`VISION.md`, `TESTING.md` and the rest): they belong to the
   repo from the moment they are generated. If a release needs a change there, its notes say so.
@@ -123,7 +133,7 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   governs every clone. Declined → record it as `Kept` with the reason, and
   say so in the summary.
 
-One question per differing copy and per missing line, no more. A copy that is the same, or kept with
+One question per differing copy and per missing line, and step 1's `filing-work:` question when the binding lacks the line, no more. A copy that is the same, or kept with
 a matching hash, is not asked.
 
 ## 4. One branch, one pull request
@@ -145,10 +155,11 @@ the human to push). In the same change, update `## Repo copies`:
 ```
 
 The `Synced to` row is the stamp the session notice reads. Drop a `Kept` row whose copy was taken
-this time. Write nothing to the repo without the answer for that copy, and nothing outside the branch.
+this time. A `filing-work:` answer from step 1 goes into `.sdlc/leeway.md` on this branch, as the
+exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing outside the branch.
 
 ## Done when
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
-version; `.sdlc/leeway.md` is byte-identical to before; and the pull request is open, or the user said
+version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had none; and the pull request is open, or the user said
 why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.

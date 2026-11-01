@@ -67,7 +67,8 @@ version, numerically by major, minor, patch:
   spells it). The session notice reads the same row.
 
 This line is a statement, not a question, so it is the same wherever the repo's contract sends
-questions.
+questions. The same goes for a binding key `.sdlc/leeway.md` lacks, such as `filing-work:`: sync-repo
+asks for it, once, and this skill never does.
 
 **Never diff, offer or write a repo file here.** When everyone who updates is offered the same
 diffs, two people open the same PR, and a copy the team decided to keep is asked about at every
