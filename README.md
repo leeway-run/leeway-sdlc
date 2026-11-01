@@ -22,10 +22,34 @@ Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions. It 
 command in `.sdlc/leeway.md` (`server:` and `cli:`). For a server other than `app.leeway.run`, log in with
 `leeway login --server <url>`.
 
+## Other agents
+
+Codex, GitHub Copilot (CLI and VS Code), Gemini CLI, Cursor, OpenCode and Grok Build install
+`targets/agents/`, a package generated from `plugin/` by `node scripts/build-targets.mjs`. It contains the same
+skills, plus a kit. `sdlc-install` copies the kit into the repo as `.sdlc/kit/`, together with that agent's
+subagents and a hook that runs the git and Leeway guards. The per-agent install commands are in
+[agent-setup/prompt.md](agent-setup/prompt.md), which is also the page the onboarding snippet points an agent at:
+
+```
+Fetch and execute the instructions to set me up for Leeway from
+https://leeway.run/agent-setup/prompt.md
+```
+
+What differs per agent (how it delegates, how the guards tell a subagent's call from the orchestrator's, where
+its instructions live, how it updates) is in that agent's `HARNESS.md`. Claude Code's is
+[plugin/HARNESS.md](plugin/HARNESS.md). The rest are generated from [scripts/targets.mjs](scripts/targets.mjs).
+> **Tested with Claude Code only.** Support for the agents above is built in, but so far it has only been
+> tested with Claude Code. Verified support will come later. Until then, some details come from each agent's docs
+> and have not been measured. If you run into an issue, let us know:
+> [GitHub issues](https://github.com/leeway-run/leeway-sdlc/issues).
+>
+> [docs/targets/](docs/targets/README.md) is the check we will run for each agent before calling it verified.
+
 ## Status
 
 The manifests, `plugin/PROCESS.md`, the craft doc, the hooks, the agents, the templates and the skills (including
-`/leeway-sdlc:sdlc-install`, used above) are in the plugin. The `0.1.0` tag is made by the release task.
+`/leeway-sdlc:sdlc-install`, used above) are in the plugin. Support for other agents is a preview from 0.2.0
+(see *Other agents*).
 
 ## Versioning
 

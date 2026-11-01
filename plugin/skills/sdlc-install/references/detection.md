@@ -142,9 +142,12 @@ near-synonyms, which are where the real matches usually are:
 
 ## Collisions
 
-An existing contract file (`CLAUDE.md`), and whether it already imports anything or already carries a
-`leeway-sdlc:begin` block. An existing `ENGINEERING.md`. Existing `.claude/agents` named
-`sdlc-implementer`, `sdlc-reviewer` or `sdlc-divergence-reviewer`, or `.claude/skills` named
+An existing contract file (the instructions file `HARNESS.md` names: `CLAUDE.md`, `AGENTS.md` or
+`GEMINI.md`), and whether it already imports anything or already carries a `leeway-sdlc:begin` block. An
+existing `ENGINEERING.md`. Existing agent definitions named `sdlc-implementer`, `sdlc-reviewer` or
+`sdlc-divergence-reviewer` (in `.claude/agents`, `.codex/agents`, `.github/agents`, `.gemini/agents`,
+`.cursor/agents`, `.opencode/agents` or `.grok/agents`), existing hook files the wiring would merge into, or
+skills (`.claude/skills`, `.agents/skills`, `.github/skills`, `.gemini/skills`, `.opencode/skills`, `.grok/skills`) named
 `shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
 definition and a plugin-provided one with the same name is a confusion worth naming before it happens.
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
@@ -181,10 +184,11 @@ An existing directory of design docs is the *Plans directory*; map it. None → 
 ## Local instructions file
 
 ```sh
-git check-ignore -q CLAUDE.local.md && echo ignored || echo NOT ignored
+git check-ignore -q <local-notes-file> && echo ignored || echo NOT ignored
 ```
 
-The contract block tells people to put per-developer facts in `CLAUDE.local.md`. **If it is not
+`<local-notes-file>` is `HARNESS.md`'s (`CLAUDE.local.md` for Claude Code, `.sdlc/local.md` otherwise). The
+contract block tells people to put per-developer facts there. **If it is not
 ignored, that is a finding**: the `.gitignore` lines in the plan cover it. Never write that it is
 ignored when the check says it is not.
 

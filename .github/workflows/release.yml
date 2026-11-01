@@ -25,7 +25,10 @@ jobs:
           node-version: 22
 
       - name: Tests
-        run: node --test "plugin/hooks/*.test.mjs" "plugin/test/*.test.mjs"
+        run: node --test "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs" "plugin/test/*.test.mjs" "scripts/*.test.mjs"
+
+      - name: Generated package is up to date
+        run: node scripts/build-targets.mjs --check
 
       - name: Manifests parse and agree
         run: node .github/scripts/check-manifests.mjs

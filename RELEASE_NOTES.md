@@ -1,5 +1,75 @@
 # Release notes
 
+## 0.2.0
+
+leeway-sdlc now runs in agents other than Claude Code: OpenAI Codex CLI, GitHub Copilot (CLI and VS Code agent
+mode), Google Gemini CLI, Cursor, OpenCode and xAI Grok Build. **It has been tested with Claude Code only.** Support
+for the other agents is built in but not yet verified. Verified support will come later, and issues are welcome at
+https://github.com/leeway-run/leeway-sdlc/issues (see *Known limits*). Claude Code behaves as before.
+
+- **One source, a generated package.** `plugin/` is still the only source and the Claude Code plugin.
+  `node scripts/build-targets.mjs` generates `targets/agents/` from it. That package holds the same skills, plus a
+  kit that `sdlc-install` copies into the repo as `.sdlc/kit/`. The kit contains `PROCESS.md`, the craft doc, the
+  agents, the guards, one `HARNESS.md` per agent, and each agent's wiring: its subagent files and a hook that runs
+  the guards. CI fails when the committed package differs from a fresh build.
+- **`HARNESS.md`.** Every mechanism that depends on the agent now lives in this file:
+  - how to delegate to a named agent;
+  - how the guards recognise a subagent's call;
+  - the instructions file and the local-notes file;
+  - where an unattended run's allow-list goes;
+  - how to update and restart.
+
+  The skills read it instead of naming Claude Code. Claude Code's is `plugin/HARNESS.md`.
+- **The guards for other agents.** `git-guard` and `leeway-guard` now export `judge(command)`.
+  `hooks/adapters/guard.mjs` reads each agent's hook payload and asks the same two cores, so no judging is
+  duplicated. In agents whose hooks do not say which agent made a call, the orchestrator marks the subagent's run
+  with `hooks/adapters/governed.mjs on|off`. Every shell call in that window is judged as the subagent's. The
+  marker expires after two hours.
+- **Required reading travels in the brief.** run-task pastes the *Required reading* rows into every implementer
+  and reviewer prompt. The Claude Code SubagentStart hook still injects them as well.
+- **The contract block** template is now `AGENT-BLOCK.md.tmpl`, renamed from `CLAUDE-BLOCK.md.tmpl`. It goes into
+  the agent's instructions file: `CLAUDE.md`, `AGENTS.md` or `GEMINI.md`. For Claude Code, the filled-in block is
+  the same as in 0.1.x.
+- **Onboarding page.** `agent-setup/prompt.md` is generated with the package. It is the page the "Fetch and execute
+  the instructions to set me up for Leeway" snippet points an agent at.
+
+### Upgrading a repo
+
+A minor release: a repo refreshes copies it took from the plugin. One person runs the sync-repo skill.
+
+- **The contract block** compares against the renamed template. The filled-in text is unchanged for Claude Code,
+  so expect "the same". A `Kept` row recorded against `CLAUDE-BLOCK.md.tmpl` no longer matches a hash and is asked
+  about once more.
+- **A new `.gitignore` line**, `.sdlc/.governed/`, is offered.
+- **A repo that is also worked in another agent** runs that agent's `sdlc-install` once. The run adds `.sdlc/kit/`
+  and that agent's wiring, and the Claude Code setup is left as it was.
+
+### How it was checked
+
+- E2 hooks: `node --test plugin/hooks/*.test.mjs plugin/hooks/adapters/*.test.mjs plugin/test/*.test.mjs`
+  passes. The Claude Code cases are unchanged. The new adapter cases cover one payload shape per agent, identity,
+  `--governed`, the marker, its expiry and the marker directory being off limits.
+- E2 package: `node --test scripts/build-targets.test.mjs` builds the package and lays it into a temporary repo
+  the way `sdlc-install` does. It then runs each agent's guard hook exactly as wired: the orchestrator is allowed,
+  a commit or a Leeway write is blocked under the marker, a read is allowed. It also checks Copilot's agent-level
+  hook, and loads and calls the OpenCode plugin.
+- Not checked: any of the six agents themselves. None was installed where this was built.
+
+### Known limits
+
+- **Unmeasured.** Payload shapes, delegation by name and the install commands come from each agent's docs (2026-11).
+  `docs/targets/README.md` is the spike that measures them. The items it names are:
+  - whether Codex selects a custom agent by name;
+  - the shape of Copilot's agent-level `hooks:`;
+  - the `npx skills add …/tree/main/targets/agents/skills` subpath form;
+  - Gemini under Antigravity CLI;
+  - the name of Grok's delegation tool.
+- **The marker is weaker than Claude Code's attribution.** While it is live, the orchestrator is judged too, and
+  a determined subagent can run `governed.mjs off`. Where a spike shows a payload that names the agent, that agent
+  moves to identity-based scoping.
+- **Trust steps.** Codex and Grok run a project hook only after the user trusts it. Grok's hooks fail open.
+- **Not supported:** the Copilot cloud coding agent, and the community `grok-dev` CLI.
+
 ## 0.1.2
 
 The `leeway` CLI is published to npm as `@leeway-run/cli` and signs in to `https://app.leeway.run` by default. The

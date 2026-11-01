@@ -9,7 +9,15 @@ You are configuring a repo and a Leeway product, not writing the repo's code. **
 second, ask third, write last**, and show the whole plan before writing any file.
 
 Read `PROCESS.md` in this plugin before you start ("The cast", "How the plugin reaches Leeway", "The
-process, read at runtime"). You are about to make claims in `.sdlc/CONFIG.md` that the loop will trust
+process, read at runtime"), and `HARNESS.md`.
+
+**Which agent this is.** `HARNESS.md` says `agent: claude` in the Claude Code plugin: that settles it. In the
+package for other agents it says `agent: any`, and this skill's `kit/harness/` has one `<agent>.md` per agent
+it supports (`codex`, `copilot`, `gemini`, `cursor`, `opencode`, `grok`). Then ask, pre-filled with the agent
+you are running in: "This repo will be worked in `<agent>`. Right?" (Another agent later is another install
+run: the wiring of each is additive.) From here on, **`HARNESS.md` means `kit/harness/<agent>.md`**: it gives
+the instructions file, the local-notes file, how the floor is imported, and the wiring to write. A repo used
+from Claude Code and another agent gets both: the plugin for Claude Code, this kit for the other. You are about to make claims in `.sdlc/CONFIG.md` that the loop will trust
 absolutely.
 
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call. Below,
@@ -119,8 +127,9 @@ a finding and not asked.
 9. **Ambiguous doc mappings.** Batched, one line each: "`<file>` plays the role of `<doc>`. Yes?" **Never
    ask about an exact-name match, and never ask when nothing plausible exists**: generate the stub and say
    so.
-10. **The contract file.** "Patch `CLAUDE.md` with the managed block, or hand the block over to paste?"
-    Default to patch when `CLAUDE.md` exists without the block, and to create it when there is none.
+10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
+    paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
+    Default to patch when it exists without the block, and to create it when there is none.
 11. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
     filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
     the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
@@ -157,8 +166,9 @@ Skipped when question 2 was (d). Otherwise, and only after the human has answere
 
 ## Step 6 — show the plan, then write
 
-Print every path with `create`, `map` or `patch` and **ask once**. `patch` is only ever `CLAUDE.md` and
-`.gitignore`, always as a marked block or appended lines, always shown as a diff first.
+Print every path with `create`, `map` or `patch` and **ask once**. `patch` is only ever the instructions file,
+`.gitignore`, and an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
+`opencode.json`), always as a marked block, appended lines or added entries, always shown as a diff first.
 
 **Never rewrite a doc that already exists.** A mapping is a row in `CONFIG.md`, not an edit.
 
@@ -201,10 +211,18 @@ Those three ship as stubs. The others are filled from detection:
   empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
-- The managed block from `scaffold/CLAUDE-BLOCK.md.tmpl` into `CLAUDE.md`, between `leeway-sdlc:begin` and
-  `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
+- The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
+  and `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
-- `.gitignore` lines `.worktrees/` and `CLAUDE.local.md`, each only if absent.
+- `.gitignore` lines `.worktrees/`, the local-notes file and `.sdlc/.governed/`, each only if absent.
+- **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
+  directory to `.sdlc/kit/` whole, then copy `kit/harness/<agent>.md` over `.sdlc/kit/HARNESS.md`, so every
+  other skill finds the plugin's files and this harness there. **It is committed**: a teammate who installs
+  the skills gets the loop from the repo. Then write the agent's **wiring**: every file under
+  `kit/wiring/<agent>/` to the same path from the repo root (the subagents and the hook that runs
+  `.sdlc/kit/hooks/adapters/guard.mjs`). A wiring file that already exists is a merge, never an overwrite: for
+  JSON, add the `leeway-sdlc` entries and keep the rest; for anything else, show the diff and ask.
+  `HARNESS.md`, "Wiring", lists anything the agent needs the human to do after (trusting hooks, a restart).
 - `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
   `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
   is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
@@ -217,7 +235,7 @@ Those three ship as stubs. The others are filled from detection:
 
 **Stamp** `Generated <date> by leeway-sdlc <version>.` near the top of `CONFIG.md` and `leeway.md`, and the
 row `| Synced to | <version> |` under `## Repo copies` in `CONFIG.md`. `<version>` is this plugin's
-`version` in `.claude-plugin/plugin.json`. The session-start notice reads that row. A copy you left alone
+`version:` line in `HARNESS.md`. The session-start notice reads that row. A copy you left alone
 because it differs gets a *Kept* row with the human's reason and `git hash-object` of the plugin's copy, so
 `sync-repo` does not ask about it again until that copy changes.
 
@@ -225,7 +243,9 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 
 - **`{{REQUIRED_READING_ROWS}}`** — one row per area whose conventions live in a skill or rule file, as
   `` | `<glob>` | `<file>`, `<file>` | <why> | ``. Find them; never invent one: a contract-file line that
-  routes an area to skills, and every `.claude/rules/*.md` with a `paths:` frontmatter. None found → delete
+  routes an area to skills, every `.claude/rules/*.md` with a `paths:` frontmatter, every
+  `.github/instructions/*.instructions.md` with an `applyTo:`, every `.cursor/rules/*.mdc` with `globs:`, and
+  every `.grok/rules/*.md`. None found → delete
   the placeholder line, leave the table with no rows, and say so.
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
@@ -234,8 +254,13 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
   `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
-- **`CLAUDE.local.md`** — run `git check-ignore -q CLAUDE.local.md && echo ignored || echo NOT ignored`
-  after the `.gitignore` write and print the answer. Never claim it is ignored when it is not.
+- **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
+  the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
+  (these agents do not expand `@` imports). Where it also names a settings entry (OpenCode's `instructions`
+  in `opencode.json`), add the path there too.
+- **`{{LOCAL_NOTES_FILE}}`** — `HARNESS.md`'s **local-notes-file**. Run `git check-ignore -q <it> && echo
+  ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Never claim it is ignored
+  when it is not.
 
 ## Step 7 — verify, and say what you did not do
 
@@ -250,7 +275,10 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   legitimate text (a Secrets section, the per-story budget) and is not a hit.
 - `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
-- Confirm `CLAUDE.md` loads the floor (the `@` line names an existing file).
+- Confirm the instructions file loads the floor (the `@` line, or the read-first line, names an existing file).
+- Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
+  `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
+  and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
 - If the evidence directory is gitignored, say that evidence has nowhere durable to live and let the human
   decide.
 - Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
@@ -258,6 +286,6 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   task of a planned story unattended, `sdlc-tune` to change the process later.
 
 **Then state what this install did not settle.** Which docs are stubs, which CI claims are unverified, the
-`CLAUDE.local.md` answer, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
+local-notes-file answer, the trust or restart steps `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
 cast") and anything the human declined. That list is the honest starting position, and it is more useful
 than a success message.

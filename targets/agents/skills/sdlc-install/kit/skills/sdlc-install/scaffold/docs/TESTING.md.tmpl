@@ -1,0 +1,38 @@
+# Testing
+
+## The idiom
+
+{{TEST_IDIOM}}
+
+State it explicitly even when it feels obvious. An agent that assumes the wrong runner writes a test
+that cannot run.
+
+## The lanes
+
+**A lane is a command, not a concept.** If you cannot run it, it is not a lane.
+
+| Lane | Command | What it needs | In CI? |
+|---|---|---|---|
+{{LANE_TABLE}}
+
+## Which lane does this change owe?
+
+| If your change touches… | It owes a test in… | Notes |
+|---|---|---|
+| | | |
+
+**When the answer is not on this table, ask rather than guess.**
+
+{{RUNNER_ARRAY_SECTION}}
+
+## What CI actually covers
+
+{{CI_COVERAGE}}
+
+Read this off the workflow, not off memory. A doc's claim about what CI runs goes stale the moment
+the workflow changes, and nothing tells you it has.
+
+## The obligation
+
+**Never disable, skip, or delete a test to make a diff clean.** If one genuinely must go, the reason
+goes in the change that removes it, and an unexplained removal is a blocker at review.

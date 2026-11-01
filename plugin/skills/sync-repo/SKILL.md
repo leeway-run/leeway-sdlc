@@ -1,11 +1,11 @@
 ---
 name: sync-repo
-description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in CLAUDE.md, and the gitignore lines - one diff and one question per copy, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after /leeway-sdlc:update. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
+description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
 ---
 
 # Sync the repo with this release
 
-The installer copied some plugin files into the repo, and `/leeway-sdlc:update` never touches them:
+The installer copied some plugin files into the repo, and the update skill never touches them:
 it runs once per developer, and a repo change offered to everyone gets made twice. This skill is the
 repo's half, **run once per release, by one person**. It changes the repo only through one pull
 request, and only with an answer per copy.
@@ -39,10 +39,12 @@ remain open. Never write a copy on an unanswered question.
 - **Not in the middle of a run.** If a `run-story` or `run-task` is in progress in this session,
   stop: a new template or floor between rounds reviews a task under rules it was not built under.
 - **This repo has `.sdlc/CONFIG.md`.** Without it there is nothing to sync; point at
-  `/leeway-sdlc:sdlc-install` and stop.
-- **The version is this plugin's own**: `version` in `.claude-plugin/plugin.json` in this plugin.
-  If `claude plugin list --json` shows a newer `leeway-sdlc` installed, this session has not
-  restarted since `/leeway-sdlc:update`: say so and stop, or you would sync to the old release.
+  the sdlc-install skill and stop.
+- **The version is this plugin's own**: the `version:` line of `HARNESS.md` in this plugin. If the
+  **installed** command in `HARNESS.md` shows a newer `leeway-sdlc` installed, this session has not
+  restarted since the update: say so and stop, or you would sync to the old release. (Where
+  `HARNESS.md` says the plugin files are `.sdlc/kit/`, "this plugin" is the freshly installed
+  `sdlc-install` skill's `kit/` directory, and `.sdlc/kit/` is a copy being synced.)
 - **Nobody is doing it already.** The Leeway CLI cannot list pull requests, so look in git:
   `git ls-remote --heads origin` for a branch named exactly as in step 4, and, where `gh` is
   installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. A branch whose
@@ -66,11 +68,13 @@ decided to keep. No such section: treat every copy as never synced, and add the 
 |---|---|---|
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
-| the contract block | in `CLAUDE.md`, from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/CLAUDE-BLOCK.md.tmpl`, the whole file, marker lines and their text included, with `{{ENGINEERING_PATH}}` replaced by the path the block's own `@` import uses |
-| the `.gitignore` lines | `git check-ignore -q .worktrees/` and `git check-ignore -q CLAUDE.local.md`, one at a time | a `.worktrees/` line and a `CLAUDE.local.md` line in `.gitignore` |
+| the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes") |
+| the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
+| the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
+| the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
 
 Compare with `diff -u --strip-trailing-cr <repo copy> <plugin copy>`, so a CRLF checkout does not show every
-line changed; for the contract block, the repo's span (`sed -n '/leeway-sdlc:begin/,/leeway-sdlc:end/p' CLAUDE.md`)
+line changed; for the contract block, the repo's span (`sed -n '/leeway-sdlc:begin/,/leeway-sdlc:end/p' <instructions-file>`)
 against the filled-in template. Each copy is one of:
 
 - **the same** → nothing to do;
@@ -82,7 +86,8 @@ against the filled-in template. Each copy is one of:
 
 **The Kept hash** is the first 12 characters of `tr -d '\r' < <file> | git hash-object --stdin`: the
 file with CRs stripped, so a CRLF and an LF checkout of one release give the same hash. `<file>` is the
-plugin copy; for the contract block it is the template file (`CLAUDE-BLOCK.md.tmpl`, unfilled); a
+plugin copy; for the contract block it is the template file (`AGENT-BLOCK.md.tmpl`, unfilled); for the kit,
+`git hash-object` of the sorted list of its files' hashes; a
 `.gitignore` line has no plugin file, so its `Kept` row carries `-`, and is kept until the line is added.
 
 The diff alone does not tell you whether the release changed the plugin's copy or the team edited
@@ -107,8 +112,9 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
   now differs on purpose.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
-  `CLAUDE.local.md`, account ids and local paths the contract block sends there get committed; without
-  `.worktrees/`, a worktree is staged by accident. Declined → record it as `Kept` with the reason, and
+  the local-notes file, account ids and local paths the contract block sends there get committed; without
+  `.worktrees/`, a worktree is staged by accident; without `.sdlc/.governed/`, a live marker is committed and
+  governs every clone. Declined → record it as `Kept` with the reason, and
   say so in the summary.
 
 One question per differing copy and per missing line, no more. A copy that is the same, or kept with

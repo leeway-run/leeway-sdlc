@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .sdlc/kit/hooks/adapters/guard.mjs codex"
+          }
+        ]
+      }
+    ]
+  }
+}

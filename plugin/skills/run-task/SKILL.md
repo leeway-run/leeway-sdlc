@@ -5,12 +5,17 @@ description: Run one task (a Leeway sub-issue) through the implement-review loop
 
 # Run a task
 
-**Read `PROCESS.md` in this plugin first**: "The cast", "How the plugin reaches Leeway", "The process, read at
+**Read `PROCESS.md` and `HARNESS.md` in this plugin first.** `HARNESS.md` says how this agent delegates, whether
+you write the governed-agent marker, and where the plugin's files are. Of `PROCESS.md`: "The cast", "How the plugin reaches Leeway", "The process, read at
 runtime", "The loop", "Questions to the human are escalations", "Records" and "Where a finding goes". It is the
 contract this skill executes, and invoking this skill is what opts the session into it. Read the
 craft doc (`craft/HOW-WE-CHANGE-CODE.md`) too: it binds you as it binds everyone.
 
 Then the repo's own wiring:
+
+- **The version.** If the `Synced to` row under `## Repo copies` in `.sdlc/CONFIG.md` is older than `HARNESS.md`'s
+  `version:`, say once that the repo's copies are behind and the sync-repo skill brings them up (Claude Code says
+  this at session start; other agents may not). Carry on: it is a notice, not a stop.
 
 - **`.sdlc/leeway.md`**: `server:`, `product:` (the key, `<KEY>` below), `cli:` and the *Nit collectors* table
   (project id to collector ref) and `friction-collector:`.
@@ -35,8 +40,11 @@ the iteration and the brief `<alias>/implementer`, the findings and the verdict 
 a later session carries that session's alias, and the thread shows the handover. Reads carry no `--as`.
 
 **Git is enforced by a hook, Leeway by a hook and by prose.** `git-guard` blocks a governed agent's git writes and
-`leeway-guard` blocks its `leeway` call whose verb is outside `get|list|whoami|help|version` (a governed agent is one
-whose type starts `leeway-sdlc:`). The hook is the mechanism and the prose is the rule: it does not see a raw HTTP
+`leeway-guard` blocks its `leeway` call whose verb is outside `get|list|whoami|help|version`. Which calls count as a
+governed agent's depends on the harness: `HARNESS.md`, "Governed-agent marker". Where it says `governed-marker:
+required`, run its `on` command immediately before every delegation in this skill and its `off` command as soon as
+the agent returns, **including when it fails or returns BLOCKED**: while the marker is live the guards treat every
+shell call as the subagent's, yours included, so never commit, push or write to Leeway with it on. The hook is the mechanism and the prose is the rule: it does not see a raw HTTP
 call, a script the agent wrote and then runs, or another plugin's agent. So every subagent prompt carries the
 read-only paragraph in "Delegate to the implementer", you give a subagent no `--as`, no token and no server
 override, and you never paste a credential into a prompt. Hold the line yourself and know that you are.
@@ -228,7 +236,8 @@ removing the skip marker, nothing else.
 
 ## 1. Delegate to the implementer
 
-Spawn `leeway-sdlc:sdlc-implementer`. Pass, in the prompt:
+Delegate to the **sdlc-implementer** agent, fresh, as `HARNESS.md` ("Delegating to a named agent") describes, with
+the marker on if it is required. Pass, in the prompt:
 
 - The **full user instruction**, the task ref, and the **absolute task-worktree path**.
 - The **verbatim descriptions of the task and the story**, and the *Technical criteria* comment if there is one.
@@ -237,6 +246,9 @@ Spawn `leeway-sdlc:sdlc-implementer`. Pass, in the prompt:
   to the `---` rule above `## Worked example`, and not one line more. The worked example is your reference, not
   part of the template.
 - The **lane commands** to run, and the failures already known to be red here (CONFIG's *Known-red*).
+- The **Required reading** rows from `.sdlc/CONFIG.md` whose paths the task touches, verbatim, with: "open each
+  listed file before you change anything under its paths, and name each under *Rules read* in your brief". Paste
+  them even where a hook injects them too: not every harness has that hook.
 - **Round 0 / the freeze**: "this is round 0" or the frozen list (above).
 - On a round after a FAIL: the **full verdict**, and the `cN` of every **live finding** it must answer, so its
   `Addresses:` line can name them. A finding is live while its `fate` is `open` or `addressed`; a `disputed` or
@@ -343,14 +355,15 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
 3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief:
    `leeway --as <alias>/implementer escalation raise <ref> --question "…" --options '[…]' --meanwhile "…" --comment cN`.
 4. Set the sub-issue blocked: `leeway --as <alias>/agent issue update <ref> --status blocked` (the step clears).
-5. **Stop.** Report the escalation id and the issue. Do not spawn the reviewer.
+5. **Stop.** Report the escalation id and the issue. Do not delegate to the reviewer.
 
 On resume, read the answer (`escalations[].answer`), set the step back to the stage the thread shows
 (`--step red-tests` or `--step implementing`), and run the next round with the answer pasted into the prompt.
 
 ## 3. Delegate to the reviewer
 
-Immediately. Spawn `leeway-sdlc:sdlc-reviewer` with the same doc map, the **verdict template** (`templates/VERDICT.md`,
+Immediately. Delegate to the **sdlc-reviewer** agent, fresh, as `HARNESS.md` describes (marker on if required),
+with the same doc map, the Required reading rows, the **verdict template** (`templates/VERDICT.md`,
 from its `# Review verdict` heading down to the `---` rule above `## Worked example`), the implementer's full brief,
 the lane commands and the known-red list, and:
 

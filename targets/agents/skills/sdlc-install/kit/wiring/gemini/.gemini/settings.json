@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "name": "leeway-sdlc-guard",
+            "command": "node .sdlc/kit/hooks/adapters/guard.mjs gemini"
+          }
+        ]
+      }
+    ]
+  }
+}

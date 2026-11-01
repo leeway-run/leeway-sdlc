@@ -1,8 +1,13 @@
 # The contract for delegated work
 
-**Status at this version.** `0.1.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
-`version-notice`), the three agents, the templates and the skills (`sdlc-install`, `sdlc-tune`, `shape-work`,
-`plan-work`, `run-task`, `run-story`, `update`, `sync-repo`). The tag itself is the release task's (G1).
+**Status at this version.** `0.2.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
+`version-notice`, and the adapters that run the guards in other agents), the three agents, the templates and the
+skills (`sdlc-install`, `sdlc-tune`, `shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo`).
+
+**This file is the same in every agent; `HARNESS.md` is not.** It sits beside this file and says how the agent
+running the loop delegates to a named agent, how the guards know a subagent's call from the orchestrator's,
+where the instructions and local notes live, and how the plugin is updated. Where this file says "a hook" or
+"delegate", `HARNESS.md` says what that is here.
 
 Your repo's own floor binds all work in it, paired or delegated. This sits on top and binds only
 **delegated** work — work broken into tasks and handed to subagents. **Never quote it at someone
@@ -45,8 +50,10 @@ gate's report as `<alias>/reviewer`); subagents never write, so their entries ar
 
 **Both are enforced for this plugin's own agents, by hooks.** `git-guard` blocks a governed agent's
 git writes; `leeway-guard` blocks a governed agent's `leeway` call whose verb is outside
-`get|list|whoami|help|version`. A governed agent is one whose type carries the `leeway-sdlc:` prefix, so
-another plugin's agents are untouched. The hook is not a vault: a raw HTTP call to the MCP endpoint
+`get|list|whoami|help|version`. In Claude Code a governed agent is one whose type carries the `leeway-sdlc:`
+prefix, so another plugin's agents are untouched. Other agents attribute calls differently, and some not at
+all: there the orchestrator marks the window in which a subagent runs (`HARNESS.md`, "Governed-agent
+marker"), and every shell call in it is judged as the subagent's. The hook is not a vault: a raw HTTP call to the MCP endpoint
 is not seen by it, and for that the invariant stays prose. A framework that claims enforcement it does
 not have is worse than one that admits the gap.
 

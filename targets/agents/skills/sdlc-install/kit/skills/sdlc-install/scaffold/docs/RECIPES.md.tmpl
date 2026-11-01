@@ -1,0 +1,30 @@
+# Recipes
+
+> **This file is a stub.** The shape exists so you know where the content belongs before there is
+> any. It is marked `stub` in `.sdlc/CONFIG.md`, and that state is load-bearing: agents must not
+> cite a stub. A reviewer that needs a rule from here says *"no rule exists for this"* instead of
+> citing a document that says nothing.
+>
+> **Its first entry belongs here when:** you do the same kind of change for the **second** time.
+>
+> When that happens, write the entry, delete this block, and change this doc's state in
+> `.sdlc/CONFIG.md` to `real`. A stub that has quietly become real is a doc nobody is allowed to
+> cite and everybody assumes they can.
+
+For each recurring change type: which files, in what order, and what is easy to miss.
+
+The second time is the trigger on purpose. The first time you do not yet know which steps are the
+non-obvious ones, and a recipe written from one instance documents that instance rather than the
+change type.
+
+## The shape of a recipe
+
+Three sub-headings, always, because they partition the work by *how the mistake is caught*:
+
+**A. What the compiler or the tooling will demand.** You cannot get this wrong silently.
+
+**B. What nothing will tell you.** The registration step, the array your thing has to be added to,
+the second place the same constant lives. **This is why the recipe exists.** A and C are
+recoverable; B is what ships broken.
+
+**C. What it owes a test.** Which lane, and what the test must actually assert.

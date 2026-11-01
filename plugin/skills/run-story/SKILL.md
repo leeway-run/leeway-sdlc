@@ -5,7 +5,7 @@ description: Run every task of one story through run-task, unattended - check th
 
 # Run a story
 
-**Read `PROCESS.md` in this plugin first, then `skills/run-task/SKILL.md`.** This skill runs `run-task` once per task
+**Read `PROCESS.md` and `HARNESS.md` in this plugin first, then `skills/run-task/SKILL.md`.** This skill runs `run-task` once per task
 and adds only what a whole story needs on top: the preconditions, the order, the stop conditions, the budget and the
 status comment. **It does not restate `run-task`.** Where a step below names a section of `run-task`, that section is
 the procedure, word for word, and nothing here relaxes it. Read the binding and the wiring as `run-task` does:
@@ -216,7 +216,7 @@ that was written down; this is where it leaves them.
 
 A run is only unattended if nothing in it waits for a keypress. That needs four things, set up before the first run.
 
-- **A permission allow-list**, in the repo's Claude Code settings, covering at least the following and every command the skill names: the lane and
+- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it, covering at least the following and every command the skill names: the lane and
   setup commands `.sdlc/CONFIG.md` names; `git add`, `commit`, `push`, `fetch`, `merge`, `switch`, `worktree`,
   `branch -d`, `ls-remote`, `rev-parse` and `diff --cached`; `node -e` for the counting one-liner;
   and the `leeway` CLI's write verbs for the orchestrator. A subagent is stopped from those by the plugin's
