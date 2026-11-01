@@ -56,6 +56,20 @@ test('the floor is imported once: the fill follows the file, and sync-repo fills
   assert.match(row, /`\{\{IMPORT_FLOOR\}\}` as the read-first line when the instructions file already imports the floor outside the markers/);
 });
 
+test('a re-run still looks for the floor import: only question 13 is skipped on an existing block', () => {
+  const start = detection.indexOf('**What the managed block would repeat.**');
+  assert.ok(start >= 0, 'detection.md has no "What the managed block would repeat"');
+  const section = oneLine(detection.slice(start, detection.indexOf('\n**', start + 1)));
+  const importAt = section.indexOf('- **an import of the floor**');
+  assert.ok(importAt >= 0, 'no floor-import check');
+  assert.doesNotMatch(section.slice(0, importAt), /leeway-sdlc:begin/, 'the import check is under the no-block condition');
+  assert.match(section, /an import of the floor\*\*[^;]*on every run, a re-run included[^;]*`\{\{IMPORT_FLOOR\}\}`/);
+  const skips = section.split(/(?<=\.) /).filter((sentence) => sentence.includes('leeway-sdlc:begin'));
+  assert.equal(skips.length, 1, 'expected one sentence that skips on an existing block');
+  assert.match(skips[0], /skip only (question 13's|its) part/);
+  assert.doesNotMatch(skips[0], /import/, 'the skip on an existing block must not cover the import check');
+});
+
 test('the branch-prefix count names each branch once and ignores remote-tracking merges', () => {
   const pipeline = /```sh\n(\{ git for-each-ref[\s\S]*?)\n```/.exec(detection);
   assert.ok(pipeline, 'detection.md has no branch-prefix pipeline');
