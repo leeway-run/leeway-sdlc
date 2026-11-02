@@ -108,7 +108,8 @@ answer as given; where they are unsure, it is an `OPEN:` line, not a nudge towar
 
 Each area is one comment (what exists today) and one escalation (the question, the likely answers as options).
 Raise the ones that do not depend on each other together, so the PO answers in one sitting, then stop. The round's
-first comment also quotes the description as it is (or "none yet"): it is what step 5 checks before it writes.
+first comment also quotes the description as it is (or "none yet") under the line `Description at this round:`; the
+latest round's quote is what step 5 checks before it writes.
 
 Hidden scope the PO can decide becomes a criterion, a fallback, or a line under *Out of scope*.
 Whether something exists in the code, or how to build it, is a line under *Open questions for dev*.
@@ -158,10 +159,16 @@ answers are the approval, and moving the story on from the shaped step is theirs
 **The shaped step** is the type's first step of kind `gate` after its `shape` step, with no `plan` step between
 them (`shaped` in the presets). Find it in `process get` by kind and position, never by id.
 
-**Re-read the issue first and stop if `issue.description` is not the one shaping started from** (the one step 3's
-first comment quoted, or the one step 0 read when nothing was asked): replacing a description silently clobbers an
-edit made in the UI in between. Show the new version and start this step again. The Status line's name is the
-PO's: the answerer's name on this round's escalations (`escalations[].answer.by.userName`), or the one the PO gave.
+**Re-read the issue first and stop if `issue.description` is not the baseline**: the one quoted under `Description
+at this round:` in the latest round's first comment, or the one step 0 read when nothing was asked; replacing a
+description silently clobbers an edit made in the UI in between. Take the edit into the body instead: rebuild the
+body on the version just read (step 4), keeping the edit, and list in the inference comment what the edit changed
+and how the body keeps it. Where the edit contradicts an answer, that is something new unclear: raise it as in
+step 3 and stop. Otherwise the version just read is the baseline now: start this step again.
+
+The Status line's name is the PO's: the answerer's name on the latest round's escalations
+(`escalations[].answer.by.userName`). When shaping asked nothing, it is the name `<cli> whoami` shows, the person
+signed in to this session; not signed in, no write can succeed, so stop and say so.
 Then write the **description** and nothing else, from a file outside the repo by absolute path, or from a quoted
 heredoc:
 
@@ -188,8 +195,8 @@ Two stories keep the approval round, and the PO is told why:
 - **Already planned** (step 0's amendment path: sub-issues, *Technical criteria*, a `# Technical criteria`
   comment, or a step past `plan`): changing its criteria changes what its tasks were built against. Say so in the
   question.
-- **No gate after `shape`** (an old or tuned process): there is no step for the body to wait at, so this
-  escalation is the approval. Say so in the question.
+- **No shaped step** (an old or tuned process, `shape → plan → gate` for example): there is no step for the body
+  to wait at, so this escalation is the approval. Say so in the question.
 
 Post one comment on the story with the current description (or "none yet"), the proposed body, and what is
 still `OPEN:`; when `issue.summary` is empty, a proposed summary too. Then raise one escalation, *Write this body
@@ -197,7 +204,8 @@ to `<ref>`?* (*Write this body and summary to `<ref>`?* when a summary is propos
 *Write it with the changes in my note* and *Do not write*, and stop. **Write nothing without the PO's yes.**
 
 On a yes, write the description (and an empty summary) and read it back as above, but check the description
-against the one the proposal comment showed, the Status line's name is this escalation's answerer, and set no
+against the one the proposal comment showed (on a mismatch, show the new version in a new proposal comment and ask
+again), the Status line's name is this escalation's answerer, and set no
 step. On an already-planned story, after writing, post one comment for the developer: which `AC-n` changed. Their
 next `plan-project` rechecks the technical criteria and the tasks that serve it.
 
@@ -231,5 +239,5 @@ Every story body is in the template's shape, every heading filled or `n/a: <why>
 says what must not happen where the gap checklist requires one, every undecided answer is an
 `OPEN:` line, the Status line names the PO and today's date, and the description read back is at most 5,000
 characters. The PO has the inference comment (on the approval round, saw the body before it was written), and an
-unplanned story sits at the shaped step (at `shape` where its type has no gate after `shape`; a planned one keeps
+unplanned story sits at the shaped step (at `shape` where its type has no shaped step; a planned one keeps
 the step and status it had).
