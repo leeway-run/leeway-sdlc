@@ -30,7 +30,8 @@ function from(text, lead, until) {
   return text.slice(at, end < 0 ? undefined : end);
 }
 
-const WAITS = /\b[Ww]aits?\b[^.]*\("Wait, then carry on"\)|\bwaits\b/;
+const WAITS = /\bwait(s|ed)?\b[^.]*\("Wait, then carry on"\)/i;
+const STOPS = /\bthen stop\b|, and you stop|stop and escalate|\bstop[.;,]/i;
 
 test('every escalation run raises is followed by the wait, not the end of the turn', () => {
   const wait = under(skill, 'Wait, then carry on');
@@ -93,8 +94,10 @@ test('each wait has its own deadline', () => {
 
 test('each stop path in run waits on its escalation', () => {
   const paths = {
-    'the round-0 cap': from(under(skill, 'Round 0: red tests first'), '**The cap.**'),
-    'a wrong frozen test': from(under(skill, 'The freeze'), '**A frozen test that is wrong'),
+    // Each path starts after the lead-in that names its condition (the round-0 cap's "stop." and the frozen test's
+    // "Stop."), and ends before the next path.
+    'the round-0 cap': from(under(skill, 'Round 0: red tests first'), 'Two failed attempts mean', '#### The freeze'),
+    'a wrong frozen test': from(under(skill, 'The freeze'), 'Show the criterion', '**At the PASS'),
     'a stalled round': from(under(skill, '2. Gate, commit, push, record'), '2. **Stalled-round check.**', '3. **Push'),
     'a BLOCKED brief': from(under(skill, 'A BLOCKED brief'), '5. **Wait.**'),
     'a finding that needs a human': from(under(skill, '4. Gate again, record, act'), '3. **A dispute or a finding', '```'),
@@ -105,10 +108,25 @@ test('each stop path in run waits on its escalation', () => {
   };
   for (const [name, text] of Object.entries(paths)) {
     assert.match(text, WAITS, `${name} does not wait`);
-    assert.doesNotMatch(text, /\bStop\.\*\*|then stop\b|, and you stop|stop and escalate/, `${name} still stops`);
+    assert.doesNotMatch(text, STOPS, `${name} still stops`);
   }
   assert.match(paths['the debt proposal'], /in an issue run that the run waits here for the answer \(its stop 4\)/);
+  assert.match(paths['the debt proposal'], /In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal \("Wait, then carry on"\) before it ends \("Land the task", step 5\)/);
   assert.match(paths['a merge conflict at the story gate'], /escalate and wait \("Wait, then carry on"\).*or escalate and wait if it names none/);
+});
+
+test('a sub-issue run waits on its debt proposal once the task has landed, and files only on a yes', () => {
+  const land = under(skill, 'Land the task');
+  const step = from(land, '5. **Wait on each debt proposal', '6. **Friction');
+  assert.match(step, /only when `run` was invoked on the sub-issue itself\*\* \(an issue run has already waited on it, as its stop 4\)/);
+  assert.match(step, /wait on it \("Wait, then carry on"\), one after another\. On a yes, file the issue as that row says; on a no, the finding stays a nit\./);
+  assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **Wait on each debt proposal'), 'the debt wait does not come after the task has landed');
+  assert.match(under(skill, 'What a deferred finding becomes'), /quoting the answer's `label` and `note`/);
+  assert.doesNotMatch(under(skill, 'What a deferred finding becomes'), /answer's `option`/);
+});
+
+test('time spent in a wait does not count toward the wall-clock budget', () => {
+  assert.match(under(skill, 'Story start'), /\*\*wall-clock\*\* continue from the `Spend` line of the latest `# Run status` comment\. Time spent in a wait \("Wait, then carry on"\) does not count toward wall-clock\./);
 });
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {
@@ -137,6 +155,14 @@ test('PROCESS.md: run waits, every other skill stops, and only the answer is one
   assert.match(rule, /\*\*Every other skill stops the turn\*\*/);
   assert.match(rule, /a comment, a status change or an edited description is not/);
   assert.match(rule, /raises the escalation from the block, and waits\./);
+});
+
+test('PROCESS.md: the loop and the round cap wait on their escalation, not stop', () => {
+  const loop = under(process_, 'The loop');
+  assert.match(loop, /it waits for a human only where one of its stop conditions fires, each ending in one escalation that it waits on, carrying on when the answer comes \("Questions to the human are escalations"\)/);
+  assert.doesNotMatch(loop, /stops for a human/);
+  assert.match(loop, /\*\*The round cap\.\*\*.*one escalation, and the work waits on its answer \("Questions to the human are escalations"\)/);
+  assert.doesNotMatch(loop, /one escalation, and the work stops/);
 });
 
 test('shape-project and plan-project still stop the turn after their escalations', () => {

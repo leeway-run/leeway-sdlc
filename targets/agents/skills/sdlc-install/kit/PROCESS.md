@@ -182,9 +182,10 @@ written down cannot be found missing.
 One task at a time, each through the full loop, in a worktree of its own. Do not batch several into one
 implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
 issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
-`unattended`; it stops for a human only where one of its stop conditions fires, each ending in one
-escalation. `run` on a project runs its issues that way, one after another, and stops at the first that stops. It
-skips an issue its issue run refuses, and goes on.
+`unattended`; it waits for a human only where one of its stop conditions fires, each ending in one
+escalation that it waits on, carrying on when the answer comes ("Questions to the human are escalations"). `run`
+on a project runs its issues that way, one after another, and stops at the first that stops. It skips an issue its
+issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
@@ -214,9 +215,10 @@ attempts are the iterations recorded before the `step_set` entry whose `to` is `
 
 **The round cap.** The `build` step's `roundCap` is the most adversarial rounds a task gets. If the cap is
 reached without convergence the task is mis-specified, not mis-implemented. That is a human decision,
-not another loop: one escalation, and the work stops. **You may override a PASS, and you may not override
-the cap.** If a finding is under-rated and you can say why, send it back and record the reason. An
-override spends a round; the cap is what stops you spending them forever.
+not another loop: one escalation, and the work waits on its answer ("Questions to the human are
+escalations"). **You may override a PASS, and you may not override the cap.** If a finding is under-rated
+and you can say why, send it back and record the reason. An override spends a round; the cap is what stops you
+spending them forever.
 
 **Why it is shaped this way**, worth thirty seconds before shortcutting it:
 
