@@ -55,6 +55,11 @@ for (const [agent, hook] of Object.entries(HOOKS)) {
       governed(repo, 'off')
       assert.equal(run('git commit -m x').status, 0, 'marker off: the orchestrator commits again')
       assert.match(readFileSync(join(repo, '.sdlc', 'kit', 'HARNESS.md'), 'utf8'), new RegExp(`^agent: ${agent}$`, 'm'))
+      assert.deepEqual(
+        readFileSync(join(repo, '.sdlc', 'kit', 'scripts', 'wait-answer.mjs')),
+        readFileSync(join(ROOT, 'plugin', 'scripts', 'wait-answer.mjs')),
+        'the kit carries the answer-wait script',
+      )
     } finally {
       rmSync(repo, { recursive: true, force: true })
     }
