@@ -39,6 +39,13 @@ example `kestrel-b1`, matching `^[a-z][a-z0-9-]{1,23}$`), never one already visi
 orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the plan
 gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their role.
 
+**A move the person asks for.** Any skill makes any move the person asks for in the session, from whatever step or
+status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says
+which move it made, from where to where, and what it leaves unmet (an open or unapplied QUESTION, no coverage
+report, no tasks). No skill tells the person to make a move in the UI because the skill may
+not. What no skill does is move a story out of the shaped step or the plan gate on its own initiative: those moves
+are a person's, made by them or by a skill they asked.
+
 **Two invariants make it work.**
 
 - **One writer to Leeway, all readers.** Only the orchestrator writes: `issue create` and `update`,
@@ -95,7 +102,7 @@ nothing else:
 | `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
 | `gate` | One of two, told apart by position, never by id. The **shaped step**, a `gate` between `shape` and `plan`: shaping ends there ("Before the plan: shaping"). The **plan gate**, the type's first `gate` after its `plan` step: planning ends there (below). A type without a plan gate goes from plan to ready with no gate |
 | `build` | The loop (below), run by `run` for each sub-issue, for a whole story and for a project. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended` |
-| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it never moves the issue past it |
+| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it moves the issue past it only when a person asks ("The cast") |
 
 **A type without a `build` step is one the plugin does not run.** `run` says so and stops.
 
@@ -291,7 +298,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
-| status | always `issue update --step` or `--status`; never by iteration or escalation |
+| status | always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>/agent`, named in the session ("The cast") |
 
 ## Where a finding goes
 

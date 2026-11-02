@@ -552,8 +552,8 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    says (the pre-push guard in "Unattended prerequisites" enforces it). Remove the story worktree. Then read the type's steps: the step
    after `build`.
    - **A next step** → `leeway --as <alias>/agent issue update <story> --step <next>`. If its kind is `manual`
-     ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and never moves
-     the story past it.
+     ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and moves
+     the story past it only when the person asks (`PROCESS.md`, "The cast").
    - **No next step** → `leeway --as <alias>/agent issue update <story> --status done`.
 
    Read the story back (`issue get <story>`) and check the step or status reads as written. Nothing else moves it.
