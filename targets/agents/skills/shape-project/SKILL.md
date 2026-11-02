@@ -39,13 +39,14 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
    a chore) is taken as written by `plan-project` or `run`: **say so, change nothing, and stop.**
 5. **Start.** Decide from content and status, not from the step alone, whether the story is *unplanned*: it has
    no sub-issues (`subIssues` empty), no comment opening `# Technical criteria`, its `issue.status` is `backlog`,
-   and `issue.step.id` is empty, `shape` or `plan` (a story `plan-project` sent back lands on `shape`).
+   and `issue.step.id` is empty or names the type's `plan` step or a step before it (`shape`, `shaped` or `plan` in
+   the presets; a story `plan-project` sent back lands on `shape`).
    - **Unplanned:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.
    - **Done or cancelled:** say so and stop. Change nothing.
-   - **Anything else** (tasks, a technical-criteria comment, or a status other than `backlog`, for example a
-     planned story at `ready` with no step): keep its step and status, and tell the PO what state it is in and
-     that changing its criteria changes what its tasks were built against. This is the amendment path: write the
-     body only on their yes (step 5), and do not set `--step shape`.
+   - **Anything else** (tasks, a technical-criteria comment, a step past `plan`, or a status other than `backlog`,
+     for example a planned story at `ready` with no step): keep its step and status, and tell the PO what state it
+     is in and that changing its criteria changes what its tasks were built against. This is the amendment path:
+     write the body only on their yes (step 5, "When the approval round stays"), and do not set `--step shape`.
 
 **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question to the PO is never a terminal
 question: it is a Leeway escalation on the story, and then you stop the turn (`PROCESS.md`, "Questions to the
@@ -106,7 +107,9 @@ ones the story leaves open**. Never ask a row that does not apply. Say what exis
 answer as given; where they are unsure, it is an `OPEN:` line, not a nudge toward an answer.
 
 Each area is one comment (what exists today) and one escalation (the question, the likely answers as options).
-Raise the ones that do not depend on each other together, so the PO answers in one sitting, then stop.
+Raise the ones that do not depend on each other together, so the PO answers in one sitting, then stop. The round's
+first comment also quotes the description as it is (or "none yet") under the line `Description at this round:`; the
+latest round's quote is what step 5 checks before it writes.
 
 Hidden scope the PO can decide becomes a criterion, a fallback, or a line under *Out of scope*.
 Whether something exists in the code, or how to build it, is a line under *Open questions for dev*.
@@ -146,38 +149,73 @@ what the work is checked against, not its background.
 context, anything a pointer can carry — and only then, if it still does not fit, a story that should be two:
 say so to the PO and let them split it. Never truncate.
 
-## 5. Show the diff, ask, then write the body only
+## 5. Write the body, then stop at the shaped step
 
-Post one comment on the story with the current description (or "none yet"), the proposed body, and what is
-still `OPEN:`; when `issue.summary` is empty, a proposed summary too (at most 280 characters: what the story is and
-why, in plain words). Then raise one escalation, *Write this body to `<ref>`?* (*Write this body and summary to
-`<ref>`?* when a summary is proposed), with the options *Write it*, *Write it with the changes in my note* and *Do
-not write*, and stop. **Write nothing without the PO's yes.** The Status line's name is the PO's: the answerer's name on the escalation (`escalations[].answer.by.userName`), or the one the PO gave.
+**Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
+that does is a follow-up: raise it as in step 3 and stop. No escalation asks whether to write the body: the PO's
+answers are the approval, and moving the story on from the shaped step is theirs. The two exceptions are under
+"When the approval round stays" below.
 
-On a yes, **re-read the issue first and stop if `issue.description` is not the one the proposal comment
-showed**: replacing a description silently clobbers an edit made in the UI in between. Show the new version and
-start this step again. Then write the **description** and nothing else, from a file outside the repo by absolute
-path, or from a quoted heredoc:
+**The shaped step** is the type's first step of kind `gate` after its `shape` step, with no `plan` step between
+them (`shaped` in the presets). Find it in `process get` by kind and position, never by id.
+
+**Re-read the issue first and stop if `issue.description` is not the baseline**: the one quoted under `Description
+at this round:` in the latest round's first comment, or the one step 0 read when nothing was asked; replacing a
+description silently clobbers an edit made in the UI in between. Take the edit into the body instead: rebuild the
+body on the version just read (step 4), keeping the edit, and list in the inference comment what the edit changed
+and how the body keeps it. Where the edit contradicts an answer, that is something new unclear: raise it as in
+step 3 and stop. Otherwise the version just read is the baseline now: start this step again.
+
+The Status line's name is the PO's: the answerer's name on the latest round's escalations
+(`escalations[].answer.by.userName`). When shaping asked nothing, it is the name `<cli> whoami` shows, the person
+signed in to this session; not signed in, no write can succeed, so stop and say so.
+Then write the **description** and nothing else, from a file outside the repo by absolute path, or from a quoted
+heredoc:
 
 ```sh
 <cli> --server <server> --as <alias>/agent issue update <ref> --stdin description <file
 ```
 
-The one exception is an empty summary: write the proposed one in its own call, naming only that field (an update
-replaces the fields it names): `<cli> --server <server> --as <alias>/agent issue update <ref> --summary "<at most 280 characters>"`.
+The one exception is an empty summary: write one in its own call, naming only that field (an update replaces the
+fields it names), at most 280 characters, what the story is and why, in plain words: `<cli> --server <server> --as <alias>/agent issue update <ref> --summary "<at most 280 characters>"`.
 
 Read it back with `issue get` and check that `issue.description` is the body and at most 5,000 characters.
 **Acceptance criteria live in the body, never in a separate field.** It is the one place the implementer, the
 reviewer and the divergence reviewer all read.
 
-**Changing criteria of a story that is already planned** — it has *Technical criteria*, a `# Technical criteria`
-comment, or tasks — changes what the tasks were built against. Say so in the question before the yes, and after
-writing, post one comment for the developer: which `AC-n` changed. Their next `plan-project` rechecks the technical
-criteria and the tasks that serve it.
+Then post **one** comment on the story: what the body says beyond the PO's answers (each thing you inferred,
+worded or left out, one line each), what is still `OPEN:`, and the summary if you wrote one. Set the shaped step,
+`<cli> --server <server> --as <alias>/agent issue update <ref> --step <the shaped step's id>`, and stop. The story
+waits there for the PO.
+
+### When the approval round stays
+
+Two stories keep the approval round, and the PO is told why:
+
+- **Already planned** (step 0's amendment path: sub-issues, *Technical criteria*, a `# Technical criteria`
+  comment, or a step past `plan`): changing its criteria changes what its tasks were built against. Say so in the
+  question.
+- **No shaped step** (an old or tuned process, `shape → plan → gate` for example): there is no step for the body
+  to wait at, so this escalation is the approval. Say so in the question.
+
+Post one comment on the story with the current description (or "none yet"), the proposed body, and what is
+still `OPEN:`; when `issue.summary` is empty, a proposed summary too. Then raise one escalation, *Write this body
+to `<ref>`?* (*Write this body and summary to `<ref>`?* when a summary is proposed), with the options *Write it*,
+*Write it with the changes in my note* and *Do not write*, and stop. **Write nothing without the PO's yes.**
+
+On a yes, write the description (and an empty summary) and read it back as above, but check the description
+against the one the proposal comment showed (on a mismatch, show the new version in a new proposal comment and ask
+again), the Status line's name is this escalation's answerer, and set no
+step. On an already-planned story, after writing, post one comment for the developer: which `AC-n` changed. Once a
+person moves the story back to the plan step, `plan-project` rechecks the technical criteria and the tasks that
+serve it.
+
+### A reply to the gaps sent back
 
 If this round answered gaps a developer sent back, **reply to that comment** (`comment add <ref> --parent cN
---stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The developer re-runs `plan-project`;
-the reply tells them whether that is worth doing yet.
+--stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The story goes back to `plan-project`
+when the PO moves it from the shaped step to the plan step, or, on a type with no shaped step, when the developer
+re-runs it; the reply tells them whether that is worth doing yet.
 
 ## 6. A new story, or several
 
@@ -193,7 +231,8 @@ list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most
 description`, the description at most 5,000 characters); `plan-project` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
-**You never create tasks, branches or a design doc**, and the only step you set is `shape`, in step 0, and only for an unplanned story. A status
+**You never create tasks, branches or a design doc**, and the only steps you set are `shape`, in step 0, and the shaped step, in step 5, and
+only for an unplanned story, besides a move the person asks for in the session (`PROCESS.md`, "The cast"). A status
 is set by `--step` or `--status` and nothing else: no comment and no escalation moves a story.
 
 ## Done when
@@ -201,5 +240,6 @@ is set by `--step` or `--status` and nothing else: no comment and no escalation 
 Every story body is in the template's shape, every heading filled or `n/a: <why>`, at least one rule
 says what must not happen where the gap checklist requires one, every undecided answer is an
 `OPEN:` line, the Status line names the PO and today's date, and the description read back is at most 5,000
-characters. The PO has seen the body as written, and an unplanned story sits at `--step shape` (a planned one
-keeps the step and status it had).
+characters. The PO has the inference comment (on the approval round, saw the body before it was written), and an
+unplanned story sits at the shaped step (at `shape` where its type has no shaped step; a planned one keeps
+the step and status it had).

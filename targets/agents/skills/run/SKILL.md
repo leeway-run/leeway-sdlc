@@ -558,8 +558,8 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    says (the pre-push guard in "Unattended prerequisites" enforces it). Remove the story worktree. Then read the type's steps: the step
    after `build`.
    - **A next step** → `leeway --as <alias>/agent issue update <story> --step <next>`. If its kind is `manual`
-     ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and never moves
-     the story past it.
+     ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and moves
+     the story past it only when the person asks (`PROCESS.md`, "The cast").
    - **No next step** → `leeway --as <alias>/agent issue update <story> --status done`.
 
    Read the story back (`issue get <story>`) and check the step or status reads as written. Nothing else moves it.
@@ -636,10 +636,23 @@ A refusal here writes nothing: say in the session which precondition failed and 
    <KEY>` gives that type's `build` step. **No `build` step, or `params.unattended` not true → say so and stop.**
    Such a story is run one sub-issue at a time, `run` on each, where a person is in the session. The process is what
    decides this, not a flag you pass.
-2. **The plan gate is recorded**, when the type has a `gate` step: a coverage report comment on the story by
-   `<div>/reviewer` (`<div>` is the divergence reviewer's alias, so `<div>/reviewer` is that reviewer's alias and role), and an escalation on it answered PASS or PASS WITH DECISIONS (`escalations[].answer`, with an
-   answer to every QUESTION in the note). A gate that only existed in a conversation did not happen. A type without
-   `gate` needs only that the story has tasks (`subIssues`) and is planned.
+2. **The plan gate is passed**, when the type has one: its first step of kind `gate` after its `plan` step, found
+   in `process get` by kind and position, never by id (a `gate` before `plan` is the shaped step, not this one).
+   It is passed when all of these hold, and each one that fails is a stop: say which and stop.
+   - **The story has tasks** (`subIssues`).
+   - **The gate is recorded**: a coverage report comment on the story by `<div>/reviewer` (`<div>` is the divergence
+     reviewer's alias), opening `# Plan coverage:`. A gate that only existed in a conversation did not happen: with
+     no report, the story was not gated.
+   - **It has left the plan gate for `ready` or later**: `issue.status` is `ready`, `in_progress` or `in_review`,
+     and `issue.step` is not the plan gate or a step before it. A person passing the gate is that move. **A story
+     still at the plan gate waits on the gate.** One at a step before it is not planned.
+   - **The latest report's QUESTIONs are answered and applied**: every escalation on a comment opening
+     `# QUESTION … of c<report>`, where `c<report>` is that report's first comment, has an answer
+     (`escalations[].answer`), and the report has a reply opening `# QUESTIONs applied`. Each
+     QUESTION needs a human answer before any task starts. One open waits on that answer; answered and not applied
+     waits on `plan-project`, which applies them. A report with no QUESTION needs no reply.
+
+   A type without a plan gate needs only that the story has tasks (`subIssues`) and is planned.
 3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
 4. **Leeway answers.** Read the story and its children; a failed call, or an empty result where something must
    exist, is stop 10 below, not an empty story.

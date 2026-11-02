@@ -93,9 +93,10 @@ decided", not "not detected".
    <one of #e0994f #6fbf95 #9184d9 #6f9bbf #d98a8a #c9b45e #8f8f9e>`. A product is created only on the
    human's yes.
 4. **The process already there.** `<cli> process get <KEY> --json` answers `{process, version, updatedAt}`.
-   `version` is the revision counter: `0` and `updatedAt: null` mean the product never set a process (the
-   answer is the `mvp` preset, not a stored one); `1` or more means a person or an earlier install set it.
-   Hold that fact for question 2.
+   `version` is the revision counter. `0`, with `updatedAt: null`, is a product created before products stored
+   their process: it has no stored row and reads the `mvp` preset. `1` or more is a stored process, and that
+   includes the `maintained` process `product create` stores at version 1, so it does not mean that a person set
+   it. Hold the version, and whether this install created the product in step 3.3, for question 2.
 
 ## Step 4 — the interview
 
@@ -109,17 +110,19 @@ asked in step 5, once the process they compare with has been read.
    one?" Pre-fill with the only product, or the one whose key or name matches the repo.
 2. **What are we building here?**
    - (a) a quick MVP or prototype: speed first, light review, no red tests (`--preset mvp`);
-   - (b) a maintained system people depend on: shaping, a plan gate, red tests, adversarial review
-     (`--preset maintained`);
+   - (b) a maintained system people depend on: a feature goes shaping → shaped → planning → planned →
+     building → verify on dev, and waits at shaped and at planned for a person to move it on; red tests,
+     adversarial review (`--preset maintained`);
    - (c) start from (b) and relax it per type (`maintained`, then the adjustments below).
 
-   **When step 3.4 found a process (`version` of 1 or more), the pre-filled answer is (d) keep what is
-   there**, and the question says so: "`<KEY>` already has a process (version N): `<one line per type>`. Keep
+   **When the product existed before this install and step 3.4 found a stored process (`version` of 1 or
+   more), the pre-filled answer is (d) keep what is there**, and the question says so: "`<KEY>` already has a process (version N): `<one line per type>`. Keep
    it, or replace it with (a), (b) or (c)?" On (d) skip questions 3 to 5 and make **no** `process update` call
    but the one an answer to question 14 or 15 asks for.
    **A process is never overwritten without this answer**; on a re-run, never replace it by default.
-   Without a stored process, pre-fill (a) for a new project and a repo with no CI and no tests, and (b) when
-   detection found CI that runs tests.
+   **A product this install created in step 3.3 is never pre-filled with (d)**: the `maintained` process
+   `product create` stored is not one a person set. For it, and for a product at `version` 0, pre-fill (a) for
+   a new project and a repo with no CI and no tests, and (b) when detection found CI that runs tests.
 3. **Types.** "The types are `<labels>`. Keep them all, drop any, or add one by naming it and the type it
    behaves like?" A type added by analogy copies that type's steps under a new id, label and branch prefix.
    Skipped on (d).

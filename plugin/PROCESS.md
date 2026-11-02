@@ -39,6 +39,13 @@ example `kestrel-b1`, matching `^[a-z][a-z0-9-]{1,23}$`), never one already visi
 orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the plan
 gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their role.
 
+**A move the person asks for.** Any skill makes any move the person asks for in the session, from whatever step or
+status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says
+which move it made, from where to where, and what it leaves unmet (an open or unapplied QUESTION, no coverage
+report, no tasks). No skill tells the person to make a move in the UI because the skill may
+not. What no skill does is move a story out of the shaped step or the plan gate on its own initiative: those moves
+are a person's, made by them or by a skill they asked.
+
 **Two invariants make it work.**
 
 - **One writer to Leeway, all readers.** Only the orchestrator writes: `issue create` and `update`,
@@ -93,17 +100,17 @@ nothing else:
 |---|---|
 | `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-project` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-project` takes the issue as written |
 | `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
-| `gate` | The plan gate (below). A type without `gate` goes from plan to ready with no gate |
+| `gate` | One of two, told apart by position, never by id. The **shaped step**, a `gate` between `shape` and `plan`: shaping ends there ("Before the plan: shaping"). The **plan gate**, the type's first `gate` after its `plan` step: planning ends there (below). A type without a plan gate goes from plan to ready with no gate |
 | `build` | The loop (below), run by `run` for each sub-issue, for a whole story and for a project. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended` |
-| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it never moves the issue past it |
+| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it moves the issue past it only when a person asks ("The cast") |
 
 **A type without a `build` step is one the plugin does not run.** `run` says so and stops.
 
 **Statuses and steps are set, never inferred.** The plugin moves an issue only with an explicit
 `issue update <ref> --step <id>` or `--status <status>`. Setting a step also sets its status in the same
 write. No iteration, escalation or comment moves an issue; a lasting state is something a person or the
-orchestrator chose. After a gate passes the orchestrator sets `--status ready`; `run` sets the build
-step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
+orchestrator chose. A person passes the plan gate by moving the issue to `ready`; on a type without one,
+`plan-project` sets `--status ready`. `run` sets the build step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
 its own, `red-tests` and `implementing`, and is `in_review` while the reviewer has it.
 
 ## Before the plan: shaping
@@ -118,6 +125,20 @@ and the plan gate all work from both. An issue description holds at most 5,000 c
 technical criteria would not fit, they move to one comment that opens `# Technical criteria`, the latest
 one wins, and every reader reads it with the body.
 
+**Shaping ends at the shaped step**, the type's first `gate` step after `shape` with no `plan` step between them
+(`shaped` in the presets). Once every question is answered and no answer leaves something new unclear,
+`shape-project` writes the body, posts one comment of what it inferred beyond the answers, sets that step and
+stops. No escalation asks whether to write the body: the product owner's answers are the approval, and the story
+waits at the shaped step for them to move it on. Two stories keep an approval escalation before the write: one
+already planned, whose tasks were built against its criteria, and one whose type has no shaped step.
+
+**Planning starts at the plan step.** The product owner moving the story from the shaped step to the plan step is
+their approval of the body. `plan-project` starts only there, or where shaping ends on a type with no shaped step:
+from `shape` or from no step at `backlog`, setting the plan step itself, since the approval escalation was the
+approval. A type with no `shape` starts from no step at `backlog` the same way. On a story still at the shaped step
+it says the story waits on the product owner and stops, writing nothing. A story it sends gaps back on goes back
+to `shape`.
+
 | Part of the story | Owner | Written through |
 |---|---|---|
 | The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |
@@ -130,16 +151,22 @@ planned task on, the orchestrator is the one writer.
 
 ## The plan gate
 
-For a type that has a `gate` step, planned work passes one gate before any code exists.
+For a type that has a plan gate (a `gate` step after `plan`), planned work passes one gate before any code
+exists.
 
 1. The divergence reviewer gets the **refs and the doc map, never the planner's summary**, and reads the
    plan, the stories and the tasks itself.
 2. It returns a coverage table, findings tagged BLOCKER / QUESTION / NOTE, and a recommended verdict:
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
-3. The orchestrator posts the **full** report as a comment on the story, then raises one escalation so a
-   human decides, with the options PASS / PASS WITH DECISIONS / RETURN. RETURN goes back to planning. PASS
-   WITH DECISIONS needs a human answer to every QUESTION. **No task starts before PASS.** The answer moves
-   the story: `--step <next>` or `--status ready`.
+3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
+   comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
+   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. No
+   escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
+   `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
+   `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
+   `plan-project` to apply the answers (it replies `# QUESTIONs applied` to the report), then move the story to
+   `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
 mind, not the story as written, and fills every gap from memory without seeing one. A fresh context with
@@ -268,10 +295,10 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
-| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
+| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
-| status | always `issue update --step` or `--status`; never by iteration or escalation |
+| status | always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>/agent`, named in the session ("The cast") |
 
 ## Where a finding goes
 
