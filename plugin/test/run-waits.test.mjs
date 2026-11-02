@@ -26,8 +26,10 @@ function under(doc, heading) {
 function from(text, lead, until) {
   const at = text.indexOf(lead);
   assert.ok(at >= 0, `no "${lead}"`);
-  const end = until ? text.indexOf(until, at + lead.length) : -1;
-  return text.slice(at, end < 0 ? undefined : end);
+  if (!until) return text.slice(at);
+  const end = text.indexOf(until, at + lead.length);
+  assert.ok(end >= 0, `no "${until}" after "${lead}"`);
+  return text.slice(at, end);
 }
 
 const WAITS = /\bwait(s|ed)?\b[^.]*\("Wait, then carry on"\)/i;
@@ -121,8 +123,17 @@ test('a sub-issue run waits on its debt proposal once the task has landed, and f
   assert.match(step, /only when `run` was invoked on the sub-issue itself\*\* \(an issue run has already waited on it, as its stop 4\)/);
   assert.match(step, /wait on it \("Wait, then carry on"\), one after another\. On a yes, file the issue as that row says; on a no, the finding stays a nit\./);
   assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **Wait on each debt proposal'), 'the debt wait does not come after the task has landed');
+  assert.match(step, /A wait here that ends without an answer \(exit 2, 3 or 4\) does not end the run\*\*: the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume\. Leave the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to step 6\./);
+  assert.doesNotMatch(step, STOPS, 'the debt wait stops the run');
+  assert.match(under(skill, 'Wait, then carry on'), /Act on how it exits\.\*\* A wait on something that blocks nothing carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\), such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\)\. Every other wait does as the table says:/);
   assert.match(under(skill, 'What a deferred finding becomes'), /quoting the answer's `label` and `note`/);
   assert.doesNotMatch(under(skill, 'What a deferred finding becomes'), /answer's `option`/);
+});
+
+test('in an issue run, a debt follow-up is filed by the run on a yes and stays a nit on a no', () => {
+  const note = from(under(skill, 'Hard stop conditions'), '**3 and 4: finish landing the task first.**', '**5 replaces');
+  assert.match(note, /A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred finding becomes" says, and on a no the finding stays a nit\./);
+  assert.doesNotMatch(note, /filed by nobody/);
 });
 
 test('time spent in a wait does not count toward the wall-clock budget', () => {

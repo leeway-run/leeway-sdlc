@@ -117,7 +117,9 @@ project run. Where a path below says to raise an escalation and wait, do this:
    `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. It only
    reads: it checks about a minute after it starts, then less and less often, never more than 15 minutes apart, and
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
-4. **Act on how it exits:**
+4. **Act on how it exits.** A wait on something that blocks nothing carries on instead of stopping when it ends
+   without an answer (exit 2, 3 or 4), such as a sub-issue run's debt proposal after its task is `done` ("Land the
+   task", step 5). Every other wait does as the table says:
 
    | Exit | It means | So |
    |---|---|---|
@@ -564,7 +566,10 @@ On a PASS of a code round.
 5. **Wait on each debt proposal, only when `run` was invoked on the sub-issue itself** (an issue run has already
    waited on it, as its stop 4). For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
    of this task, wait on it ("Wait, then carry on"), one after another. On a yes, file the issue as that row says; on
-   a no, the finding stays a nit.
+   a no, the finding stays a nit. **A wait here that ends without an answer (exit 2, 3 or 4) does not end the run**:
+   the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume. Leave
+   the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to
+   step 6.
 6. **Friction, only when `run` was invoked on the sub-issue itself** (an issue run harvests the whole story once,
    at the end). Collect every *Friction* line from this task's briefs and verdicts, round 0 included; drop `none`; dedupe
    against each other and against the open issues of the friction project (`friction-project:` in
@@ -801,7 +806,8 @@ Notes on the ones that need them:
   the story branch, which reaches nobody until the story gate. So a PASS is landed through "Land the task",
   and then the run stops. A `security` follow-up is filed first, as "What a deferred finding becomes" says, with no delay; the stop is so a
   person decides whether the story should go on being built on top of it (options "Continue the story" and "Hold the
-  story"). A `debt` follow-up is filed by nobody: the proposal is the escalation, and the person answers it.
+  story"). A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred
+  finding becomes" says, and on a no the finding stays a nit.
 - **5 replaces the sub-issue run's fallback.** A sub-issue run does a twice-hallucinated round inline and tells the user the
   workflow degraded. Unattended there is nobody to tell while it matters, and a degraded round nobody noticed is
   indistinguishable afterwards from a normal one. Stop instead.
