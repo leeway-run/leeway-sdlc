@@ -137,15 +137,24 @@ test('answered QUESTIONs are applied before the move, and the application is a r
   assert.match(start(), /carry on at step 8, "The QUESTIONs": apply them, and move nothing \|/);
 });
 
-test('returned and three or more RETURNs count only the reports since the later of the last move to ready and the last move into planning from shaping', () => {
+test('returned and three or more RETURNs count only the reports since the latest of the move to ready, the move into planning from shaping, a re-plan answer and a re-plan request', () => {
   const text = start();
-  assert.match(text, /Count its coverage reports \(comments opening `# Plan coverage:`, step 8\) posted since the later of two moves: - its last move to `ready`: the latest `thread` entry of kind `status` whose `data\.to` is `ready`; - its last move into the plan step from `shape` or the shaped step\./);
-  assert.match(text, /The thread records no step move, so read it from the latest comment that sent the story back to `shape`, the one ending \*"Answer these with `shape-project` on `<ref>`"\* \(step 1's gaps, or step 8's "Three RETURNs"\): the story came back to planning after it\. With neither, count all of them\./);
-  assert.match(text, /One or two: it was returned from the gate\..* Three or more: do not re-plan; step 8, "Three RETURNs"\./);
+  assert.match(text, /Count its coverage reports \(comments opening `# Plan coverage:`, step 8\) posted since the latest of four marks: - its last move to `ready`: the latest `thread` entry of kind `status` whose `data\.to` is `ready`; - its last move into the plan step from `shape` or the shaped step\./);
+  assert.match(text, /The thread records no step move, so read it from the latest comment that sent the story back to `shape`, the one whose closing sentence begins \*"Answer these with `shape-project` on `<ref>`"\* \(step 1's gaps, or step 8's "Three RETURNs"\): the story came back to planning after it;/);
+  assert.doesNotMatch(text, /the one ending \*"Answer these/);
+  const endings = [...section(skill, '### Gaps → back to the PO').matchAll(/[Ee]nd with:? \*"([^"]*)"\*/g)].map((m) => m[1]);
+  assert.equal(endings.length, 2, endings.join('\n'));
+  for (const ending of endings) assert.match(ending, /^Answer these with `shape-project` on `<ref>`[;,] [^.]*\.$/);
+  assert.match(text, /- on a type with no `shape`, the latest "Three RETURNs" escalation answered \*Re-plan once more\* \(step 8\): count only the reports after the one it is tied to \(`escalations\[\]\.comment`\); - the latest comment opening `# Re-plan requested`, posted when a person asks to plan a stopped story again \(step 8\): count only the reports after it\. With no mark, count all of them\./);
+  assert.match(text, /None in the window: plan it afresh;.* One or two: it was returned from the gate\..* Three or more: do not re-plan; step 8, "Three RETURNs"\./);
   const gate = section(skill, '### The QUESTIONs');
   assert.match(gate, /\*\*Three RETURNs mean the story is wrong, not the plan\.\*\* Step 0 counts them, before any re-planning: three or more coverage reports in its window\. Then stop re-planning\./);
   assert.match(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
   assert.match(gate, /When it has no `shape`, \*\*stop and raise one escalation on the story\*\*, tied to the latest report with `--comment cN`, asking the person how to go on/);
+  assert.match(gate, /how do we go on\?"\* The reviewer is tracing a story that does not say what anyone means by it\. Give two options, each naming what plan-project does next: - \*Re-plan once more\*: the next plan-project re-plans it\. The answer starts a fresh window \(step 0\), so the count starts again\. - \*Stop planning it\*: the next plan-project says the story is stopped and stops, writing and raising nothing\. To plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again\. To drop it, they close it\./);
+  assert.doesNotMatch(gate, /moves it on by hand/);
+  assert.match(gate, /The same escalation is not raised twice\. After a \*Re-plan once more\* answer, three more reports raise a new one on the latest report\./);
+  assert.match(gate, /When the latest is answered \*Stop planning it\*, say so and stop, unless the person asks in this session to plan the story again\. Then post a comment on the story opening `# Re-plan requested`, saying it was posted because the person asked and naming who asked, and carry on from step 0: the reports after that comment start a fresh window\./);
   assert.doesNotMatch(gate, /three coverage reports on it already/);
 });
 
