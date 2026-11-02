@@ -144,11 +144,6 @@ looked up — how a screen works today, a rule in the intent doc, an existing fl
 (*"as the upload on the Documents page"*, *"VISION.md, Retention"*), not a retelling. The body is
 what the work is checked against, not its background.
 
-**The description holds at most 5,000 characters** (UTF-16 code units of the trimmed text, as the server counts; `plan-project` gives the one-liner), and the developer adds
-*Technical criteria* to the same body, so leave room. A body over the cap is first cut — verbose rules, restated
-context, anything a pointer can carry — and only then, if it still does not fit, a story that should be two:
-say so to the PO and let them split it. Never truncate.
-
 ## 5. Write the body, then stop at the shaped step
 
 **Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
@@ -179,7 +174,7 @@ heredoc:
 The one exception is an empty summary: write one in its own call, naming only that field (an update replaces the
 fields it names), at most 280 characters, what the story is and why, in plain words: `<cli> --server <server> --as <alias>/agent issue update <ref> --summary "<at most 280 characters>"`.
 
-Read it back with `issue get` and check that `issue.description` is the body and at most 5,000 characters.
+Read it back with `issue get` and check that `issue.description` is the body.
 **Acceptance criteria live in the body, never in a separate field.** It is the one place the implementer, the
 reviewer and the divergence reviewer all read.
 
@@ -228,7 +223,7 @@ A story is created in a project, with a type that has a shape step:
 An issue cannot be created outside a project, a title is at most 200 characters, and the summary at most 280: what
 the story is and why, in plain words. For several stories, find or create the project that holds them (`project
 list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most 280 characters>" --stdin
-description`, the description at most 5,000 characters); `plan-project` adopts it and adds what planning needs. Each story
+description`); `plan-project` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
 **You never create tasks, branches or a design doc**, and the only steps you set are `shape`, in step 0, and the shaped step, in step 5, and
@@ -239,7 +234,7 @@ is set by `--step` or `--status` and nothing else: no comment and no escalation 
 
 Every story body is in the template's shape, every heading filled or `n/a: <why>`, at least one rule
 says what must not happen where the gap checklist requires one, every undecided answer is an
-`OPEN:` line, the Status line names the PO and today's date, and the description read back is at most 5,000
-characters. The PO has the inference comment (on the approval round, saw the body before it was written), and an
+`OPEN:` line, the Status line names the PO and today's date, and the description read back is the body.
+The PO has the inference comment (on the approval round, saw the body before it was written), and an
 unplanned story sits at the shaped step (at `shape` where its type has no shaped step; a planned one keeps
 the step and status it had).
