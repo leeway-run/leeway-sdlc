@@ -3,8 +3,8 @@
 ## 0.3.0
 
 The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
-of an approval question. **0.3.0 needs a Leeway server with the process model and two `gate` steps per type, and no
-deployed server has them yet** (see *Known limits*).
+of an approval question. **0.3.0 needs a Leeway server with the process model that allows two `gate` steps in a
+type, and no deployed server has it yet** (see *Known limits*).
 
 - **New names (LWY-114).** `shape-work` is now `shape-project`, and `plan-work` is now `plan-project`. `run-task`
   and `run-story` are one skill, `run`, which takes any ref. On a sub-issue it runs one task; on an issue it runs
@@ -65,6 +65,11 @@ upgrading:**
 
 - **Finish or restart any story that is mid-shaping under 0.2.0.** Its rounds carry no `Description at this round:`
   quote, so a UI edit made after the 0.2.0 approval was answered is not guarded.
+- **Decide every plan gate still open under 0.2.0.** Answer its PASS / PASS WITH DECISIONS / RETURN escalation and
+  let `plan-work` act on the answer before you upgrade, the QUESTIONs a PASS WITH DECISIONS raises included. 0.3.0
+  does not read that escalation, and the QUESTIONs inside a 0.2.0 report were never raised on their own. After the
+  upgrade, answering it moves nothing, and a story you move to `ready` yourself starts with those QUESTIONs not
+  checked.
 - **Make sure every QUESTION on a story gated under 0.2.0 is answered and applied.** 0.3.0's `run` does not see
   QUESTIONs raised the 0.2.0 way. It counts only escalations on `# QUESTION … of c<report>` comments, and a report
   with no such comment needs no reply. So a story gated under 0.2.0 passes without its QUESTIONs being checked.
@@ -88,6 +93,11 @@ upgrading:**
 - **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
   `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
   `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, and a 0.2.0 kit `Kept` row is asked about again.
+- **The subagent files in the agent's own directory**, for an agent other than Claude Code: `sdlc-implementer`,
+  `sdlc-reviewer` and `sdlc-divergence-reviewer` under `.codex/agents/`, `.github/agents/`, `.cursor/agents/`,
+  `.gemini/agents/`, `.grok/agents/` or `.opencode/agents/`. The release changed all three: the implementer and the
+  reviewer name the friction project, and the divergence reviewer names `plan-project`. sync-repo asks about each
+  one on its own, and a `Kept` row on one is asked about again.
 - **By hand, if you want the new words.** sync-repo never compares the installed `.sdlc/CONFIG.md` (outside
   `## Repo copies`) or the contract docs. A 0.2.x `.sdlc/CONFIG.md` still names `run-task` and `run-story` and says
   "before a story merges", and `EVIDENCE-STANDARD.md` still says "task". Edit them to `run`, "an issue" and
@@ -109,10 +119,11 @@ upgrading:**
 
 ### Known limits
 
-- **No deployed Leeway server runs 0.3.0 yet.** The Leeway app's `main` has no process model. LWY-129 and LWY-125
-  are on the app's v4 plan branch only, so dev.leeway.run, deployed from `main`, serves no `process get`, `--type`
-  or `--step`. 0.3.0's skills set and read steps, so they need a server with the process model and LWY-125's two
-  `gate` steps per type. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and sync-repo.
+- **No deployed Leeway server supports 0.3.0 yet.** The Leeway app's `main` has no process model. LWY-129 and
+  LWY-125 are on the app's v4 plan branch only, so dev.leeway.run, deployed from `main`, serves no `process get`,
+  `--type` or `--step`. 0.3.0's skills set and read steps, so they need a server with the process model and
+  LWY-125's two `gate` steps per type. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and
+  sync-repo.
 - **Old skills outside Claude Code.** It is not verified whether re-running `npx skills add` or `gemini skills
   install` leaves `shape-work`, `plan-work`, `run-task` and `run-story` installed beside the new skills. If they
   are still listed, remove them by hand from where that agent installed them.
