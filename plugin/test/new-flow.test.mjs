@@ -66,8 +66,21 @@ function toNewFlow(steps) {
   });
 }
 
+// sdlc-tune's Step 2 rules on a type's steps, read from its text: the kind counts and the step bound.
+const kindRule = /each non-`manual` kind at most once per type, except `([a-z]+)`, at most twice/.exec(tune);
+const stepBound = Number(/\*\*(\d+) steps per type\*\*/.exec(tune)?.[1]);
+const breaksRule = (steps) => {
+  const count = (kind) => steps.filter((s) => s.kind === kind).length;
+  if (new Set(steps.map((s) => s.id)).size !== steps.length) return 'step ids unique per type';
+  if (['shape', 'plan', 'gate', 'build'].some((kind) => count(kind) > (kind === kindRule?.[1] ? 2 : 1))) return 'kind count';
+  if (steps.length > stepBound) return 'steps per type';
+  return null;
+};
+const offered = (steps) => onOldFlow(steps) && breaksRule(toNewFlow(steps)) === null;
+
 test('sdlc-tune states the old-flow condition the server presets are told apart by', () => {
-  assert.match(oldFlowRule, /has a `shape` step and no `gate` step between `shape` and its `plan` step/);
+  assert.match(oldFlowRule, /has a `shape` step and no shaped step, "the type's first `gate` step after `shape` with no `plan` step between them" \(`PROCESS\.md`, "Before the plan: shaping"\)/);
+  assert.match(oldFlowRule, /no `gate` after `shape` before its `plan` step, or after `shape` at all when it has no `plan`/);
   assert.match(oldFlowRule, /no `shape` step[^.]*is not on the old flow/);
   assert.match(oldFlowRule, /differs from the new flow only in its labels; neither is offered it/);
   assert.equal(onOldFlow(OLD), true);
@@ -81,10 +94,45 @@ test('the new flow, applied to the old one, is the maintained feature, and is no
   assert.match(newFlowEdit, /Nothing else on the type changes/);
 });
 
+test("tune's Step 2 rules accept the new flow's two gates, and a result that breaks one is not offered", () => {
+  assert.ok(kindRule, 'no kind-count rule in sdlc-tune Step 2');
+  assert.equal(kindRule[1], 'gate');
+  assert.match(tune, /except `gate`, at most twice \(the shaped step and the plan gate\)/);
+  assert.equal(stepBound, 12);
+  assert.equal(breaksRule(toNewFlow(OLD)), null);
+  assert.equal(offered(OLD), true);
+  assert.match(newFlowEdit, /A type whose result would break a rule below \(a step id `shaped` already in it, a third `gate`, more than 12 steps\) is shown, naming the rule it breaks, and not offered/);
+  const manualShaped = { id: 'shaped', kind: 'manual', label: 'shaped', status: 'backlog' };
+  const twoGatesAfterPlan = [...OLD.slice(0, 3), { id: 'gate-2', kind: 'gate', label: 'gate 2', status: 'backlog' }, ...OLD.slice(3)];
+  const twelve = [...OLD, ...Array.from({ length: 7 }, (_, i) => ({ id: `check-${i}`, kind: 'manual', label: `check ${i}`, status: 'in_review' }))];
+  for (const [name, steps, rule] of [
+    ['a step id shaped', [...OLD, { ...manualShaped, status: 'in_review' }], 'step ids unique per type'],
+    ['two gates after plan', twoGatesAfterPlan, 'kind count'],
+    ['12 steps', twelve, 'steps per type'],
+  ]) {
+    assert.equal(onOldFlow(steps), true, name);
+    assert.equal(breaksRule(toNewFlow(steps)), rule, name);
+    assert.equal(offered(steps), false, name);
+  }
+  assert.match(sync, /A type whose result would break a rule \(sdlc-tune, Step 2, "The new flow"\) is shown, naming the rule it breaks, and not offered/);
+});
+
+test('tune offers the new flow once per run, and a no goes on to the request', () => {
+  assert.match(oldFlowRule, /Offer it once per run\. On a yes, a request is turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request/);
+});
+
+// The human, on LWY-126: "We're very much still in the beta phase, so we can break some things, and we need to push
+// for a good version." So a no to sync's offer is asked again at the next release, and gets no `Kept` row.
+test('sync names its two options, and a no is asked again at the next release, as the question says', () => {
+  assert.match(sync, /Two options, each with its argument: "Move to the new flow" first \([^)]+\), then "Leave it" \([^)]+\)/);
+  assert.match(sync, /The question says that a no is asked again at the next release/);
+  assert.match(sync, /a no gets no `Kept` row, so the next release asks again/);
+});
+
 test('tune and sync offer the new flow, and write it only on a yes', () => {
   assert.match(tune, /Ask once: "Change `<types>` as shown, and write it to `<KEY>`\?"[^.]*\. On no, change nothing/);
   assert.match(sync, /\*\*No type on the old flow\*\* \(sdlc-tune, Step 1, "The old flow"\) → nothing to offer/);
-  assert.match(sync, /On the yes, write it as sdlc-tune's Step 4 does[^.]*\. On any other answer nothing is written/);
+  assert.match(sync, /On "Move to the new flow", write it as sdlc-tune's Step 4 does[^.]*\. On any other answer nothing is written/);
   assert.match(sync, /matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new flow \(step 1\), by `Sync process: to <this version>:`/);
   assert.match(update, /for a product's process on the old flow: sync-repo asks, once, and this skill never does/);
 });

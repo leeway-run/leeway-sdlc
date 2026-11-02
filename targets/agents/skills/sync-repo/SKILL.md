@@ -104,13 +104,17 @@ Then the product's process, which lives in Leeway, not in the repo:
 
 - **No `.sdlc/leeway.md`** → nothing to offer: there is no product.
 - **Otherwise** read it, `<cli> process get <KEY> --json`, `<KEY>` the `product:` of `.sdlc/leeway.md`. **No
-  type on the old flow** (sdlc-tune, Step 1, "The old flow") → nothing to offer. **One or more** → offer the new
-  flow once, as one question asked with the copies in step 3 (its escalation's question begins `Sync process: to
-  <this version>:`), showing each such type before → after and the open issues it touches, as sdlc-tune's Steps
-  2 and 3 do. On the yes, write it as sdlc-tune's Step 4 does, `--as <alias>/agent`, and read it back as its
-  Step 6 does; `process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune. On any
-  other answer nothing is written. It is a Leeway write, not a repo copy: nothing on the branch records it, and
-  a no gets no `Kept` row.
+  type on the old flow** (sdlc-tune, Step 1, "The old flow") → nothing to offer. A type whose result would break
+  a rule (sdlc-tune, Step 2, "The new flow") is shown, naming the rule it breaks, and not offered. **One or more
+  left** → offer the new flow once, as one question asked with the copies in step 3 (its escalation's question
+  begins `Sync process: to <this version>:`), showing each such type before → after and the open issues it
+  touches, as sdlc-tune's Steps 2 and 3 do. Two options, each with its argument: "Move to the new flow" first
+  (shaping ends at the shaped step, which the product owner moves on, as on a new product), then "Leave it" (the
+  process stays as it is). The question says that a no is asked again at the next release. On "Move to the new
+  flow", write it as sdlc-tune's Step 4 does, `--as <alias>/agent`, and read it back as its Step 6 does;
+  `process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune. On any other answer
+  nothing is written. It is a Leeway write, not a repo copy: nothing on the branch records it, and a no gets no
+  `Kept` row, so the next release asks again.
 
 ## 2. Compare each copy
 

@@ -49,11 +49,12 @@ does not mean that a person set it. `process.version` is the schema version, `1`
 `build` step is `unattended`. A type with no `build` step is one the plugin does not run; say so in its line.
 Then ask what the human wants to change, unless the invocation already said.
 
-**The old flow.** A type is on the old flow when it has a `shape` step and no `gate` step between `shape` and its
-`plan` step: its shaping ends at no step a person moves on (`PROCESS.md`, "Before the plan: shaping"). When any
-type is, offer the new flow (Step 2) as a change of its own, alongside anything the invocation asked for: Steps 3
-to 6 run for it alone, with its own question, and a request is turned into an edit afterwards, from a fresh
-Step 1 read. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
+**The old flow.** A type is on the old flow when it has a `shape` step and no shaped step, "the type's first `gate`
+step after `shape` with no `plan` step between them" (`PROCESS.md`, "Before the plan: shaping"): no `gate` after
+`shape` before its `plan` step, or after `shape` at all when it has no `plan`. Its shaping ends at no step a person
+moves on. When any type is, offer the new flow (Step 2) as a change of its own, alongside anything the invocation
+asked for: Steps 3 to 6 run for it alone, with its own question. Offer it once per run. On a yes, a request is
+turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
 that differs from the new flow only in its labels; neither is offered it. A relabel is an ordinary request.
 
 ## Step 2 - turn the request into an edit
@@ -74,7 +75,9 @@ Take the request in the human's words. It is one or more of these, and nothing e
 - **The new flow**, on each type on the old flow (Step 1): the step `{"id": "shaped", "kind": "gate", "label":
   "shaped"}` inserted directly after `shape`, at the `shape` step's status, and the labels of the type's
   `shape`, `plan`, plan gate (its first `gate` after `plan`, if it has one) and `build` steps set to "shaping",
-  "planning", "planned" and "building". Nothing else on the type changes.
+  "planning", "planned" and "building". Nothing else on the type changes. A type whose result would break a rule
+  below (a step id `shaped` already in it, a third `gate`, more than 12 steps) is shown, naming the rule it
+  breaks, and not offered.
 - **A build parameter** (red tests, review depth, caps, blocking rungs) on that type's `build` step. The
   `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an integer 1 to 10;
   `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1` to `R5`;
@@ -86,7 +89,7 @@ rules the server enforces:
 
 - ids `^[a-z][a-z0-9-]{0,23}$`, labels 1 to 40 characters, `branchPrefix` `^[a-z][a-z0-9-]{0,15}$`;
 - type ids unique and `defaultType` one of them; step ids unique per type; each non-`manual` kind at most
-  once per type;
+  once per type, except `gate`, at most twice (the shaped step and the plan gate);
 - step kinds `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`,
   non-decreasing along a type's steps; a `build` step has status `in_progress`.
 
