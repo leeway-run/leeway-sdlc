@@ -70,7 +70,7 @@ test('plan-project starts where shaping ends, and a shaped story waits on the PO
   assert.match(text, /\| the plan step \| carry on \|/);
   assert.match(text, /\| no step at `backlog`, on a type with no `shape` step \| `<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>`, then carry on \|/);
   assert.match(text, /\| the shaped step \| \*\*say the story waits on the PO, and stop\.\*\* Moving it to the plan step is their approval of the body\. Write nothing, and do not move it unless the person asks \(step 7\) \|/);
-  assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*.* Write nothing \|/);
+  assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*.* Write nothing, and do not move it unless the person asks \(step 7\) \|/);
   assert.match(text, /\| anywhere else \(`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later\) \|/);
   assert.doesNotMatch(text, /--step plan\b/);
 });
@@ -134,7 +134,7 @@ test('answered QUESTIONs are applied before the move, and the application is a r
   const rows = startRows();
   const apply = rows.indexOf('the plan gate, or `ready` with no step, with the latest report\'s QUESTIONs answered and not applied (step 8, "The QUESTIONs")');
   assert.ok(apply >= 0 && apply < rows.indexOf('the plan gate') && apply < rows.findIndex((r) => r.startsWith('anywhere else')), rows.join('\n'));
-  assert.match(start(), /carry on at step 8, "The QUESTIONs": apply them, and move nothing \|/);
+  assert.match(start(), /carry on at step 8, "The QUESTIONs": apply them, and move nothing unless the person asks \(step 7\) \|/);
 });
 
 test('returned and three or more RETURNs count only the reports since the latest of the move to ready, the move into planning from shaping, a re-plan answer and a re-plan request', () => {

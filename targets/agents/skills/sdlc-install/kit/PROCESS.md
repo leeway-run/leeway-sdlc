@@ -41,7 +41,8 @@ gate's report as `<alias>/reviewer`); subagents never write, so their entries ar
 
 **A move the person asks for.** Any skill makes any move the person asks for in the session, from whatever step or
 status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says
-which move it made, from where to where. No skill tells the person to make a move in the UI because the skill may
+which move it made, from where to where, and what it leaves unmet (an open or unapplied QUESTION, no coverage
+report, no tasks). No skill tells the person to make a move in the UI because the skill may
 not. What no skill does is move a story out of the shaped step or the plan gate on its own initiative: those moves
 are a person's, made by them or by a skill they asked.
 
