@@ -9,17 +9,21 @@ import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parse } from '../scripts/wait-answer.mjs'
 
 const SCRIPT = fileURLToPath(new URL('../scripts/wait-answer.mjs', import.meta.url))
 const WRITE_VERBS = /\b(create|update|add|remove|record|raise|answer|link|unlink|login|logout|delete)\b/
 
 const FAKE = `
 import { appendFileSync, readFileSync } from 'node:fs'
+import { spawn } from 'node:child_process'
 const log = process.env.FAKE_LOG
 const plan = JSON.parse(readFileSync(process.env.FAKE_PLAN, 'utf8'))
 const n = readFileSync(log, 'utf8').split('\\n').filter(Boolean).length
 appendFileSync(log, JSON.stringify({ at: Date.now(), argv: process.argv.slice(2) }) + '\\n')
 const r = plan[Math.min(n, plan.length - 1)]
+// A grandchild that inherits the pipes, as a wrapper script's child would.
+if (r.grandchild) spawn(process.execPath, ['-e', 'setTimeout(() => {}, ' + r.grandchild + ')'], { stdio: 'inherit' })
 setTimeout(() => {
   if (r.stdout !== undefined) process.stdout.write(typeof r.stdout === 'string' ? r.stdout : JSON.stringify(r.stdout))
   if (r.stderr) process.stderr.write(r.stderr)
@@ -112,15 +116,30 @@ test('the gaps start at --first, double to --cap, and the deadline ends with the
 })
 
 test('the deadline holds even when it falls inside a gap', async () => {
-  const r = await run([issue(esc(1))], ['e1'], ['--first', '0.3', '--cap', '10', '--deadline', '0.5', '--call-timeout', '1'])
+  // Checks at 1 s, then the 2 s gap is cut to end at 1.5 s; without the cut the script would run past 3 s.
+  const r = await run([issue(esc(1))], ['e1'], ['--first', '1', '--cap', '10', '--deadline', '1.5', '--call-timeout', '1'])
   assert.equal(r.status, 2, r.stderr)
-  assert.ok(r.ended - r.started < 500 + 500, `exited at ${r.ended - r.started} ms`)
+  assert.equal(r.calls.length, 2)
+  assert.ok(r.ended - r.started < 1500 + 400, `exited at ${r.ended - r.started} ms`)
 })
 
 test('one transient failure does not end the wait', async () => {
   const r = await run([{ stderr: 'cannot reach https://x.test: fetch failed', code: 1 }, issue(esc(1, answered('Yes')))], ['e1'])
   assert.equal(r.status, 0, r.stderr)
   assert.equal(r.calls.length, 2)
+})
+
+test('a good check resets the failure count, so failures that alternate with good checks never give up early', async () => {
+  const fail = { stderr: 'cannot reach https://x.test: fetch failed', code: 1 }
+  const plan = Array.from({ length: 40 }, (_, i) => (i % 2 ? issue(esc(1)) : fail))
+  const r = await run(plan, ['e1', '--max-failures', '2'], ['--first', '0.05', '--cap', '0.05', '--deadline', '0.8', '--call-timeout', '1'])
+  assert.equal(r.status, 2, r.stderr)
+  assert.ok(r.calls.length >= 4, `${r.calls.length} calls`)
+})
+
+test('the defaults are a first check after 60 s, a 900 s cap and a 16 hour deadline', () => {
+  const o = parse(['--server', 'https://x.test', 'LWY-1', 'e2', '--', 'node', '/a b/leeway.js'])
+  assert.deepEqual(o, { first: 60, cap: 900, deadline: 57600, callTimeout: 60, maxFailures: 4, server: 'https://x.test', ref: 'LWY-1', number: 2, cli: ['node', '/a b/leeway.js'] })
 })
 
 test('Leeway unreachable for --max-failures checks in a row exits 3', async () => {
@@ -145,10 +164,20 @@ test('a call that hangs is cut at --call-timeout and counts as a failure', async
   assert.ok(r.ended - r.started < 2000)
 })
 
-test('output that is not one JSON document is a failure, not an answer', async () => {
-  const r = await run([{ stdout: '{"escalations":[]}{"escalations":[]}' }], ['e1', '--max-failures', '2'])
+test('a call whose grandchild holds the pipes open is still cut at --call-timeout', async () => {
+  const r = await run([{ grandchild: 4000, delay: 5000, stdout: {} }], ['e1', '--max-failures', '1', '--call-timeout', '0.3'])
   assert.equal(r.status, 3, r.stderr)
-  assert.match(r.stderr, /one JSON document/)
+  assert.match(r.stderr, /longer than 0.3s/)
+  assert.ok(r.ended - r.started < 1500, `exited at ${r.ended - r.started} ms`)
+})
+
+test('output that is not one JSON document with an escalations array is a failure, not an answer', async () => {
+  for (const stdout of ['{"escalations":[]}{"escalations":[]}', 'null', '5', '{"issue":{}}']) {
+    const r = await run([{ stdout }], ['e1', '--max-failures', '2'])
+    assert.equal(r.status, 3, `${stdout}: ${r.stderr}`)
+    assert.match(r.stderr, /one JSON document with an escalations array/)
+    assert.equal(r.calls.length, 2)
+  }
 })
 
 test('an escalation the issue does not have exits 1 instead of waiting', async () => {

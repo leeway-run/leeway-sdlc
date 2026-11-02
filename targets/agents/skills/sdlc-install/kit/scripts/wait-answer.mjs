@@ -24,6 +24,8 @@
 // No dependencies.
 
 import { spawn } from 'node:child_process'
+import { realpathSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
 const EXIT = { answered: 0, usage: 1, gaveUp: 2, unreachable: 3, unauthorised: 4 }
 
@@ -32,7 +34,7 @@ const usage = (msg) => {
   process.exit(EXIT.usage)
 }
 
-const parse = (argv) => {
+export const parse = (argv) => {
   const dash = argv.indexOf('--')
   if (dash === -1 || dash === argv.length - 1) usage('no CLI command after --')
   const cli = argv.slice(dash + 1)
@@ -65,23 +67,36 @@ const check = (o) =>
   new Promise((resolve) => {
     const child = spawn(o.cli[0], [...o.cli.slice(1), '--server', o.server, '--json', 'issue', 'get', o.ref], {
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout: o.callTimeout * 1000,
     })
     let out = ''
     let err = ''
+    let done = false
+    const finish = (r) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      resolve(r)
+    }
+    // Our own timer, not spawn's `timeout`: a wrapper's grandchild can hold the pipes open, and `close` waits for them.
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL')
+      child.stdout.destroy()
+      child.stderr.destroy()
+      finish({ failure: 'unreachable', detail: `issue get took longer than ${o.callTimeout}s` })
+    }, o.callTimeout * 1000)
     child.stdout.on('data', (d) => (out += d))
     child.stderr.on('data', (d) => (err += d))
-    child.on('error', (e) => resolve({ failure: 'unreachable', detail: e.message }))
-    child.on('close', (code, signal) => {
-      if (signal) return resolve({ failure: 'unreachable', detail: `issue get took longer than ${o.callTimeout}s` })
+    child.on('error', (e) => finish({ failure: 'unreachable', detail: e.message }))
+    child.on('close', (code) => {
       const detail = err.trim() || out.trim()
       // The CLI ends both "not logged in" and "did not accept the saved token" with "Run: leeway login --server <url>".
-      if (code !== 0) return resolve({ failure: /leeway login/.test(err) ? 'unauthorised' : 'unreachable', detail })
+      if (code !== 0) return finish({ failure: /leeway login/.test(err) ? 'unauthorised' : 'unreachable', detail })
+      let issue
       try {
-        resolve({ issue: JSON.parse(out) })
-      } catch {
-        resolve({ failure: 'unreachable', detail: 'issue get did not print one JSON document' })
-      }
+        issue = JSON.parse(out)
+      } catch {}
+      if (!Array.isArray(issue?.escalations)) return finish({ failure: 'unreachable', detail: 'issue get did not print one JSON document with an escalations array' })
+      finish({ issue })
     })
   })
 
@@ -101,7 +116,7 @@ const wait = async (o) => {
       }
     } else {
       failures = 0
-      const esc = (r.issue.escalations ?? []).find((e) => e.number === o.number)
+      const esc = r.issue.escalations.find((e) => e.number === o.number)
       if (!esc) return { code: EXIT.usage, message: `${o.ref} has no escalation e${o.number}` }
       if (esc.answer) return { code: EXIT.answered, answer: { label: esc.answer.label, note: esc.answer.note, by: esc.answer.by } }
     }
@@ -110,7 +125,10 @@ const wait = async (o) => {
   }
 }
 
-const result = await wait(parse(process.argv.slice(2)))
-if (result.answer) process.stdout.write(JSON.stringify(result.answer) + '\n')
-else process.stderr.write(`wait-answer: ${result.message}\n`)
-process.exit(result.code)
+// Run only as a script, so a test can import `parse` without starting a wait.
+if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
+  const result = await wait(parse(process.argv.slice(2)))
+  if (result.answer) process.stdout.write(JSON.stringify(result.answer) + '\n')
+  else process.stderr.write(`wait-answer: ${result.message}\n`)
+  process.exit(result.code)
+}
