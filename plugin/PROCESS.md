@@ -271,14 +271,22 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   with six has not been thought through.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
-- **Then stop the turn**, naming the escalation and the issue. Do not continue the work that depends on
-  the answer, and do not ask again somewhere else.
+- **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
+  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), and on an answer carry on
+  as a re-invoke would, writing nothing twice. It stops the turn only when the wait ends without an
+  answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
+  outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
+  answer that needs a person to act first is put to them as an escalation and waited on too (run's
+  "Wait, then carry on"). **Every other skill stops the turn**, naming the escalation
+  and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
+  somewhere else.
 - **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
-  no answer means do not proceed.
+  no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
+  description is not.
 
 An implementer that returns `BLOCKED` carries a `## Question` section. The orchestrator does not
 paraphrase it: it runs the gate on the brief, posts the brief as a comment, raises the escalation from the
-block, and stops. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
+block, and waits. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
 
 ## Records
 
