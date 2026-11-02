@@ -60,14 +60,16 @@ whatever happened.
    | anywhere else (`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
 
    A story at the plan step that already has tasks or technical criteria is a re-plan: read step 1's note on it.
-   Count its coverage reports (comments opening `# Plan coverage:`, step 8) posted since the latest of three marks:
+   Count its coverage reports (comments opening `# Plan coverage:`, step 8) posted since the latest of four marks:
    - its last move to `ready`: the latest `thread` entry of kind `status` whose `data.to` is `ready`;
    - its last move into the plan step from `shape` or the shaped step. The thread records no step move, so read it
      from the latest comment that sent the story back to `shape`, the one whose closing sentence begins *"Answer
      these with `shape-project` on `<ref>`"* (step 1's gaps, or step 8's "Three RETURNs"): the story came back to
      planning after it;
    - on a type with no `shape`, the latest "Three RETURNs" escalation answered *Re-plan once more* (step 8): count
-     only the reports after the one it is tied to (`escalations[].comment`).
+     only the reports after the one it is tied to (`escalations[].comment`);
+   - the latest comment opening `# Re-plan requested`, posted when a person asks to plan a stopped story again
+     (step 8): count only the reports after it.
 
    With no mark, count all of them. None in the window: plan it afresh; the latest report before the window, if
    there is one, says what the last plan missed. One or two: it was returned from the gate. Read the latest report
@@ -477,14 +479,19 @@ moving.
 coverage reports in its window. Then stop re-planning. When the type has `shape`, set `--step shape` and post what
 the rounds could not trace as a step 1 comment to the PO, with step 1's ending. When it has no `shape`, **stop and
 raise one escalation on the story**, tied to the latest report with `--comment cN`, asking the person how to go on:
-*"`<ref>` has three or more coverage reports and none passed: how do we go on?"*, with two options, each naming what
-plan-project does next:
+*"`<ref>` has three or more coverage reports and none passed: how do we go on?"* The reviewer is tracing a story that
+does not say what anyone means by it. Give two options, each naming what plan-project does next:
 - *Re-plan once more*: the next plan-project re-plans it. The answer starts a fresh window (step 0), so the count
   starts again.
-- *Stop planning it*: the next plan-project says the story is stopped and stops, writing and raising nothing. The
-  person rewrites the story, closes it or moves it on by hand.
+- *Stop planning it*: the next plan-project says the story is stopped and stops, writing and raising nothing. To
+  plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again. To drop
+  it, they close it.
 
-An answered one is not raised again: when the latest is answered *Stop planning it*, say so and stop. The reviewer is tracing a story that does not say what anyone means by it.
+The same escalation is not raised twice. After a *Re-plan once more* answer, three more reports raise a new one on
+the latest report. When the latest is answered *Stop planning it*, say so and stop, unless the person asks in this
+session to plan the story again. Then post a comment on the story opening `# Re-plan requested`, saying it was
+posted because the person asked and naming who asked, and carry on from step 0: the reports after that comment
+start a fresh window.
 
 **What is lost.** The gate checks that the plan traces to the story, not that the story is right or the design is
 good. A criterion nobody wrote down cannot be found missing.
