@@ -12,6 +12,7 @@
 //     skills/sdlc-install/kit/                  what sdlc-install copies to .sdlc/kit/ in the repo:
 //       PROCESS.md, HARNESS.md, craft/, agents/, skills/ (the skills' files but not SKILL.md, for "in this plugin" paths)
 //       hooks/git-guard.mjs, hooks/leeway-guard.mjs, hooks/adapters/{guard,governed}.mjs
+//       scripts/wait-answer.mjs                 what run waits on for an escalation's answer
 //       harness/<agent>.md                      one HARNESS.md per agent (scripts/targets.mjs)
 //       wiring/<agent>/...                      that agent's subagents and guard hook, at their repo paths
 //
@@ -122,6 +123,7 @@ const build = (out) => {
   for (const f of ['git-guard.mjs', 'leeway-guard.mjs', 'adapters/guard.mjs', 'adapters/governed.mjs']) {
     write(join(kit, 'hooks', f), readFileSync(join(PLUGIN, 'hooks', f)))
   }
+  write(join(kit, 'scripts', 'wait-answer.mjs'), readFileSync(join(PLUGIN, 'scripts', 'wait-answer.mjs')))
   for (const t of TARGETS) {
     write(join(kit, 'harness', `${t.id}.md`), harness(t, version, NOTICE))
     for (const [path, content] of Object.entries(t.wiring(agents))) write(join(kit, 'wiring', t.id, path), content)
