@@ -640,8 +640,9 @@ A refusal here writes nothing: say in the session which precondition failed and 
    - **It has left the plan gate for `ready` or later**: `issue.status` is `ready`, `in_progress` or `in_review`,
      and `issue.step` is not the plan gate or a step before it. A person passing the gate is that move. **A story
      still at the plan gate waits on the gate.** One at a step before it is not planned.
-   - **The latest report's QUESTIONs are answered and applied**: every escalation whose `comment` is that report's
-     `cN` has an answer (`escalations[].answer`), and the report has a reply opening `# QUESTIONs applied`. Each
+   - **The latest report's QUESTIONs are answered and applied**: every escalation on a comment opening
+     `# QUESTION … of c<report>`, where `c<report>` is that report's first comment, has an answer
+     (`escalations[].answer`), and the report has a reply opening `# QUESTIONs applied`. Each
      QUESTION needs a human answer before any task starts. One open waits on that answer; answered and not applied
      waits on `plan-project`, which applies them. A report with no QUESTION needs no reply.
 

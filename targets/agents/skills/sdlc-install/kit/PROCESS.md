@@ -151,14 +151,15 @@ exists.
    plan, the stories and the tasks itself.
 2. It returns a coverage table, findings tagged BLOCKER / QUESTION / NOTE, and a recommended verdict:
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
-3. The orchestrator posts the **full** report as a comment on the story, raises one escalation per QUESTION,
-   and stops with the story at the plan gate. No escalation asks for the gate decision: **the decision is a
-   person's move.** Moving the story from the plan gate to `ready` passes it; moving it back to the plan step
-   returns it to planning. **No task starts before that move to `ready`**, and no skill makes it on its own
-   initiative. With QUESTIONs, the order is: answer them, run `plan-project` to apply the answers (it replies
-   `# QUESTIONs applied` to the report), then move the story to `ready`. `run` reads the gate from the step and the
-   record: it refuses a story with no coverage report, one still at the plan gate, and one whose latest report has
-   a QUESTION open, or answered and not applied.
+3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
+   comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
+   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. No
+   escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
+   `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
+   `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
+   `plan-project` to apply the answers (it replies `# QUESTIONs applied` to the report), then move the story to
+   `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
 mind, not the story as written, and fills every gap from memory without seeing one. A fresh context with
@@ -287,7 +288,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
-| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); one escalation per QUESTION in it, tied to it with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
+| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
 | status | always `issue update --step` or `--status`; never by iteration or escalation |
