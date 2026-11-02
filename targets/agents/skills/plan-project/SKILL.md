@@ -394,8 +394,9 @@ escalation and no iteration moves a story. Setting a step sets the step's status
 the plan step (a type with no `shape`, or no shaped step); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
 type without one. **The moves out of the shaped step and out of the plan gate are a person's**: this skill
 never makes them on its own initiative. When the person asks in the session for one, or for any other move, make it
-as `<alias>/agent` and say which move you made (`PROCESS.md`, "The cast"). Then read the story again and start again
-at step 0.
+as `<alias>/agent` and say which move you made (`PROCESS.md`, "The cast"). When that move put the story at the plan
+step, read the story again and start again at step 0. After any other move, say where the story now is and stop:
+make no further move of your own.
 
 ## 8. The plan gate
 

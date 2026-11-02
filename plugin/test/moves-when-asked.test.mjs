@@ -128,7 +128,7 @@ test('PROCESS.md says any skill makes the move the person asks for, and none mov
   assert.match(contract, /\| status \| always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>\/agent`, named in the session \("The cast"\) \|/);
 });
 
-test('after a move the person asked for, plan-project reads the story again and starts at step 0', () => {
+test('after a move the person asked for, plan-project restarts at step 0 only from the plan step, and otherwise stops', () => {
   const plan = skills.find(([name]) => name === 'plan-project')[1].replace(/\s+/g, ' ');
-  assert.match(plan, /say which move you made \(`PROCESS\.md`, "The cast"\)\. Then read the story again and start again at step 0\./);
+  assert.match(plan, /say which move you made \(`PROCESS\.md`, "The cast"\)\. When that move put the story at the plan step, read the story again and start again at step 0\. After any other move, say where the story now is and stop: make no further move of your own\./);
 });
