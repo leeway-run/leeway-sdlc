@@ -45,14 +45,22 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
 <cli> process get <KEY> --json > <file outside the repo>/before.json
 ```
 
-The answer is `{process, version, updatedAt}`. `version` is the revision (`0` and `updatedAt: null`: the
-product never set a process, and `process` is the `mvp` preset, not a stored one). `process.version` is the
-schema version, `1`.
+The answer is `{process, version, updatedAt}`. `version` is the revision counter. `0`, with `updatedAt: null`, is
+a product created before products stored their process: it has no stored row and reads the `mvp` preset. `1` or
+more is a stored process, and that includes the `maintained` process `product create` stores at version 1, so it
+does not mean that a person set it. `process.version` is the schema version, `1`.
 
 **State each type in one line**, in the words `sdlc-install` uses for its questions 3 and 4: "A `<type>` goes
 `<step labels joined with →>`." ("An" before a vowel.) Add what its question 5 shows: whether the type's
 `build` step is `unattended`. A type with no `build` step is one the plugin does not run; say so in its line.
 Then ask what the human wants to change, unless the invocation already said.
+
+**The old flow.** A type is on the old flow when it has a `shape` step and no `gate` step between `shape` and its
+`plan` step: its shaping ends at no step a person moves on (`PROCESS.md`, "Before the plan: shaping"). When any
+type is, offer the new flow (Step 2) as a change of its own, alongside anything the invocation asked for: Steps 3
+to 6 run for it alone, with its own question, and a request is turned into an edit afterwards, from a fresh
+Step 1 read. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
+that differs from the new flow only in its labels; neither is offered it. A relabel is an ordinary request.
 
 ## Step 2 - turn the request into an edit
 
@@ -69,6 +77,10 @@ Take the request in the human's words. It is one or more of these, and nothing e
 - **A type the request names that is not in the definition** ("spikes skip plan" with no spike): say so and
   ask; do not guess a neighbour.
 - **Unattended** ("run chores without me") sets `unattended` on that type's `build` step.
+- **The new flow**, on each type on the old flow (Step 1): the step `{"id": "shaped", "kind": "gate", "label":
+  "shaped"}` inserted directly after `shape`, at the `shape` step's status, and the labels of the type's
+  `shape`, `plan`, plan gate (its first `gate` after `plan`, if it has one) and `build` steps set to "shaping",
+  "planning", "planned" and "building". Nothing else on the type changes.
 - **A build parameter** (red tests, review depth, caps, blocking rungs) on that type's `build` step. The
   `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an integer 1 to 10;
   `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1` to `R5`;

@@ -1,6 +1,6 @@
 ---
 name: sync-repo
-description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
+description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, and the new shaping and planning flow offered to a product process still on the old one, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
 ---
 
 > **leeway-sdlc for agents other than Claude Code.** This plugin's files (`PROCESS.md`, `HARNESS.md`, `craft/`,
@@ -40,7 +40,8 @@ Raising, all together, once steps 0 to 2 have found which copies need an answer:
 answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
 remain open. Never write a copy on an unanswered question. The `filing-work:` question is the exception:
 step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
-(step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`.
+(step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new
+flow (step 1), by `Sync process: to <this version>:`.
 
 ## 0. Before anything
 
@@ -98,6 +99,18 @@ Then the friction line of `.sdlc/leeway.md`:
   made twice. A project is created only on that answer, as sdlc-install's `{{FRICTION_PROJECT}}` says, and
   its id is read back from Leeway; never invent one. The answer replaces the legacy line in step 4. The old
   issue is left as it is: nothing is written to it, and it is not closed.
+
+Then the product's process, which lives in Leeway, not in the repo:
+
+- **No `.sdlc/leeway.md`** → nothing to offer: there is no product.
+- **Otherwise** read it, `<cli> process get <KEY> --json`, `<KEY>` the `product:` of `.sdlc/leeway.md`. **No
+  type on the old flow** (sdlc-tune, Step 1, "The old flow") → nothing to offer. **One or more** → offer the new
+  flow once, as one question asked with the copies in step 3 (its escalation's question begins `Sync process: to
+  <this version>:`), showing each such type before → after and the open issues it touches, as sdlc-tune's Steps
+  2 and 3 do. On the yes, write it as sdlc-tune's Step 4 does, `--as <alias>/agent`, and read it back as its
+  Step 6 does; `process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune. On any
+  other answer nothing is written. It is a Leeway write, not a repo copy: nothing on the branch records it, and
+  a no gets no `Kept` row.
 
 ## 2. Compare each copy
 
@@ -165,7 +178,8 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   say so in the summary.
 
 One question per differing copy and per missing line, step 1's `filing-work:` question when the
-binding lacks the line, and step 1's friction migration for a legacy binding with a ref, no more. A copy
+binding lacks the line, step 1's friction migration for a legacy binding with a ref, and step 1's new flow
+when a type is on the old flow, no more. A copy
 that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
@@ -195,5 +209,6 @@ outside the branch.
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
 version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
-none and a legacy friction line replaced by `friction-project:`; and the pull request is open, or the
-user said why not. End with one line: the version synced to, and each copy as taken, kept or unchanged.
+none and a legacy friction line replaced by `friction-project:`; the process is changed only on a yes to the
+new flow; and the pull request is open, or the user said why not. End with one line: the version synced to,
+each copy as taken, kept or unchanged, and the process as moved to the new flow, left, or not offered.
