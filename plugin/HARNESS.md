@@ -21,6 +21,18 @@ governed-marker: not used
 The hooks identify this plugin's agents from the `agent_type` the harness sends with each call. You never write a
 marker.
 
+## Waiting for an answer
+
+wait: background
+
+Start `wait-answer.mjs` (run, "Wait, then carry on") with the Bash tool and `run_in_background: true`, as it is,
+with nothing appended: an `; echo` after it would become the exit code the harness reports. The harness runs it
+detached and wakes the session when it exits, naming its exit code and its output file, so no turn is spent per
+check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
+on the exit code as run's table says. If the session ends first, the run has stopped as at the deadline: the
+escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
+docs/targets/claude.md records the probe.
+
 ## Required reading
 
 `required-reading` (SubagentStart) also injects the *Required reading* rows into the implementer and the reviewer.
