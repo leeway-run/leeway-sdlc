@@ -1,6 +1,6 @@
 # The contract for delegated work
 
-**Status at this version.** `0.2.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
+**Status at this version.** `0.3.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
 `version-notice`, and the adapters that run the guards in other agents), the three agents, the templates and the
 skills (`sdlc-install`, `sdlc-tune`, `shape-project`, `plan-project`, `run`, `update`, `sync-repo`).
 

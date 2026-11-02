@@ -4,7 +4,7 @@ The skills and `PROCESS.md` describe the loop in terms any coding agent can foll
 the agent running it. Each target ships its own `HARNESS.md`; this is the Claude Code one. Read it alongside
 `PROCESS.md`, and where the two disagree on a mechanism, this file wins.
 
-version: 0.2.0
+version: 0.3.0
 agent: claude
 plugin-files: the plugin root (this file's directory)
 
