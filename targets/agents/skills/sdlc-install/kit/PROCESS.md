@@ -118,6 +118,13 @@ and the plan gate all work from both. An issue description holds at most 5,000 c
 technical criteria would not fit, they move to one comment that opens `# Technical criteria`, the latest
 one wins, and every reader reads it with the body.
 
+**Shaping ends at the shaped step**, the type's first `gate` step after `shape` with no `plan` step between them
+(`shaped` in the presets). Once every question is answered and no answer leaves something new unclear,
+`shape-project` writes the body, posts one comment of what it inferred beyond the answers, sets that step and
+stops. No escalation asks whether to write the body: the product owner's answers are the approval, and the story
+waits at the shaped step for them to move it on. Two stories keep an approval escalation before the write: one
+already planned, whose tasks were built against its criteria, and one whose type has no shaped step.
+
 | Part of the story | Owner | Written through |
 |---|---|---|
 | The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |

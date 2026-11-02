@@ -10,6 +10,8 @@ asks it, and the body says nothing about it, not even `n/a`. When you cannot tel
 applies, that is the one question to ask: *"can this list get long enough to page?"*
 
 Of the rows that apply, one the story already answers needs nothing; one it leaves open is a gap.
+An answer that leaves something new unclear is a new gap, asked the same way. When no gap is left, `shape-project`
+writes the body without asking again.
 
 The rows are questions, not headings. An answer lands as a rule under the acceptance criterion it
 belongs to — the empty state under the criterion for the list it empties.
