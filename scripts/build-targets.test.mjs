@@ -54,6 +54,8 @@ test('every HARNESS.md says how a run waits, and waits only where a probe showed
     assert.ok(section, `${path}: no "## Waiting for an answer" section`)
     const wait = /^wait: (background|stop)$/m.exec(section)?.[1]
     assert.ok(wait, `${path}: no wait line`)
+    // run's step 4 lets a wait that blocks nothing (a debt proposal after the task is done) carry on; stop must too.
+    if (wait === 'stop') assert.match(section, /blocks nothing[^.]*carries on/, `${path} stops a wait that blocks nothing`)
     if (wait === 'background') {
       const record = join(ROOT, 'docs', 'targets', `${id}.md`)
       assert.ok(existsSync(record), `${path} waits, but there is no probe record ${record}`)

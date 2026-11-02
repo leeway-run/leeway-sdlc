@@ -36,9 +36,11 @@ wait: stop
 
 A run in Google Gemini CLI does not wait for an escalation's answer. UNVERIFIED: whether Google Gemini CLI can run a long command
 without spending a turn per check and resume the session when it exits; no probe has shown it (docs/targets/gemini.md).
-Until one does, skip steps 2 and 3 of run's "Wait, then carry on" and act at once as on exit 2: post what the path
-posts, say which escalation on which issue you stopped on, and stop the turn. The escalation and any `# Run status`
-comment stay, and re-invoking `run` once it is answered resumes the work.
+Until one does, skip steps 2 and 3 of run's "Wait, then carry on" and act at once as its step 4 says for exit 2. A
+wait that blocks nothing, such as a sub-issue run's debt proposal ("Land the task", step 5), carries on. Any other
+posts what the path posts, says which escalation on which issue it stopped on, and stops the turn. The escalation and
+any `# Run status` comment stay, and re-invoking `run` once it is answered resumes where there is work left to
+resume (run, "Land the task", step 5).
 
 ## Required reading
 

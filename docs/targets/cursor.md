@@ -2,7 +2,7 @@
 
 - **Version tested:** not run
 - **Date:** 2026-11-02
-- **Tested by:** the LWY-131.3 implementer
+- **Tested by:** nobody yet; the LWY-131.3 implementer recorded that it could not be run
 
 ## Hook payloads
 Not run yet (README.md, "The run, per agent").

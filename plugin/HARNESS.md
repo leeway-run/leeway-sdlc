@@ -30,7 +30,8 @@ with nothing appended: an `; echo` after it would become the exit code the harne
 detached and wakes the session when it exits, naming its exit code and its output file, so no turn is spent per
 check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
 on the exit code as run's table says. If the session ends first, the run has stopped as at the deadline: the
-escalation stays, and re-invoking `run` resumes. docs/targets/claude.md records the probe.
+escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
+docs/targets/claude.md records the probe.
 
 ## Required reading
 
