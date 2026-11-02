@@ -1,6 +1,6 @@
 ---
 name: plan-project
-description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and passes the plan gate (when the type has one) - an independent coverage review and a human decision. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
+description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and ends at the plan gate (when the type has one) - an independent coverage review, then a person passes it by moving the issue to ready. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
 ---
 
 # Plan a project
@@ -34,11 +34,25 @@ whatever happened.
    | no `plan` step | **Say so and stop.** Create no project, issue, comment or step; point at `run` for a type with `build`. Never plan a type the process does not plan |
    | a `shape` step | step 1, the product check, runs |
    | a `plan` step with `params.designDoc: true` | step 3 writes the design doc |
-   | a `gate` step | step 8 runs the plan gate |
+   | a `gate` step after `plan` | step 8 ends planning at the plan gate |
 
+   **The plan step** is the type's step of kind `plan`. **The plan gate** is the type's first step of kind `gate`
+   after its `plan` step (`gate` "planned" in the presets). A `gate` step before `plan` is the shaped step, where
+   shaping ends: it is not the plan gate. Find each in `process get` by kind and position, never by id.
    The type's `branchPrefix` names its branches (step 6). A sub-issue takes its story's type.
-4. **Start.** `<cli> --as <alias>/planner issue update <story> --step plan`. Skip it when `issue.step.id` is already
-   `plan`. A story that already has tasks or technical criteria is a re-plan: read step 1's note on it.
+4. **Start only from the plan step.** Read `issue.step.id` against the type's steps:
+
+   | The story is at | So |
+   |---|---|
+   | the plan step | carry on |
+   | no step, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
+   | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it |
+   | the plan gate | an answered QUESTION escalation from step 8 not yet applied: carry on at step 8, "The QUESTIONs". Otherwise **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing |
+   | anywhere else (`shape`, no step on a type with `shape`, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
+
+   A story at the plan step that already has tasks or technical criteria is a re-plan: read step 1's note on it.
+   One that also carries a coverage report from step 8 was returned from the gate: read the latest report and the
+   comments since it, fix what its BLOCKERs name, and gate it again (step 8).
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
    terminal question: it is a Leeway escalation on the story, and then you stop the turn. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
@@ -352,18 +366,21 @@ before round 2** and say so inline (send the whole corrected text, after re-read
 ## 7. A status moves only by --step or --status
 
 A status or a step is set by `issue update --step <id>` or `--status <status>` and by nothing else: no comment, no
-escalation and no iteration moves a story. Setting a step sets the step's status in the same write. Step 0 set
-`plan`; step 1 may set `shape`; step 8 sets `gate`, and `--status ready` when the gate passes.
+escalation and no iteration moves a story. Setting a step sets the step's status in the same write. Step 0 may set
+the plan step (a type with no `shape`); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
+type without one. **The moves out of the shaped step and out of the plan gate are a person's**: this skill
+never makes them on its own initiative.
 
 ## 8. The plan gate
 
 The last step, once the whole hierarchy exists. **No task starts before it.**
 
-**A type without a `gate` step** goes from plan to ready with no gate: `issue update <story> --status ready` (no
+**A type without a plan gate** goes from plan to ready with no gate: `issue update <story> --status ready` (no
 step), the end of this skill.
 
-**A type with one**: `issue update <story> --step gate`. You wrote the plan, so you are the one reader who cannot
-check it: an artifact cannot audit itself. So a fresh context does, and a human decides.
+**A type with one**: `issue update <story> --step <the plan gate's id>`. You wrote the plan, so you are the one
+reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and a person decides by
+moving the story on.
 
 ### Delegate to the divergence reviewer with ids, not a story
 
@@ -395,42 +412,39 @@ worried about: the critical input is the items as written, and your account of t
 | **Hallucination** | read log missing, refs or titles that do not match Leeway, a tree that changed | re-spawn with the prefix *"You hallucinated tool calls in your previous run. Use real tool invocations only."* Second failure → **do not run the review yourself.** Tell the human the gate degraded and put the hierarchy in front of them to trace by hand |
 | **Truncated report** | the read log matches, the report is cut short | re-spawn: there is no staged work to lose |
 
-### Post the full report, then ask
+### Post the full report, then stop at the gate
 
 Post the **full report** as a comment on each story it covers, **`--as <alias>/reviewer`**: every row of that
 story's coverage table, every finding. Not a summary: the report reaches you as the agent's final message and is
 written nowhere else. A report over the 20,000-character comment cap goes across the comment and a reply
 (`comment add <ref> --parent cN --stdin body`), never cut.
 
-**Then raise the human's decision as one escalation on the story**, as `<alias>/planner`, tied to the report with
-`--comment cN`. The verdict is the reviewer's recommendation; the decision is not the reviewer's and not yours.
+**Planning ends here, with the story at the plan gate.** No escalation asks for the gate decision: the decision is
+the person's move. The verdict is the reviewer's recommendation; the decision is not the reviewer's and not yours.
+Say in the session, per story, the report's `cN`, its verdict and what each move means:
 
-```sh
-<cli> --server <server> --as <alias>/planner escalation raise <story> --question "Plan coverage for <story>: <verdict>, N questions. Gate decision?" --options '[{"label":"PASS","argument":"..."},{"label":"PASS WITH DECISIONS","argument":"..."},{"label":"RETURN","argument":"..."}]' --meanwhile "No task starts." --comment cN
-```
+- **Passing the gate** is a person moving the story from the plan gate to `ready`. No step: `run` sets the build
+  step when it starts, so a story is never `in_progress` with nobody on it. **No task starts before that move.**
+- **Returning it** is a person moving it back to the plan step. The next `plan-project` fixes the items the
+  BLOCKERs name (step 0) and spawns a **fresh** reviewer — never the same one with a note about what changed. The
+  next round posts its own report comment.
 
-Each option's argument says what it does and, from the report, why: *PASS* opens the gate; *PASS WITH DECISIONS*
-needs a written answer to every QUESTION; *RETURN* names the BLOCKERs. Then **stop**, naming the escalation and the
-story.
+Raise the QUESTIONs, when the report has any (below), and **stop**.
 
-### The answer moves the story
+### The QUESTIONs
 
-On resume, read the answer on the story:
+A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Raise one escalation per QUESTION on the
+story, as `<alias>/planner`, tied to the report with `--comment cN` (the options the report gives, 2 to 5). They
+are questions about the plan, not the gate decision. Say in the session that an unanswered QUESTION is a gate not
+to pass yet. On resume, when every one is answered, change what an answer changes in a description or a task, say
+so, and stop again: the story stays at the plan gate.
 
-- **PASS** → `issue update <story> --status ready`. No step: `run` sets the build step when it starts, so a
-  story is never `in_progress` with nobody on it.
-- **PASS WITH DECISIONS** → raise one escalation per QUESTION (the options the report gives, 2 to 5), and stop.
-  When every one is answered, change what an answer changes in a description or a task, then `--status ready`.
-  An unanswered QUESTION is a closed gate.
-- **RETURN** → `issue update <story> --step plan`, fix the items the BLOCKERs name, and spawn a **fresh**
-  reviewer — never the same one with a note about what changed. The next round posts its own report comment.
+**A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
+moving.
 
-**A human may overrule a BLOCKER, and you may not.** They answer it in the escalation's note, with the reason. You
-never downgrade a finding to get the plan moving.
-
-**Three RETURNs mean the story is wrong, not the plan.** When the type has `shape`, stop re-planning: set
-`--step shape` and post what the three rounds could not trace as a step 1 comment to the PO. The reviewer is
-tracing a story that does not say what anyone means by it.
+**Three RETURNs mean the story is wrong, not the plan.** A story back at the plan step with three coverage reports
+on it already: when the type has `shape`, stop re-planning, set `--step shape` and post what the three rounds could
+not trace as a step 1 comment to the PO. The reviewer is tracing a story that does not say what anyone means by it.
 
 **What is lost.** The gate checks that the plan traces to the story, not that the story is right or the design is
 good. A criterion nobody wrote down cannot be found missing.
@@ -447,5 +461,5 @@ names at least one thing that must be proven false. Every story passed the produ
 to the PO as one comment and it has no tasks. Every planned story's description is at most 5,000 characters, with
 its *Technical criteria* in the body or, pointed to from it, in the `# Technical criteria` comment, and a *planned
 by* half on its Status line. Every story and task, and the Plan record, has a summary.
-And, for a type with a gate, the report is posted and a human's PASS — or their
-answer to every QUESTION — is on the story, and the story is `--status ready`.
+And, for a type with a plan gate, the report is posted, every QUESTION in it is an escalation, and the story waits
+at the plan gate for a person to move it; for a type without one, the story is `--status ready`.

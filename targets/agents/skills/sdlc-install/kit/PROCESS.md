@@ -93,7 +93,7 @@ nothing else:
 |---|---|
 | `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-project` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-project` takes the issue as written |
 | `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
-| `gate` | The plan gate (below). A type without `gate` goes from plan to ready with no gate |
+| `gate` | One of two, told apart by position, never by id. The **shaped step**, a `gate` between `shape` and `plan`: shaping ends there ("Before the plan: shaping"). The **plan gate**, the type's first `gate` after its `plan` step: planning ends there (below). A type without a plan gate goes from plan to ready with no gate |
 | `build` | The loop (below), run by `run` for each sub-issue, for a whole story and for a project. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended` |
 | `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it never moves the issue past it |
 
@@ -102,8 +102,8 @@ nothing else:
 **Statuses and steps are set, never inferred.** The plugin moves an issue only with an explicit
 `issue update <ref> --step <id>` or `--status <status>`. Setting a step also sets its status in the same
 write. No iteration, escalation or comment moves an issue; a lasting state is something a person or the
-orchestrator chose. After a gate passes the orchestrator sets `--status ready`; `run` sets the build
-step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
+orchestrator chose. A person passes the plan gate by moving the issue to `ready`; on a type without one,
+`plan-project` sets `--status ready`. `run` sets the build step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
 its own, `red-tests` and `implementing`, and is `in_review` while the reviewer has it.
 
 ## Before the plan: shaping
@@ -125,6 +125,11 @@ stops. No escalation asks whether to write the body: the product owner's answers
 waits at the shaped step for them to move it on. Two stories keep an approval escalation before the write: one
 already planned, whose tasks were built against its criteria, and one whose type has no shaped step.
 
+**Planning starts at the plan step.** The product owner moving the story from the shaped step to the plan step is
+their approval of the body. `plan-project` starts only there (or from no step, on a type with no `shape`): on a
+story still at the shaped step it says the story waits on the product owner and stops, writing nothing. A story it
+sends gaps back on goes back to `shape`.
+
 | Part of the story | Owner | Written through |
 |---|---|---|
 | The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |
@@ -137,16 +142,18 @@ planned task on, the orchestrator is the one writer.
 
 ## The plan gate
 
-For a type that has a `gate` step, planned work passes one gate before any code exists.
+For a type that has a plan gate (a `gate` step after `plan`), planned work passes one gate before any code
+exists.
 
 1. The divergence reviewer gets the **refs and the doc map, never the planner's summary**, and reads the
    plan, the stories and the tasks itself.
 2. It returns a coverage table, findings tagged BLOCKER / QUESTION / NOTE, and a recommended verdict:
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
-3. The orchestrator posts the **full** report as a comment on the story, then raises one escalation so a
-   human decides, with the options PASS / PASS WITH DECISIONS / RETURN. RETURN goes back to planning. PASS
-   WITH DECISIONS needs a human answer to every QUESTION. **No task starts before PASS.** The answer moves
-   the story: `--step <next>` or `--status ready`.
+3. The orchestrator posts the **full** report as a comment on the story, raises one escalation per QUESTION,
+   and stops with the story at the plan gate. No escalation asks for the gate decision: **the decision is a
+   person's move.** Moving the story from the plan gate to `ready` passes it; moving it back to the plan step
+   returns it to planning. **No task starts before that move to `ready`**, and no skill makes it on its own
+   initiative. `run` reads the gate from the step: a story still at the plan gate waits on the gate.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
 mind, not the story as written, and fills every gap from memory without seeing one. A fresh context with
@@ -275,7 +282,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
-| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
+| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); one escalation per QUESTION in it; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
 | status | always `issue update --step` or `--status`; never by iteration or escalation |
