@@ -8,3 +8,10 @@ plugin-files: .sdlc/kit/
 
 This is the package's own harness file. The repo's is `.sdlc/kit/HARNESS.md`, which `sdlc-install` writes from
 `kit/harness/<agent>.md` for the agent you use. Until then, run `sdlc-install`.
+
+## Waiting for an answer
+
+wait: stop
+
+How a run waits depends on the agent, and `.sdlc/kit/HARNESS.md` says so for yours. Without it, a run does not
+wait: it stops the turn after an escalation, and re-invoking `run` once it is answered resumes.

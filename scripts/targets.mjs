@@ -1,7 +1,9 @@
 // One row per agent other than Claude Code. build-targets.mjs renders each row into that agent's
 // HARNESS.md, its wiring (subagents + the guard hook) and its section of agent-setup/prompt.md, so the
 // three never disagree. Facts marked UNVERIFIED come from the agent's docs (2026-11) and are confirmed
-// or corrected by the Phase 0 spike in docs/targets/<id>.md.
+// or corrected by the Phase 0 spike in docs/targets/<id>.md. `wait` is how a run waits for an escalation's answer, or
+// null when no probe has shown the agent can, so a run there stops instead; set it only with a probe record in
+// docs/targets/<id>.md that says `wait: background`.
 
 const GUARD = (agent, extra = '') => `node .sdlc/kit/hooks/adapters/guard.mjs ${agent}${extra}`
 const REPO = 'leeway-run/leeway-sdlc'
@@ -22,6 +24,7 @@ export const TARGETS = [
     delegate:
       'Ask for the named agent explicitly, for example "spawn the `sdlc-implementer` agent with this prompt: …". Custom agents are `.codex/agents/<name>.toml`. UNVERIFIED: that the main agent selects a custom agent by name; if it starts a generic one instead, stop and say so rather than running the loop without the agent\'s instructions.',
     permissions: '`.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person.',
+    wait: null,
     installed: 'the leeway-sdlc entry under `/plugins` in the Codex TUI.',
     refresh: '`codex plugin marketplace add leeway-run/leeway-sdlc` refreshes the marketplace; the new version is in `targets/agents/HARNESS.md` there.',
     update: 'update leeway-sdlc-agents from `/plugins`.',
@@ -50,6 +53,7 @@ export const TARGETS = [
     delegate:
       'Delegate to the custom agent by name: in Copilot CLI the `task` tool with the agent `sdlc-implementer` (or ask "use the sdlc-implementer agent to …"); in VS Code, `runSubagent` with that agent. Agents are `.github/agents/<name>.agent.md`.',
     permissions: '`.github/copilot/settings.json` (`permissions`), or `--allow-tool` flags for one run.',
+    wait: null,
     installed: '`copilot plugin list`.',
     refresh: '`copilot plugin marketplace update` where it was installed from a marketplace; otherwise the install command again.',
     update: '`copilot plugin install leeway-run/leeway-sdlc:targets/agents` again (it replaces the installed version).',
@@ -89,6 +93,7 @@ export const TARGETS = [
     delegate:
       'Each agent in `.gemini/agents/` is a tool of the same name: call the `sdlc-implementer` tool with the prompt. A subagent cannot start another one.',
     permissions: '`.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run.',
+    wait: null,
     installed: '`gemini skills list`.',
     refresh: 'the install command again; the new version is in `targets/agents/HARNESS.md` of `leeway-run/leeway-sdlc`.',
     update: '`gemini skills install https://github.com/leeway-run/leeway-sdlc --path targets/agents/skills --scope workspace --consent` again.',
@@ -112,6 +117,7 @@ export const TARGETS = [
     floorImport: 'read-first',
     delegate: 'Ask for the subagent by name ("use the sdlc-implementer subagent to …", or `/sdlc-implementer`). Agents are `.cursor/agents/<name>.md`.',
     permissions: '`.cursor/cli.json` (`permissions.allow`) for the CLI; the agent settings for the editor.',
+    wait: null,
     installed: '`npx skills list -a cursor`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
     update: `\`npx -y skills add ${REPO}/tree/main/${SKILLS_PATH} -a cursor --yes\` again. UNVERIFIED: the subpath form; see docs/targets/cursor.md.`,
@@ -137,6 +143,7 @@ export const TARGETS = [
     floorSetting: 'also add the ENGINEERING path to `instructions` in `opencode.json` (OpenCode does not follow `@` imports).',
     delegate: 'Use the Task tool with `subagent_type` set to the agent name, for example `sdlc-implementer`. Agents are `.opencode/agents/<name>.md` with `mode: subagent`.',
     permissions: '`opencode.json` (`permission.bash`).',
+    wait: null,
     installed: '`npx skills list -a opencode`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
     update: `\`npx -y skills add ${REPO}/tree/main/${SKILLS_PATH} -a opencode --yes\` again. UNVERIFIED: the subpath form; see docs/targets/opencode.md.`,
@@ -173,6 +180,7 @@ export const LeewaySdlcGuard = async ({ directory } = {}) => ({
     floorImport: 'read-first',
     delegate: 'Delegate to the custom subagent by name ("use the sdlc-implementer subagent to …"). Agents are `.grok/agents/<name>.md`. UNVERIFIED: the delegation tool\'s name.',
     permissions: '`~/.grok/config.toml` or the project\'s `.grok/` settings (permission rules).',
+    wait: null,
     installed: '`grok inspect` (lists skills).',
     refresh: 'nothing to refresh: the update command fetches the latest.',
     update: `\`npx -y skills add ${REPO}/tree/main/${SKILLS_PATH} -a grok --yes\` again.`,
@@ -221,6 +229,20 @@ and as soon as the agent returns, **however it returns**,
 
 While the marker is live every shell call is judged as the subagent's, yours included, so never commit, push or
 write to Leeway with it on. It expires on its own after two hours, so a crashed run cannot lock you out for longer.
+
+## Waiting for an answer
+
+${
+  t.wait
+    ? `wait: background\n\n${t.wait} docs/targets/${t.id}.md records the probe.`
+    : `wait: stop
+
+A run in ${t.name} does not wait for an escalation's answer. UNVERIFIED: whether ${t.name} can run a long command
+without spending a turn per check and resume the session when it exits; no probe has shown it (docs/targets/${t.id}.md).
+Until one does, skip steps 2 and 3 of run's "Wait, then carry on" and act at once as on exit 2: post what the path
+posts, say which escalation on which issue you stopped on, and stop the turn. The escalation and any \`# Run status\`
+comment stay, and re-invoking \`run\` once it is answered resumes the work.`
+}
 
 ## Required reading
 
