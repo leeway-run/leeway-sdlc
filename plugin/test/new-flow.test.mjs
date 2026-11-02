@@ -97,7 +97,7 @@ test('the new flow, applied to the old one, is the maintained feature, and is no
 test("tune's Step 2 rules accept the new flow's two gates, and a result that breaks one is not offered", () => {
   assert.ok(kindRule, 'no kind-count rule in sdlc-tune Step 2');
   assert.equal(kindRule[1], 'gate');
-  assert.match(tune, /except `gate`, at most twice \(the shaped step and the plan gate\)/);
+  assert.match(tune, /except `gate`, at most twice \(in the presets, the shaped step and the plan gate\)/);
   assert.equal(stepBound, 12);
   assert.equal(breaksRule(toNewFlow(OLD)), null);
   assert.equal(offered(OLD), true);
@@ -115,6 +115,7 @@ test("tune's Step 2 rules accept the new flow's two gates, and a result that bre
     assert.equal(offered(steps), false, name);
   }
   assert.match(sync, /A type whose result would break a rule \(sdlc-tune, Step 2, "The new flow"\) is shown, naming the rule it breaks, and not offered/);
+  assert.match(sync, /step 1's new flow when a type is offered it \(one or more left\), no more/);
 });
 
 test('tune offers the new flow once per run, and a no goes on to the request', () => {

@@ -95,7 +95,7 @@ rules the server enforces:
 
 - ids `^[a-z][a-z0-9-]{0,23}$`, labels 1 to 40 characters, `branchPrefix` `^[a-z][a-z0-9-]{0,15}$`;
 - type ids unique and `defaultType` one of them; step ids unique per type; each non-`manual` kind at most
-  once per type, except `gate`, at most twice (the shaped step and the plan gate);
+  once per type, except `gate`, at most twice (in the presets, the shaped step and the plan gate);
 - step kinds `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`,
   non-decreasing along a type's steps; a `build` step has status `in_progress`.
 

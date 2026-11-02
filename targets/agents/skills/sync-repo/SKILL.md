@@ -183,7 +183,7 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 One question per differing copy and per missing line, step 1's `filing-work:` question when the
 binding lacks the line, step 1's friction migration for a legacy binding with a ref, and step 1's new flow
-when a type is on the old flow, no more. A copy
+when a type is offered it (one or more left), no more. A copy
 that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
