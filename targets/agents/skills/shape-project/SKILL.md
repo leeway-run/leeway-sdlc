@@ -206,14 +206,16 @@ to `<ref>`?* (*Write this body and summary to `<ref>`?* when a summary is propos
 On a yes, write the description (and an empty summary) and read it back as above, but check the description
 against the one the proposal comment showed (on a mismatch, show the new version in a new proposal comment and ask
 again), the Status line's name is this escalation's answerer, and set no
-step. On an already-planned story, after writing, post one comment for the developer: which `AC-n` changed. Their
-next `plan-project` rechecks the technical criteria and the tasks that serve it.
+step. On an already-planned story, after writing, post one comment for the developer: which `AC-n` changed. Once a
+person moves the story back to the plan step, `plan-project` rechecks the technical criteria and the tasks that
+serve it.
 
 ### A reply to the gaps sent back
 
 If this round answered gaps a developer sent back, **reply to that comment** (`comment add <ref> --parent cN
---stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The developer re-runs `plan-project`;
-the reply tells them whether that is worth doing yet.
+--stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The story goes back to `plan-project`
+when the PO moves it from the shaped step to the plan step, or, on a type with no shaped step, when the developer
+re-runs it; the reply tells them whether that is worth doing yet.
 
 ## 6. A new story, or several
 
