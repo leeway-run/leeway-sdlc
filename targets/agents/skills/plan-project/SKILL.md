@@ -46,19 +46,24 @@ whatever happened.
    after its `plan` step (`gate` "planned" in the presets). A `gate` step before `plan` is the shaped step, where
    shaping ends: it is not the plan gate. Find each in `process get` by kind and position, never by id.
    The type's `branchPrefix` names its branches (step 6). A sub-issue takes its story's type.
-4. **Start only from the plan step.** Read `issue.step.id` against the type's steps:
+4. **Start where shaping ends.** Read `issue.step.id` and `issue.status` against the type's steps; the first row
+   that fits decides:
 
    | The story is at | So |
    |---|---|
    | the plan step | carry on |
-   | no step, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
+   | `shape`, or no step at `backlog`, on a type with `shape` but no shaped step | with a body and no open escalation: `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on. Shaping ends at `shape` there, and the PO's yes to shape-project's approval escalation was the approval. With no body, or an escalation still open: **say shaping is not finished, and stop.** Write nothing |
+   | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
    | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it |
-   | the plan gate | an answered QUESTION escalation from step 8 not yet applied: carry on at step 8, "The QUESTIONs". Otherwise **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing |
-   | anywhere else (`shape`, no step on a type with `shape`, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
+   | the plan gate, or `ready` with no step, with QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and move nothing |
+   | the plan gate | **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing |
+   | anywhere else (`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
 
    A story at the plan step that already has tasks or technical criteria is a re-plan: read step 1's note on it.
-   One that also carries a coverage report from step 8 was returned from the gate: read the latest report and the
-   comments since it, fix what its BLOCKERs name, and gate it again (step 8).
+   Count its coverage reports (comments opening `# Plan coverage:`, step 8) posted since it last moved to `ready`:
+   after the latest `thread` entry of kind `status` whose `data.to` is `ready`, or all of them when there is none.
+   One or two: it was returned from the gate. Read the latest report and the comments since it, fix what its
+   BLOCKERs name, and gate it again (step 8). Three: do not re-plan; step 8, "Three RETURNs".
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
    terminal question: it is a Leeway escalation on the story, and then you stop the turn. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
@@ -122,7 +127,9 @@ Carry on. **Do not re-ask anything the body answers**, and do not re-litigate a 
 Post the gap list as **one comment on the story**, addressed to the PO: each gap with the heading it belongs to
 and the question the PO has to answer, in product terms; hidden scope with your rough size of each option. Where a
 technical finding has a consequence the user will see, say what it is and **propose wording for the criterion**,
-marked as a proposal. End with: *"Answer these with `shape-project` on `<ref>`, then re-run plan-project."* Re-read the
+marked as a proposal. End with: *"Answer these with `shape-project` on `<ref>`; moving it to planning hands it back
+to plan-project."* On a type with no shaped step, where shaping ends at `shape`, end with *"Answer these with
+`shape-project` on `<ref>`, then re-run plan-project."* instead. Re-read the
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
@@ -373,7 +380,7 @@ before round 2** and say so inline (send the whole corrected text, after re-read
 
 A status or a step is set by `issue update --step <id>` or `--status <status>` and by nothing else: no comment, no
 escalation and no iteration moves a story. Setting a step sets the step's status in the same write. Step 0 may set
-the plan step (a type with no `shape`); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
+the plan step (a type with no `shape`, or no shaped step); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
 type without one. **The moves out of the shaped step and out of the plan gate are a person's**: this skill
 never makes them on its own initiative.
 
@@ -441,16 +448,22 @@ Raise the QUESTIONs, when the report has any (below), and **stop**.
 
 A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Raise one escalation per QUESTION on the
 story, as `<alias>/planner`, tied to the report with `--comment cN` (the options the report gives, 2 to 5). They
-are questions about the plan, not the gate decision. Say in the session that an unanswered QUESTION is a gate not
-to pass yet. On resume, when every one is answered, change what an answer changes in a description or a task, say
-so, and stop again: the story stays at the plan gate.
+are questions about the plan, not the gate decision. A report's QUESTIONs are the escalations whose `comment` is
+its `cN`. Say in the session, in this order: answer every QUESTION, run plan-project to apply the answers, then
+move the story to `ready`. `run` refuses the story until they are applied.
+
+On resume, when every one is answered, change what an answer changes in a description or a task, then **reply to
+the report** (`comment add <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line
+per escalation, its answer and what it changed, or that it changed nothing. That reply is what makes them
+applied. Say so, and stop again: move nothing, so the story stays where it was, at the plan gate or at `ready`.
 
 **A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
 moving.
 
-**Three RETURNs mean the story is wrong, not the plan.** A story back at the plan step with three coverage reports
-on it already: when the type has `shape`, stop re-planning, set `--step shape` and post what the three rounds could
-not trace as a step 1 comment to the PO. The reviewer is tracing a story that does not say what anyone means by it.
+**Three RETURNs mean the story is wrong, not the plan.** Step 0 counts them, before any re-planning: three
+coverage reports since the story last moved to `ready`. Then, when the type has `shape`, stop re-planning, set
+`--step shape` and post what the three rounds could not trace as a step 1 comment to the PO. The reviewer is
+tracing a story that does not say what anyone means by it.
 
 **What is lost.** The gate checks that the plan traces to the story, not that the story is right or the design is
 good. A criterion nobody wrote down cannot be found missing.

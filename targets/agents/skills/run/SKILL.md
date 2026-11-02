@@ -638,10 +638,20 @@ A refusal here writes nothing: say in the session which precondition failed and 
    decides this, not a flag you pass.
 2. **The plan gate is passed**, when the type has one: its first step of kind `gate` after its `plan` step, found
    in `process get` by kind and position, never by id (a `gate` before `plan` is the shaped step, not this one).
-   It is passed when the story has left the plan gate for `ready` or later: `issue.status` is `ready`,
-   `in_progress` or `in_review`, and `issue.step` is not the plan gate or a step before it. A person passing the gate
-   is that move. **A story still at the plan gate waits on the gate**: say so and stop. One at a step before it is
-   not planned. A type without a plan gate needs only that the story has tasks (`subIssues`) and is planned.
+   It is passed when all of these hold, and each one that fails is a stop: say which and stop.
+   - **The story has tasks** (`subIssues`).
+   - **The gate is recorded**: a coverage report comment on the story by `<div>/reviewer` (`<div>` is the divergence
+     reviewer's alias), opening `# Plan coverage:`. A gate that only existed in a conversation did not happen: with
+     no report, the story was not gated.
+   - **It has left the plan gate for `ready` or later**: `issue.status` is `ready`, `in_progress` or `in_review`,
+     and `issue.step` is not the plan gate or a step before it. A person passing the gate is that move. **A story
+     still at the plan gate waits on the gate.** One at a step before it is not planned.
+   - **The latest report's QUESTIONs are answered and applied**: every escalation whose `comment` is that report's
+     `cN` has an answer (`escalations[].answer`), and the report has a reply opening `# QUESTIONs applied`. Each
+     QUESTION needs a human answer before any task starts. One open waits on that answer; answered and not applied
+     waits on `plan-project`, which applies them. A report with no QUESTION needs no reply.
+
+   A type without a plan gate needs only that the story has tasks (`subIssues`) and is planned.
 3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
 4. **Leeway answers.** Read the story and its children; a failed call, or an empty result where something must
    exist, is stop 10 below, not an empty story.
