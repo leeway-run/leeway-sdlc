@@ -69,7 +69,7 @@ test('plan-project starts where shaping ends, and a shaped story waits on the PO
   assert.match(text, /the first row that fits decides/);
   assert.match(text, /\| the plan step \| carry on \|/);
   assert.match(text, /\| no step at `backlog`, on a type with no `shape` step \| `<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>`, then carry on \|/);
-  assert.match(text, /\| the shaped step \| \*\*say the story waits on the PO, and stop\.\*\* Moving it to the plan step is their approval of the body\. Write nothing, and do not move it \|/);
+  assert.match(text, /\| the shaped step \| \*\*say the story waits on the PO, and stop\.\*\* Moving it to the plan step is their approval of the body\. Write nothing, and do not move it unless the person asks \(step 7\) \|/);
   assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*.* Write nothing \|/);
   assert.match(text, /\| anywhere else \(`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later\) \|/);
   assert.doesNotMatch(text, /--step plan\b/);

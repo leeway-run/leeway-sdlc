@@ -226,7 +226,7 @@ description`, the description at most 5,000 characters); `plan-project` adopts i
 body goes through steps 3 to 5.
 
 **You never create tasks, branches or a design doc**, and the only steps you set are `shape`, in step 0, and the shaped step, in step 5, and
-only for an unplanned story. A status
+only for an unplanned story, besides a move the person asks for in the session (`PROCESS.md`, "The cast"). A status
 is set by `--step` or `--status` and nothing else: no comment and no escalation moves a story.
 
 ## Done when

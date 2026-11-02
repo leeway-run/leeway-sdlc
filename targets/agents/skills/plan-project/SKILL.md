@@ -54,7 +54,7 @@ whatever happened.
    | the plan step | carry on |
    | `shape`, or no step at `backlog`, on a type with `shape` but no shaped step | with a body and no open escalation: `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on. Shaping ends at `shape` there, and the PO's yes to shape-project's approval escalation was the approval. With no body, or an escalation still open: **say shaping is not finished, and stop.** Write nothing |
    | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
-   | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it |
+   | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it unless the person asks (step 7) |
    | the plan gate, or `ready` with no step, with the latest report's QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and move nothing |
    | the plan gate | **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing |
    | anywhere else (`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
@@ -393,7 +393,8 @@ A status or a step is set by `issue update --step <id>` or `--status <status>` a
 escalation and no iteration moves a story. Setting a step sets the step's status in the same write. Step 0 may set
 the plan step (a type with no `shape`, or no shaped step); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
 type without one. **The moves out of the shaped step and out of the plan gate are a person's**: this skill
-never makes them on its own initiative.
+never makes them on its own initiative. When the person asks in the session for one, or for any other move, make it
+as `<alias>/agent` and say which move you made (`PROCESS.md`, "The cast").
 
 ## 8. The plan gate
 
