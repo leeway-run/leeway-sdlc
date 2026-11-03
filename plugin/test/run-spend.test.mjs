@@ -11,6 +11,12 @@ const flat = (text) => text.replace(/\s+/g, ' ');
 const skill = read('skills/run/SKILL.md');
 const contract = read('PROCESS.md');
 const brief = read('skills/run/templates/BRIEF.md');
+const implementer = read('agents/sdlc-implementer.md');
+const row = (doc, lead) => {
+  const rows = doc.split('\n').filter((line) => line.startsWith(lead));
+  assert.equal(rows.length, 1, `one row starting "${lead}"`);
+  return rows[0];
+};
 
 // The text under `heading` (any level), up to the next heading of the same or a higher level, on one line.
 function under(doc, heading) {
@@ -48,8 +54,10 @@ test('unreported tokens are left out, never sent as 0', () => {
     from(spend(), '- **Tokens are', '- **The round**'),
     "- **Tokens are the subagents' counts as the harness reports them when each returns.** A count the harness did not " +
       'report is left out: never `--tokens 0`, never an estimate. Leeway then marks the total incomplete ' +
-      '(`tokensIncomplete`), and every readout of it says so. A span in which you delegated to no subagent has no ' +
-      'reported count, so its record leaves `--tokens` out too. ',
+      "(`tokensIncomplete`), and every readout of it says so. Until the harness can count the orchestrator's own " +
+      "tokens, a span of yours (the baseline, landing a task, the story gate's own work) leaves them out of its " +
+      "record, so every story `run` touches reads `tokensIncomplete`: its token total is a floor, and the run carries " +
+      'on (stop 9). ',
   );
   const record = from(under(skill, '2. Gate, commit, push, record'), '4. **Record the iteration**', '`iteration.number` is `N`');
   assert.equal(
@@ -145,27 +153,67 @@ test('stop 9: a round with unreported tokens never counts as free', () => {
     from(under(skill, 'Hard stop conditions'), '- **9: check at round boundaries', '- **10:'),
     '- **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been ' +
       "real. Read the story's `totals` at each boundary (\"Start the budget\"). Tokens are the subagents' counts as " +
-      'the harness reports them when each returns ("Recording spend"). A total with `tokensIncomplete` is a floor, not ' +
-      'a count: it is checked as it stands, it never reads as within budget, and the status comment and the report to ' +
-      'the user say it is incomplete. Rounds include round-0 attempts. ',
+      'the harness reports them when each returns ("Recording spend"). Stop when `totals.tokens` reaches the token ' +
+      'budget; while `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it ' +
+      '(the status comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include ' +
+      'round-0 attempts. ',
   );
   assert.doesNotMatch(flat(skill), /that dimension is not enforced/);
+  assert.equal(
+    from(under(skill, 'What is lost'), 'The budget is checked at round boundaries', ' A span the session ends inside'),
+    'The budget is checked at round boundaries, so one long round can overshoot it, and a token count the harness ' +
+      'does not report leaves the token total a floor, not a count.',
+  );
+});
+
+test('a round with no iteration points at its spend record, before its escalation', () => {
+  assert.equal(
+    from(flat(skill), 'A stalled round **records no iteration**', ', leaves the sub-issue where it is'),
+    'A stalled round **records no iteration** (its spend still goes on the sub-issue, "Recording spend")',
+  );
+  const blocked = under(skill, 'A BLOCKED brief');
+  assert.equal(
+    from(blocked, '1. If it staged work', '2. Post the brief'),
+    '1. If it staged work, commit, push and record the iteration as above; if it staged nothing, do not (no ' +
+      'iteration): record its spend on the sub-issue instead, now, before the escalation at step 3 ("Recording ' +
+      'spend"). ',
+  );
 });
 
 test('the round records, the contract and the brief carry the spend fields', () => {
   const writes = under(skill, 'The writes of one round, in order');
   assert.match(writes, /\| 4 \| iteration \| `--as <alias>\/implementer iteration record <ref> <sha> --tests "…" \[--passed\] \[--addresses '\[…\]'\] \[--tokens N\] \[--minutes N\] \[--testMinutes N\] --note "…"` \|/);
   assert.match(writes, /then `--as <alias>\/reviewer spend record <ref> <minutes> \[--tokens N\] --note "review of it\.X"` \|/);
-  assert.match(
-    flat(contract),
-    /`--tokens` is left out when the harness did not report them, never `0`\)/,
+  assert.equal(
+    row(contract, '| round |'),
+    '| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] ' +
+      "--addresses '[\"c1\",\"c2\"]' [--tokens N] [--minutes N] [--testMinutes N] --note \"…\" --as <impl>/implementer` " +
+      '(`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`; `--tokens` is ' +
+      'left out when the harness did not report them, never `0`); the round count is the iterations; round-0 attempts ' +
+      'are those before the `step_set {to: implementing}` entry |',
   );
-  assert.match(
-    flat(contract),
-    /\| spend outside a round \| `spend record <ref> <minutes> \[--tokens N\] --note "…"`: a round's review on its sub-issue, and the run's own time \(the baseline, landing a task, the story gate\) on the story; totals are read back from `issue get <ref>` \(`totals`\), never from a comment \|/,
+  assert.equal(
+    row(contract, '| spend outside a round |'),
+    '| spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round\'s review, or a round ' +
+      "that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story " +
+      'gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |',
   );
-  assert.match(
-    flat(brief),
-    /- \*\*Test minutes:\*\* the whole minutes this round spent running the lanes, timed \(`date \+%s` before and after each run\), or `unknown` when you did not time them\. Never an estimate\./,
+  assert.equal(
+    from(flat(brief), '- **Test minutes:** the whole', ' - **Addresses:**'),
+    '- **Test minutes:** the whole minutes this round spent running the lanes, timed (`date +%s` before and after ' +
+      'each run), or `unknown` when you did not time them. Never an estimate.',
+  );
+  assert.equal(
+    row(brief, '| Head sha, Lane line, Passed, Addresses, Test minutes |'),
+    '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as kestrel-b1/implementer iteration record ' +
+      'LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" ' +
+      "--passed --addresses '[\"c2\",\"c3\"]' --tokens 48210 --minutes 9 --testMinutes 2 --note \"addresses c2, c3\"` " +
+      '(`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer\'s as the harness reported them, left ' +
+      "out when it reported none, and `--minutes` is the orchestrator's own timing: `run`, \"Recording spend\") |",
+  );
+  assert.equal(
+    from(flat(implementer), '*Test minutes* is', ' **Addresses.**'),
+    '*Test minutes* is the whole minutes you spent running lanes, timed with `date +%s` around each run, or ' +
+      '`unknown`; never an estimate.',
   );
 });

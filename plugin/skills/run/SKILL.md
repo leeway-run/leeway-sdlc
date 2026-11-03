@@ -274,8 +274,9 @@ back from prose.
   total incomplete (`minutesIncomplete`).
 - **Tokens are the subagents' counts as the harness reports them when each returns.** A count the harness did not
   report is left out: never `--tokens 0`, never an estimate. Leeway then marks the total incomplete
-  (`tokensIncomplete`), and every readout of it says so. A span in which you delegated to no subagent has no reported
-  count, so its record leaves `--tokens` out too.
+  (`tokensIncomplete`), and every readout of it says so. Until the harness can count the orchestrator's own tokens,
+  a span of yours (the baseline, landing a task, the story gate's own work) leaves them out of its record, so every
+  story `run` touches reads `tokensIncomplete`: its token total is a floor, and the run carries on (stop 9).
 - **The round**, on its iteration ("Gate, commit, push, record", step 4): `--minutes` from delegating to the
   implementer to the iteration record; `--tokens` the implementer's; `--testMinutes` the brief's *Test minutes*, left
   out when it says `unknown` and never more than `--minutes` (pass the smaller); `--note` what the round did, in a
@@ -473,7 +474,8 @@ the iteration number, and the verdict is not a reply to the brief (the server re
 
 An implementer that returns `Status: BLOCKED` has stopped on a decision for the human. After the gate:
 
-1. If it staged work, commit, push and record the iteration as above; if it staged nothing, do not (no iteration).
+1. If it staged work, commit, push and record the iteration as above; if it staged nothing, do not (no iteration):
+   record its spend on the sub-issue instead, now, before the escalation at step 3 ("Recording spend").
 2. Post the brief as a comment (step 5), so there is a `cN` to point at. With nothing committed write its `Head sha`
    line as `none (BLOCKED, nothing committed)`.
 3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief:
@@ -919,9 +921,9 @@ Notes on the ones that need them:
   put the conflicting paths in the status comment.
 - **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been real.
   Read the story's `totals` at each boundary ("Start the budget"). Tokens are the subagents' counts as the harness
-  reports them when each returns ("Recording spend"). A total with `tokensIncomplete` is a floor, not a count: it is
-  checked as it stands, it never reads as within budget, and the status comment and the report to the user say it is
-  incomplete. Rounds include round-0 attempts.
+  reports them when each returns ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
+  `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it (the status
+  comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include round-0 attempts.
 - **10: no comment and no escalation can be written.** Put the status comment, word for word, in the session output,
   and post it once Leeway answers again, with the stop's escalation. Never retry in a loop.
 
