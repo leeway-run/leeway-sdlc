@@ -260,6 +260,39 @@ The caps: `round0Cap` bounds the round-0 attempts and `roundCap` the code rounds
 the code rounds. Separately, the server refuses a 51st iteration on one issue (`iteration_limit`): a task that
 reaches it is mis-specified whatever its caps say, and is escalated like any cap.
 
+#### Recording spend
+
+**Every round records what it cost on its iteration, and the run's own time goes on the story.** Leeway sums them:
+`totals` in `leeway --json issue get <ref>`, a story's over its own records and its sub-issues'. Nothing reads a total
+back from prose.
+
+- **Time is measured, never estimated.** Take `date +%s` when a span starts and again when it ends; its minutes are
+  the difference in whole minutes, rounded to the nearest (`$(( (end - start + 30) / 60 ))`). **A wait ends a span**:
+  record what came before it, and start a new span once the answer arrives. Time waiting on a person is never in a
+  record; Leeway counts it from the escalations. A round whose start this session did not see (resumed from an
+  earlier session) has no minutes: its iteration leaves `--minutes` and `--testMinutes` out, and Leeway marks the
+  total incomplete (`minutesIncomplete`).
+- **Tokens are the subagents' counts as the harness reports them when each returns.** A count the harness did not
+  report is left out: never `--tokens 0`, never an estimate. Leeway then marks the total incomplete
+  (`tokensIncomplete`), and every readout of it says so. Until the harness can count the orchestrator's own tokens,
+  a span of yours (the baseline, landing a task, the story gate's own work) leaves them out of its record, so every
+  story `run` touches reads `tokensIncomplete`: its token total is a floor, and the run carries on (stop 9).
+- **The round**, on its iteration ("Gate, commit, push, record", step 4): `--minutes` from delegating to the
+  implementer to the iteration record; `--tokens` the implementer's; `--testMinutes` the brief's *Test minutes*, left
+  out when it says `unknown` and never more than `--minutes` (pass the smaller); `--note` what the round did, in a
+  few words ("round 0: 4 red tests", "addresses c6, c7").
+- **Its review**, on the same sub-issue once the verdict is posted, because a recorded iteration is never edited:
+  `leeway --as <alias>/reviewer --json spend record <ref> <minutes> [--tokens <N>] --note "review of it.N"`, the
+  minutes from delegating to the reviewer to the verdict posted.
+- **A round that records no iteration** (a stalled round, a BLOCKED brief with nothing staged) still cost what it
+  cost: `leeway --as <alias>/agent --json spend record <ref> <minutes> [--tokens <N>] --note "<stalled round |
+  BLOCKED, nothing staged>"`, before its escalation.
+- **The run's own time**, on the story: `leeway --as <alias>/agent --json spend record <story> <minutes> [--tokens
+  <N>] --note "<what>"`, one record per span: the baseline ("Story start", step 3), landing each task (from "Land the
+  task", step 1, through the lanes run after it lands), and the story gate (from its step 1 to the story read back at
+  its step 5, with the tokens of a reviewer pass at its step 3). The moments between spans, posting records and
+  reading Leeway, are not recorded.
+
 ### Round 0: red tests first
 
 Only when step 0.4 said so. Before any code, the implementer writes the tests that state the story's criteria, the
@@ -390,9 +423,9 @@ a step that fails stops the round.
 
 2. **Stalled-round check.** Read `iterations[].sha` (`leeway --json issue get <ref>`). The round is **stalled** if
    there was nothing staged to commit, or if `rev-parse HEAD` equals the `sha` of any recorded iteration (the server
-   refuses every repeat: `sha_repeated`). A stalled round **records nothing**, leaves the sub-issue where it is,
-   raises an escalation on it and waits. It is never counted and never retried silently, and you do not force a
-   commit to get past it:
+   refuses every repeat: `sha_repeated`). A stalled round **records no iteration** (its spend still goes on the
+   sub-issue, "Recording spend"), leaves the sub-issue where it is, raises an escalation on it and waits. It is
+   never counted and never retried silently, and you do not force a commit to get past it:
 
    ```sh
    leeway --as <alias>/agent escalation raise <ref> --question "Round N produced no new commit on <branch>: how should it go on?" --options '[{"label":"Re-run the implementer","argument":"The prompt was at fault; a sharper one may produce the change."},{"label":"Take it inline","argument":"The task is smaller than a round; the orchestrator does it and says the workflow degraded."},{"label":"Re-scope or cancel","argument":"The task is already satisfied or mis-specified; no more rounds buy anything."}]' --meanwhile "The sub-issue keeps its status and nothing is merged."
@@ -409,10 +442,11 @@ a step that fails stops the round.
 
 4. **Record the iteration**, as the implementer. `--tests` is the brief's lane line (at most 200 characters);
    `--passed` is present only when the brief says `Passed: yes` (for `no` or `n/a` omit it; a failed lane is already
-   in the text as `FAILED: …`); `--addresses` is the brief's `Addresses:` as a JSON list, omitted when `none`:
+   in the text as `FAILED: …`); `--addresses` is the brief's `Addresses:` as a JSON list, omitted when `none`; the
+   round's spend is as "Recording spend" says, `--tokens` left out when the harness reported none, never `0`:
 
    ```sh
-   leeway --as <alias>/implementer --json iteration record <ref> <sha> --tests "<lane line>" [--passed] [--addresses '["c1","c3"]']
+   leeway --as <alias>/implementer --json iteration record <ref> <sha> --tests "<lane line>" [--passed] [--addresses '["c1","c3"]'] [--tokens <N>] [--minutes <N>] [--testMinutes <N>] --note "<note>"
    ```
 
    `iteration.number` is `N`, this round's `it.N`. **No push, no iteration.**
@@ -440,7 +474,8 @@ the iteration number, and the verdict is not a reply to the brief (the server re
 
 An implementer that returns `Status: BLOCKED` has stopped on a decision for the human. After the gate:
 
-1. If it staged work, commit, push and record the iteration as above; if it staged nothing, do not (no iteration).
+1. If it staged work, commit, push and record the iteration as above; if it staged nothing, do not (no iteration):
+   record its spend on the sub-issue instead, now, before the escalation at step 3 ("Recording spend").
 2. Post the brief as a comment (step 5), so there is a `cN` to point at. With nothing committed write its `Head sha`
    line as `none (BLOCKED, nothing committed)`.
 3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief:
@@ -718,12 +753,12 @@ moves an issue.
 | 1 | start (once) | `issue update <story> --step build`; `issue update <ref> --step red-tests` or `--step implementing` (branch written back first) |
 | 2 | implementer | none |
 | 3 | gate, commit, stalled check, push | none (a stalled round: `escalation raise`, wait) |
-| 4 | iteration | `--as <alias>/implementer iteration record <ref> <sha> --tests "…" [--passed] [--addresses '[…]']` |
+| 4 | iteration | `--as <alias>/implementer iteration record <ref> <sha> --tests "…" [--passed] [--addresses '[…]'] [--tokens N] [--minutes N] [--testMinutes N] --note "…"` |
 | 5 | brief | `--as <alias>/implementer comment add <ref> --stdin body` |
 | 6 | hand over | `issue update <ref> --status in_review`, in round 0 too |
 | 7 | reviewer | none |
 | 8 | findings | `--as <alias>/reviewer comment add <ref> [--anchor '{…}'] --stdin body`, one each |
-| 9 | verdict | `--as <alias>/reviewer comment add <ref> --kind review --iteration X --settles … --disputes … --raises … --stdin body` |
+| 9 | verdict | `--as <alias>/reviewer comment add <ref> --kind review --iteration X --settles … --disputes … --raises … --stdin body`, then `--as <alias>/reviewer spend record <ref> <minutes> [--tokens N] --note "review of it.X"` |
 | 10 | a human is needed | `--as <alias>/reviewer escalation raise <ref> … [--comment <the finding's cN>]` (never the verdict's), then wait |
 | 11 | nits, follow-ups | comment on the nit collector; `issue create` for a security follow-up; an escalation for a debt proposal |
 | 12 | outcome | round-0 PASS: `issue update <ref> --step implementing`. Code-round PASS: merge, `issue update <ref> --status done`. FAIL: `issue update <ref> --step implementing` (round-0 FAIL: `--step red-tests`) |
@@ -797,10 +832,11 @@ A refusal here writes nothing: say in the session which precondition failed and 
    branch hides whatever the tasks break.
 4. **Start the budget** from `.sdlc/CONFIG.md`, *Per-story budget*. It reads as up to three dimensions, whichever is
    hit first (for example "2,000,000 subagent tokens · 15 rounds · 4 h wall-clock"), and `none` for a dimension
-   means it is not enforced. It is per story, across runs: **rounds** are the iterations on the story's sub-issues
-   (read them from Leeway, round-0 attempts included), and **tokens** and **wall-clock** continue from the `Spend`
-   line of the latest `# Run status` comment. Time spent in a wait ("Wait, then carry on") does not count toward
-   wall-clock.
+   means it is not enforced. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
+   `leeway --json issue get <story>`, over the story's own records and its sub-issues' ("Recording spend").
+   **Rounds** are `totals.rounds`, round-0 attempts included; **tokens** are `totals.tokens`, and **wall-clock** is
+   `totals.minutes`. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment.
+   Time spent in a wait ("Wait, then carry on") does not count toward wall-clock.
 
 ### The task order
 
@@ -884,8 +920,10 @@ Notes on the ones that need them:
   anything a person wrote stops the run: abort the merge, so the story worktree is left at the commit before it, and
   put the conflicting paths in the status comment.
 - **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been real.
-  Tokens are the subagents' counts as the harness reports them when each returns; if it reports none, that dimension
-  is not enforced, and the status comment and the report to the user say so. Rounds include round-0 attempts.
+  Read the story's `totals` at each boundary ("Start the budget"). Tokens are the subagents' counts as the harness
+  reports them when each returns ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
+  `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it (the status
+  comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include round-0 attempts.
 - **10: no comment and no escalation can be written.** Put the status comment, word for word, in the session output,
   and post it once Leeway answers again, with the stop's escalation. Never retry in a loop.
 
@@ -916,6 +954,9 @@ Do these, in this order, and nothing else:
    - **Friction so far:** <one line each, with task and round, harvested per "The friction harvest">; or "none".
    ```
 
+   The *Spend* line is a readout of the story's `totals`: `<tokens>` reads `at least <totals.tokens>, incomplete`
+   when `tokensIncomplete` is true, and `<elapsed>` likewise when `minutesIncomplete` is.
+
 5. **Raise the stop's one escalation** (the last column of "Hard stop conditions"). One the issue run raises is on the story, as
    `<alias>/agent`, tied to the status comment (`--comment cN`, its `comment.number`), with the human's real
    choices as options (2 to 5, each with its argument) and `--meanwhile` saying what stays blocked and what does not.
@@ -940,9 +981,9 @@ the sub-issue run's own. The gate ends with the story set to the step after `bui
 where the run ends ("verify on dev"), with the story waiting for a person.
 
 The end posts one `# Run status — <story ref> · finished` comment on the story, with *Landed* (every task), the
-story's new step or status, the *Spend* line and the friction proposal, so the next reader and a continuation run
-have the spend. No escalation, except the friction proposal below and, where `gh` is not installed or fails, the
-ask for the plan's pull request ("The plan's end"). When the story was the plan's last, the comment and the session's last words say what "The plan's end" left the
+story's new step or status, the *Spend* line and the friction proposal, so the next reader has the spend. A
+continuation run reads it from Leeway ("Start the budget"), never from that line. No escalation, except the
+friction proposal below and, where `gh` is not installed or fails, the ask for the plan's pull request ("The plan's end"). When the story was the plan's last, the comment and the session's last words say what "The plan's end" left the
 Plan record reading, as its ending does: "in review" and the pull request that waits on the person's test, or the
 plan merged into `main` once it reads `done`.
 
@@ -1010,7 +1051,8 @@ happen, so a task that passed review on a misread criterion is found at the stor
 on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up holds the run on
 its answer rather than waiting in a queue, so a debt-heavy codebase waits often; the alternative is filing tickets nobody
 approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count the
-harness does not report is not enforced at all. And dropping each task's subagent context means a pattern noticed in
+harness does not report leaves the token total a floor, not a count. A span the session ends inside, before its
+record is written, is not recorded at all. And dropping each task's subagent context means a pattern noticed in
 task 2 reaches task 5 only if a round record wrote it down.
 
 ## Run a project

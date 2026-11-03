@@ -166,7 +166,9 @@ arguing — the orchestrator escalates.
 **Iteration.** The brief opens with an *Iteration* block the orchestrator turns into `iteration
 record`. You do not commit or push, so you do not know the sha: write `pending`. The *Lane line* is
 one line, at most 200 characters, of what you ran and the result; a lane that failed starts
-`FAILED:`. *Passed* is `yes`, `no`, or `n/a` when no lane owns the change.
+`FAILED:`. *Passed* is `yes`, `no`, or `n/a` when no lane owns the change. *Test minutes* is the
+whole minutes you spent running lanes, timed with `date +%s` around each run, or `unknown`; never
+an estimate.
 
 **Addresses.** Round 1 is always `none`. On a later round, name only the `cN` your prompt lists as
 live (`open` or `addressed`), the earlier findings this round fixed. A `disputed` or `settled` one

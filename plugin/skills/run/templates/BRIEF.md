@@ -20,6 +20,8 @@ posts this brief.
 - **Lane line:** one line, at most 200 characters, of what you ran and the result, for example
   `typecheck, unit 412/412 green`. A lane that failed goes here too, starting `FAILED:`.
 - **Passed:** yes | no | n/a (no lane owns this change)
+- **Test minutes:** the whole minutes this round spent running the lanes, timed (`date +%s` before and after each
+  run), or `unknown` when you did not time them. Never an estimate.
 - **Addresses:** `c1, c3` — the earlier findings (`cN`, from the reviewer's last verdict) this round fixed, or
   `none`. The first round of a task is always `none`. Name only the `cN` your prompt lists as live (`open` or `addressed`): a
   `disputed` or `settled` finding cannot be addressed again, and the verdict re-raises a disputed one as a new
@@ -159,6 +161,7 @@ This is what a filled brief looks like once the orchestrator has written the sha
 - **Head sha:** ce84f32a32c79f634395275e24549a2a035b7255
 - **Lane line:** unit 31/31 green (docs-lint); typecheck n/a
 - **Passed:** yes
+- **Test minutes:** 2
 - **Addresses:** c2, c3
 
 ## What I built
@@ -227,7 +230,7 @@ The orchestrator fills the round's commands from it (alias `kestrel-b1`, this se
 
 | Field | Becomes |
 |---|---|
-| Head sha, Lane line, Passed, Addresses | `leeway --as kestrel-b1/implementer iteration record LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" --passed --addresses '["c2","c3"]'` (`Passed: no` or `n/a` omits `--passed`) |
+| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as kestrel-b1/implementer iteration record LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" --passed --addresses '["c2","c3"]' --tokens 48210 --minutes 9 --testMinutes 2 --note "addresses c2, c3"` (`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer's as the harness reported them, left out when it reported none, and `--minutes` is the orchestrator's own timing: `run`, "Recording spend") |
 | the whole brief, sha filled in | `leeway --as kestrel-b1/implementer comment add LWY-12.3 --stdin body <brief.md`; `--json` gives `comment.number` = 5, so `c5` |
 | `Status: DONE` | `leeway --as kestrel-b1/agent issue update LWY-12.3 --status in_review` (and `LWY-12`) |
 | `Status: BLOCKED` and `## Question` | the escalation described in the plugin's `PROCESS.md`, "Questions to the human are escalations" |
