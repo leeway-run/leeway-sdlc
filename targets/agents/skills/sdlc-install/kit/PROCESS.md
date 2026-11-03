@@ -338,3 +338,8 @@ On top of what your repo's floor says every change owes:
   in Leeway is the only lasting copy.
 - A task lands deliberately: PASS, merge into the story's worktree, `--status done`. The story is closed at
   the story gate, by the orchestrator setting `--step` or `--status`, and nothing else moves it.
+- A plan is done once it has merged into `main`, on the person's word. With a plan branch, at its last story
+  the Plan record goes `in_review`, with the plan's pull request linked on the project, and it goes `done` only
+  once that pull request reads `merged` (`run`, "When the plan merges into `main`"). With no plan branch, the
+  stories merge into `main` one by one, and the Plan record goes `done` only once every `done` story reads merged
+  into `main`, and `in_review` until then (`run`, "The plan's end").
