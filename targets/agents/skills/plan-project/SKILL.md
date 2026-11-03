@@ -358,6 +358,8 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 
    One link per repository per project. Linking a repository again replaces its branch and its pull request, and a
    link without `--number` has none, so a repository already in `project.links` with this branch is left as it is.
+   A repository linked with another branch (a renamed plan, a link a person made) is left as it is too, because
+   linking it again would drop its pull request: name it in the ending, for the person to relink or unlink it.
    Nothing changes on GitHub. A refusal of `repository_required` or `invalid_repository` is step 3's. A repository
    the plan changes that this session has no checkout of is cut and linked by `run` when its first story starts
    (`run`, "Worktrees: mandatory, and yours alone"): say which in the ending.
