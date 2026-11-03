@@ -11,6 +11,7 @@ const flat = (text) => text.replace(/\s+/g, ' ');
 const run = read('skills/run/SKILL.md');
 const sync = flat(read('skills/sync-repo/SKILL.md'));
 const install = flat(read('skills/sdlc-install/SKILL.md'));
+const tune = flat(read('skills/sdlc-tune/SKILL.md'));
 const template = read('skills/sdlc-install/scaffold/CONFIG.md.tmpl');
 
 // The text under `heading` (any level), up to the next heading of the same or a higher level, on one line.
@@ -65,26 +66,61 @@ test('no skill, agent or contract reads or writes a budget in .sdlc/CONFIG.md', 
     assert.doesNotMatch(read(file), /PER_STORY_BUDGET/, file);
   }
   assert.doesNotMatch(template, /budget/i);
+  const near = files
+    .filter((file) => !['skills/run/SKILL.md', 'skills/sync-repo/SKILL.md'].includes(file))
+    .flatMap((file) => flat(read(file)).split(/(?<=\.) /).filter((s) => /budget/i.test(s) && /CONFIG/.test(s)).map((s) => `${file}: ${s}`));
+  assert.deepEqual(near, []);
 });
 
-test('sdlc-install writes no budget, and says which types have none', () => {
+test('sdlc-tune sets the budget within the bounds the process accepts', () => {
   assert.equal(
-    from(install, '**Never written: a per-story budget.**', ' ## Step 5'),
-    "**Never written: a per-story budget.** It lives in the process, as `params.budget` on a type's `build` step, and " +
-      "no preset sets one, so a new product's runs have none until a person sets it (`sdlc-tune`, or the product's " +
-      'Process section). Nothing goes in `CONFIG.md` for it. Step 7 says so.',
+    from(tune, '`budget`, optional,', ' The `plan` step'),
+    '`budget`, optional, `{tokens, rounds, hours}`, each optional, `tokens` an integer 1 to 1,000,000,000, `rounds` 1 ' +
+      'to 500, `hours` 1 to 720, and a dimension left out is not limited.',
   );
+});
+
+test('sdlc-install writes the old default budget on the preset path only, and says where it went', () => {
+  assert.equal(
+    from(install, '**Written without asking, with a preset only: the per-story budget**', ' ## Step 5'),
+    '**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15, ' +
+      '"hours": 4}` (2,000,000 subagent tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
+      '`params.budget` on each `build` step that has none (step 5). No preset sets one, so the install does, as a ' +
+      'default the human did not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) ' +
+      'the process is the human\'s and no budget is written. Step 7 says which `build` steps have one.',
+  );
+  const step5 = from(install, '## Step 5 — set the process', ' ## Step 6');
+  assert.equal(
+    from(step5, 'When question 2 was (d)', ' 1. `<cli> process update'),
+    'When question 2 was (d), skip the preset (1) and make no change for questions 3 to 5: ask 14 and 15 against the ' +
+      'process step 3.4 read, make only the change their answers ask for (3), write no budget (skip 4), and read it ' +
+      'back (5). Otherwise, and only after the human has answered 2 to 5:',
+  );
+  assert.equal(
+    from(step5, '4. **The default budget.**', ' 5. **Read it back**'),
+    '4. **The default budget.** Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget` ' +
+      'to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing ' +
+      'else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.',
+  );
+  const order = ['1. `<cli> process update', '3. **Adjustments**', '4. **The default budget.**', '5. **Read it back**'];
+  const at = order.map((s) => step5.indexOf(s));
+  assert.ok(at.every((n) => n >= 0), 'every step 5 item is there');
+  assert.deepEqual([...at].sort((a, b) => a - b), at);
   assert.match(
     install,
-    /which types' `build` steps have no per-story budget in the process read back \(a run of them is limited only by the round caps, and a person sets one with `sdlc-tune`\), and what follows/,
+    /cast"\), from the process read back which types' `build` steps got the default per-story budget in step 5 and which have none \(a run of those is limited only by the round caps\), and that `sdlc-tune` changes either, and what follows/,
   );
-  assert.doesNotMatch(install, /2,000,000/);
+  assert.doesNotMatch(install, /Process section/);
 });
 
 test('sync-repo offers the move once, as a question asked with the copies', () => {
   assert.equal(
-    from(sync, '- **Otherwise** offer the move once', ' **Converting the row.**'),
-    '- **Otherwise** offer the move once, as one question asked with the copies in step 3 (its escalation\'s question ' +
+    from(sync, 'Then the per-story budget, which', ' **Converting the row.**'),
+    'Then the per-story budget, which `run` reads from the process and no longer from `.sdlc/CONFIG.md`: - **No ' +
+      '`Per-story budget` row in `.sdlc/CONFIG.md`** → nothing to offer. - **A row, and no `.sdlc/leeway.md`** → ' +
+      'nothing to offer: there is no product to move it into. The row stays, and no skill reads it; say so in the ' +
+      'summary. - **A row that does not convert** (below) → show it, naming what does not fit, and do not offer it. ' +
+      'The row stays. - **Otherwise** offer the move once, as one question asked with the copies in step 3 (its escalation\'s question ' +
       'begins `Sync budget: to <this version>:`), showing the row, the budget it becomes, and every type with a ' +
       '`build` step, that step\'s `params.budget` before → after. Two options, each with its argument: "Move it" ' +
       'first (the budget goes on every type\'s `build` step, where `run` reads it, and the row leaves ' +
@@ -104,44 +140,29 @@ test('the row is removed only after the process read back carries the budget', (
   const move = from(sync, '**On "Move it"**', ' ## 2. Compare each copy');
   assert.equal(
     move,
-    '**On "Move it"**, in this order, each only once the one before it holds: 1. **Write.** Read the definition ' +
+    '**On "Move it"**, after the new flow of this sync is settled (not offered, answered no, refused, or written ' +
+      'and read back; while its `Sync process:` question is open, the move waits), because each write sends the ' +
+      "whole definition and one built from an earlier read would drop the other's change. Then, in this order, each " +
+      'only once the one before it holds: 1. **Write.** Read the definition ' +
       '(`<cli> process get <KEY> --json`), set `params.budget` on every `build` step to the budget (or remove it, ' +
       'when the row became no `budget`), change nothing else, and send the whole definition back as sdlc-tune\'s ' +
-      'Step 4 does, `--as <alias>/agent`. When every `build` step already carries it, skip the write. 2. **Read ' +
-      "back.** `<cli> process get <KEY> --json`: every `build` step's `params.budget` equals the budget (is absent, " +
-      'when the row became no `budget`). 3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, ' +
+      'Step 4 does, `--as <alias>/agent`. When every `build` step already carries it, skip the write. ' +
+      '`process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune. 2. **Read back** as ' +
+      "sdlc-tune's Step 6 does: `<cli> process get <KEY> --json`, every `build` step's `params.budget` equals the " +
+      'budget (is absent, when the row became no `budget`), and everything else is byte-identical to the definition ' +
+      'step 1 read. It is the last process read before the row is removed, and no process write of this sync comes ' +
+      'after it. 3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, ' +
       'with the `<!-- Per-story budget: … -->` comment that describes it, where there is one, and nothing else. A ' +
       'write the server refuses, or a read-back that does not carry the budget, removes nothing: the row stays, say ' +
       'which and why in the summary, and the next release asks again. Like the new flow, a no gets no `Kept` row.',
   );
-  const order = ['1. **Write.**', '2. **Read back.**', '3. **Only then remove the row**'].map((s) => move.indexOf(s));
+  const order = ['after the new flow of this sync is settled', '1. **Write.**', '2. **Read back**', '3. **Only then remove the row**'].map((s) => move.indexOf(s));
+  assert.ok(order.every((n) => n >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.match(sync, /a `Per-story budget` row is removed only after the process read back carries it;/);
 });
 
-// A model of "Converting the row", so the prose's own example is checked against the rule it states.
-const BOUNDS = { tokens: 1_000_000_000, rounds: 500, hours: 720 };
-function convert(row) {
-  const parts = row.replace(/, whichever comes first$/, '').split(' · ');
-  const shapes = [
-    ['tokens', /^([\d,]+) subagent tokens$/],
-    ['rounds', /^([\d,]+) rounds$/],
-    ['hours', /^([\d.]+) h wall-clock$/],
-  ];
-  if (parts.length !== 3) return undefined;
-  const budget = {};
-  for (const [i, [key, shape]] of shapes.entries()) {
-    if (parts[i] === 'none') continue;
-    const m = shape.exec(parts[i]);
-    if (!m) return undefined;
-    const n = Math.ceil(Number(m[1].replace(/,/g, '')));
-    if (!(n >= 1 && n <= BOUNDS[key])) return undefined;
-    budget[key] = n;
-  }
-  return Object.keys(budget).length ? budget : null;
-}
-
-test('converting the row: the prose example, none, rounding up, and what does not convert', () => {
+test('converting the row: the rule, and its own example read the way it says', () => {
   const rule = from(sync, '**Converting the row.**', ' **On "Move it"**');
   assert.equal(
     rule,
@@ -154,11 +175,6 @@ test('converting the row: the prose example, none, rounding up, and what does no
       '`rounds` 1 to 500, `hours` 1 to 720), does not convert.',
   );
   const [, example, json] = /\(`([^`]+)` is `([^`]+)`\)/.exec(rule);
-  assert.deepEqual(convert(example), JSON.parse(json));
-  assert.deepEqual(convert(`${example}, whichever comes first`), JSON.parse(json));
-  assert.deepEqual(convert('none · 15 rounds · none'), { rounds: 15 });
-  assert.equal(convert('none · none · none'), null);
-  assert.deepEqual(convert('none · none · 2.5 h wall-clock'), { hours: 3 });
-  assert.equal(convert('none · 501 rounds · none'), undefined);
-  assert.equal(convert('2M tokens · 15 rounds · 4 h wall-clock'), undefined);
+  const [tokens, rounds, hours] = example.split(' · ').map((part) => Number(part.split(' ')[0].replace(/,/g, '')));
+  assert.deepEqual({ tokens, rounds, hours }, JSON.parse(json));
 });

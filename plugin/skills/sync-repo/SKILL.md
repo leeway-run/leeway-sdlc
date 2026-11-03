@@ -132,14 +132,19 @@ all. A wall-clock not in whole hours is rounded up to the next one, and the ques
 read this way, or a value outside the process's bounds (`tokens` 1 to 1,000,000,000, `rounds` 1 to 500, `hours` 1
 to 720), does not convert.
 
-**On "Move it"**, in this order, each only once the one before it holds:
+**On "Move it"**, after the new flow of this sync is settled (not offered, answered no, refused, or written and
+read back; while its `Sync process:` question is open, the move waits), because each write sends the whole
+definition and one built from an earlier read would drop the other's change. Then, in this order, each only once
+the one before it holds:
 
 1. **Write.** Read the definition (`<cli> process get <KEY> --json`), set `params.budget` on every `build` step to
    the budget (or remove it, when the row became no `budget`), change nothing else, and send the whole definition
    back as sdlc-tune's Step 4 does, `--as <alias>/agent`. When every `build` step already carries it, skip the
-   write.
-2. **Read back.** `<cli> process get <KEY> --json`: every `build` step's `params.budget` equals the budget (is absent,
-   when the row became no `budget`).
+   write. `process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune.
+2. **Read back** as sdlc-tune's Step 6 does: `<cli> process get <KEY> --json`, every `build` step's
+   `params.budget` equals the budget (is absent, when the row became no `budget`), and everything else is
+   byte-identical to the definition step 1 read. It is the last process read before the row is removed, and no
+   process write of this sync comes after it.
 3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, with the `<!-- Per-story budget: … -->`
    comment that describes it, where there is one, and nothing else.
 
