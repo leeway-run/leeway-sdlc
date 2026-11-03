@@ -80,8 +80,8 @@ the one failure that corrupts everything downstream.**
   token, and `leeway-guard` stops its writes.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
-- **Size limits.** A comment body is 1 to 20,000 characters, a description at most 5,000, a title at most
-  200, `--tests` at most 200, and `--stdin` is capped at 64 KiB. A brief over the comment cap goes in whole
+- **Size limits.** A comment body is 1 to 20,000 characters, a title at most 200, `--tests` at most 200,
+  and `--stdin` is capped at 64 KiB. A brief over the comment cap goes in whole
   across the comment and a reply (`comment add <ref> --parent cN --stdin body`), never cut. A verdict that
   would exceed it shrinks: each finding is its own comment, posted before the verdict and anchored where it
   can be, and the verdict only names them by `cN`.
@@ -121,9 +121,9 @@ out of scope, and the questions left for a developer. A developer then runs `pla
 step is a **product check**. A story that passes gets its **technical criteria** (`TC-n`) from the
 developer, at the end of the same body, unless the change is small or trivial: the `AC-n` say what the
 user gets, the `TC-n` what the build must hold to. Together they are final, and the tasks, the red tests
-and the plan gate all work from both. An issue description holds at most 5,000 characters; where the
-technical criteria would not fit, they move to one comment that opens `# Technical criteria`, the latest
-one wins, and every reader reads it with the body.
+and the plan gate all work from both. A story planned before may point from its body to the latest comment
+that opens `# Technical criteria` instead; that comment holds its technical criteria, and every reader reads
+it with the body.
 
 **Shaping ends at the shaped step**, the type's first `gate` step after `shape` with no `plan` step between them
 (`shaped` in the presets). Once every question is answered and no answer leaves something new unclear,
@@ -142,7 +142,7 @@ to `shape`.
 | Part of the story | Owner | Written through |
 |---|---|---|
 | The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |
-| *Technical criteria* (`TC-n`) | the planner | `plan-project`, after the product check; the overflow comment when the body would not fit |
+| *Technical criteria* (`TC-n`) | the planner | `plan-project`, after the product check |
 | The design doc, the tasks, the dependencies | the planner | `plan-project` |
 | A change to a frozen test | the criterion's owner: the product owner for an `AC-n`, the planner for a `TC-n` | the round record, then the body |
 
@@ -296,7 +296,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
-| technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
+| technical criteria a story body points to | the comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
 | status | always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>/agent`, named in the session ("The cast") |
 

@@ -124,7 +124,7 @@ Read the description and every comment, the intent doc, and the surfaces the sto
 | **no negative** | a story the checklist's *What must not happen* applies to — data scope, roles, permissions or isolation; or data it moves, copies, deletes or replaces — without the rule it requires |
 | **stale** | a criterion that contradicts the intent doc, or what the code does today. If the Status line has a date, `git log --since=<date>` on the intent doc shows what changed since shaping |
 | **hidden scope** | a capability the story assumes and the code shows is not there, **when it needs a scope decision**: build it here, a fallback, or out of scope. One the criterion obviously needs and you just build is a task, not a gap |
-| **too big** | the story should be two, or its part alone passes the 5,000-character description cap. Name the split you would suggest; the PO decides it |
+| **too big** | the story should be two. Name the split you would suggest; the PO decides it |
 
 A checklist row the story leaves open is **missing** only when it applies, by its *Applies when*. **Not gaps:**
 *Open questions for dev*, which are your input for step 3, and a missing Status line.
@@ -198,39 +198,18 @@ criteria* after *Open questions for dev*, and the Status line's second half: `·
 developer's yes is not asked here; the plan gate (step 8) is the human's look at the TCs, and a type without a
 gate is watched by the developer in this session.
 
-### The 5,000-character cap, and the overflow
+### A story whose criteria are in a comment
 
-An issue description holds at most 5,000 characters, counted by the server as UTF-16 code units of the trimmed
-text. Count the full body you are about to write the same way, from the file you will send (`wc -m` depends on
-the locale and can count bytes):
+A story planned before may keep its *Technical criteria* in a story comment whose body opens with the heading
+`# Technical criteria`, with the body's `## Technical criteria` heading holding one line: *"In the latest
+`# Technical criteria` comment on this story."* The latest such comment is in force; never edit an earlier one.
 
-```sh
-node -e "process.stdout.write(String(require('fs').readFileSync(0,'utf8').trim().length))" <body
-```
+Your `TC-n` go in the body, in full. On a re-plan of such a story, post a final `# Technical criteria` comment
+first, whose body is the heading and one line, *"Moved to the story description; this comment list is closed."*,
+then write the description with the section in full, so the older comment is never the latest. Never truncate.
 
-**Treat 4,800 as the line**: a body over it overflows, which leaves room for the pointer line and a late edit.
-
-1. **Cut your section first** — verbose rules, restated detail a pointer can carry. Never shorten the PO's part.
-2. **Still over → overflow to a comment.** The whole *Technical criteria* section moves to **one story comment
-   whose body opens with the heading `# Technical criteria`** (`comment add <story> --stdin body`, at most 20,000
-   characters), the `TC-n` in full. In the description, the `## Technical criteria` heading stays with one line
-   under it: *"In the latest `# Technical criteria` comment on this story."* Never split the TCs between the two,
-   and never truncate.
-3. **A revision posts a new comment with the full list**, numbers unchanged. The latest such comment is in force;
-   never edit an earlier one.
-4. **Criteria that move back into the body** (a re-plan whose TCs now fit under the line) leave the older comment
-   as the latest, and so in force. Post a final `# Technical criteria` comment first, whose body is the heading
-   and one line, *"Moved to the story description; this comment list is closed."*, then write the description with
-   the section in full.
-5. **A `# Technical criteria` comment over 20,000 characters** is not cut and not split: the story should be two.
-   Say so and stop, as for the PO's part.
-6. **The PO's part alone over the cap** is a story that should be two: a step 1 gap.
-
-Whoever reads the criteria reads the body **and** the latest `# Technical criteria` comment when the body points
-to one. Post the comment first, then write the description with `issue update <story> --stdin description` from a
-file outside the repo by absolute path or a quoted heredoc, so a pointer never exists without its comment. Then read
-it back: its length (counted as above) is at most 5,000 and, when it overflowed, the
-comment exists and holds every `TC-n` (count them: the list is as long as the plan's).
+Write the description with `issue update <story> --stdin description` from a file outside the repo by absolute
+path or a quoted heredoc. Then read it back: it is the body you wrote, with every `TC-n` the plan has.
 
 ## 4. Two lists, and never one
 
@@ -275,7 +254,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    <cli> --server <server> --as <alias>/planner --json project create <KEY> --name "<plan name>" --summary "<at most 280 characters>" --stdin description <plan.md
    ```
 
-   The description (at most 5,000) links the design doc, names the plan branch if *Plan branch* in `CONFIG.md`
+   The description links the design doc, names the plan branch if *Plan branch* in `CONFIG.md`
    asks for one (`feat/p_<first 8 hex of project id>-<slug of the name, at most 40>`; `none` means stories branch
    from the integration branch and there is nothing to name), and carries the first status line. A project has no
    settable status: its status updates are comments on the Plan record.
@@ -341,9 +320,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    <cli> --server <server> --as <alias>/planner --json issue create <KEY> --parent <story> --title "<task>" --summary "<at most 280 characters>" --status backlog --stdin description <task.md
    ```
 
-   At most 100 sub-issues per issue: a plan that wants more is two stories. The description is at most 5,000
-   characters; a task that needs more puts the rest in its first comment (`comment add <ref> --stdin body`), and
-   the description says so.
+   At most 100 sub-issues per issue: a plan that wants more is two stories.
 
 6. **Order is the blocking relation**, task by task, after all exist: `dependency add <ref> <blockedBy ref>`. Read
    it back on `issue get <ref>`: `issue.blockedBy`.
@@ -508,9 +485,9 @@ someone could pick up from its description alone.
 
 Plus: **every hazard names an owning task**, or the doc says which one does not and why. Every task's done-when
 names at least one thing that must be proven false. Every story passed the product check — or its gaps went back
-to the PO as one comment and it has no tasks. Every planned story's description is at most 5,000 characters, with
-its *Technical criteria* in the body or, pointed to from it, in the `# Technical criteria` comment, and a *planned
-by* half on its Status line. Every story and task, and the Plan record, has a summary.
+to the PO as one comment and it has no tasks. Every planned story has its *Technical criteria* in the body (or, on
+a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
+*planned by* half on its Status line. Every story and task, and the Plan record, has a summary.
 And, for a type with a plan gate, the report is posted, every QUESTION in it is a comment of its own with an
 escalation on it, and the story waits
 at the plan gate for a person to move it; for a type without one, the story is `--status ready`.
