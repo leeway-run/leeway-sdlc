@@ -143,8 +143,9 @@ the one before it holds:
    write. `process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune.
 2. **Read back** as sdlc-tune's Step 6 does: `<cli> process get <KEY> --json`, every `build` step's
    `params.budget` equals the budget (is absent, when the row became no `budget`), and everything else is
-   byte-identical to the definition step 1 read. It is the last process read before the row is removed, and no
-   process write of this sync comes after it.
+   byte-identical to the definition this move's own Write (1, just above) read, not the one "1. Read the record"
+   read before the new flow. It is the last process read before the row is removed, and no process write of this
+   sync comes after it.
 3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, with the `<!-- Per-story budget: … -->`
    comment that describes it, where there is one, and nothing else.
 

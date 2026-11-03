@@ -66,10 +66,30 @@ test('no skill, agent or contract reads or writes a budget in .sdlc/CONFIG.md', 
     assert.doesNotMatch(read(file), /PER_STORY_BUDGET/, file);
   }
   assert.doesNotMatch(template, /budget/i);
-  const near = files
-    .filter((file) => !['skills/run/SKILL.md', 'skills/sync-repo/SKILL.md'].includes(file))
-    .flatMap((file) => flat(read(file)).split(/(?<=\.) /).filter((s) => /budget/i.test(s) && /CONFIG/.test(s)).map((s) => `${file}: ${s}`));
-  assert.deepEqual(near, []);
+  const near = files.flatMap((file) =>
+    flat(read(file)).split(/(?<=\.) /).filter((s) => /budget/i.test(s) && /CONFIG/.test(s)).map((s) => `${file}: ${s}`),
+  );
+  assert.deepEqual(near, [
+    'skills/run/SKILL.md: **Start the budget** from the process: `params.budget` on the story\'s build step ' +
+      '(precondition 1), never from `.sdlc/CONFIG.md`.',
+    'skills/run/SKILL.md: A *Per-story budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves ' +
+      'it into the process.',
+    'skills/sync-repo/SKILL.md: --- name: sync-repo description: Bring this repo\'s leeway-sdlc copies up to the plugin ' +
+      'version this session runs - the ticket templates, the craft floor, the managed contract block in the agent\'s ' +
+      'instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent ' +
+      'and hook files - one diff and one question per copy, the new shaping and planning flow offered to a product ' +
+      'process still on the old one, and a run budget left in .sdlc/CONFIG.md offered a move into the process, then one ' +
+      'branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md.',
+    'skills/sync-repo/SKILL.md: Then the per-story budget, which `run` reads from the process and no longer from ' +
+      '`.sdlc/CONFIG.md`: - **No `Per-story budget` row in `.sdlc/CONFIG.md`** → nothing to offer.',
+    'skills/sync-repo/SKILL.md: Two options, each with its argument: "Move it" first (the budget goes on every type\'s ' +
+      '`build` step, where `run` reads it, and the row leaves `.sdlc/CONFIG.md`), then "Leave it" (nothing is written; ' +
+      'the row stays, and no skill reads it).',
+    'skills/sync-repo/SKILL.md: **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, with the ' +
+      '`<!-- Per-story budget: … -->` comment that describes it, where there is one, and nothing else.',
+    'skills/sync-repo/SKILL.md: - `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4) and a `Per-story ' +
+      'budget` row, with its comment, that the budget move removes (step 1).',
+  ]);
 });
 
 test('sdlc-tune sets the budget within the bounds the process accepts', () => {
@@ -97,18 +117,20 @@ test('sdlc-install writes the old default budget on the preset path only, and sa
       'back (5). Otherwise, and only after the human has answered 2 to 5:',
   );
   assert.equal(
-    from(step5, '4. **The default budget.**', ' 5. **Read it back**'),
-    '4. **The default budget.** Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget` ' +
-      'to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing ' +
-      'else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.',
+    from(step5, '4. **The default budget**', ' 5. **Read it back**'),
+    '4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use` ' +
+      'included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set ' +
+      '`params.budget` to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no ' +
+      '`budget`, change nothing else, and send the whole definition back as in 3. Every `build` step already ' +
+      'carrying one → skip the write.',
   );
-  const order = ['1. `<cli> process update', '3. **Adjustments**', '4. **The default budget.**', '5. **Read it back**'];
+  const order = ['1. `<cli> process update', '3. **Adjustments**', '4. **The default budget**', '5. **Read it back**'];
   const at = order.map((s) => step5.indexOf(s));
   assert.ok(at.every((n) => n >= 0), 'every step 5 item is there');
   assert.deepEqual([...at].sort((a, b) => a - b), at);
   assert.match(
     install,
-    /cast"\), from the process read back which types' `build` steps got the default per-story budget in step 5 and which have none \(a run of those is limited only by the round caps\), and that `sdlc-tune` changes either, and what follows/,
+    /cast"\), from the process read back which types' `build` steps got the default per-story budget in step 5 and which have none \(a run of those is limited only by the round caps\), and that `sdlc-tune` changes either, a preset the server refused in step 5 \(the refs it named, and that neither the preset nor the default budget was applied\), and what follows/,
   );
   assert.doesNotMatch(install, /Process section/);
 });
@@ -150,8 +172,9 @@ test('the row is removed only after the process read back carries the budget', (
       '`process_in_use` → name the refs, leave the process as it was, and point at sdlc-tune. 2. **Read back** as ' +
       "sdlc-tune's Step 6 does: `<cli> process get <KEY> --json`, every `build` step's `params.budget` equals the " +
       'budget (is absent, when the row became no `budget`), and everything else is byte-identical to the definition ' +
-      'step 1 read. It is the last process read before the row is removed, and no process write of this sync comes ' +
-      'after it. 3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, ' +
+      'this move\'s own Write (1, just above) read, not the one "1. Read the record" read before the new flow. It is ' +
+      'the last process read before the row is removed, and no process write of this sync comes after it. ' +
+      '3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, ' +
       'with the `<!-- Per-story budget: … -->` comment that describes it, where there is one, and nothing else. A ' +
       'write the server refuses, or a read-back that does not carry the budget, removes nothing: the row stays, say ' +
       'which and why in the summary, and the next release asks again. Like the new flow, a no gets no `Kept` row.',

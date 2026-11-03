@@ -206,8 +206,9 @@ process step 3.4 read, make only the change their answers ask for (3), write no 
    - **The body stays under 16384 bytes** (`wc -c <file>`); the server refuses more as `invalid_process`.
    - `process_in_use` (an open issue would be stranded) is not an install problem: say which refs it names,
      and leave the process as it was.
-4. **The default budget.** Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget` to
-   `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
+4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use`
+   included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget`
+   to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
    else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.
 5. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
    (labels joined with →). The files you write next describe this, so never write them from the answers.
@@ -388,7 +389,8 @@ was a question above. Which docs are stubs, which CI claims are unverified, a cl
 detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
 cast"), from the process read back which types' `build` steps got the default per-story budget in step 5 and
-which have none (a run of those is limited only by the round caps), and that `sdlc-tune` changes either, and
+which have none (a run of those is limited only by the round caps), and that `sdlc-tune` changes either, a preset
+the server refused in step 5 (the refs it named, and that neither the preset nor the default budget was applied), and
 what follows from an answer the
 human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
 declined (run prompts for every command), an allow-list added without `git push` (each push prompts
