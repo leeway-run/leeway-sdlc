@@ -182,9 +182,9 @@ asked in step 5, once the process they compare with has been read.
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
 config format nobody tunes correctly.
 
-**Written without asking, as framework defaults:** the per-story budget `2,000,000 subagent tokens · 15
-rounds · 4 h wall-clock`, whichever comes first (a harness fact, so it lives in `CONFIG.md`, not in Leeway).
-A human edits `CONFIG.md` to change it.
+**Never written: a per-story budget.** It lives in the process, as `params.budget` on a type's `build` step,
+and no preset sets one, so a new product's runs have none until a person sets it (`sdlc-tune`, or the product's
+Process section). Nothing goes in `CONFIG.md` for it. Step 7 says so.
 
 ## Step 5 — set the process
 
@@ -201,7 +201,7 @@ and only after the human has answered 2 to 5:
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
      `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`. A `build`
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
-     unattended}`; a `plan` step `params {designDoc}`.
+     unattended, budget?}`; a `plan` step `params {designDoc}`.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
      reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
      `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,
@@ -372,7 +372,7 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **Grep them for secret shapes**: `grep -rnE "Bearer [A-Za-z0-9]|lw_[A-Za-z0-9]{8,}"`, and for any value
   held in the CLI's credentials file (compare without printing it). A hit is a possible credential: **stop and
   show the human the line**, and let them decide. Never remove it automatically; the word "token" alone is
-  legitimate text (a Secrets section, the per-story budget) and is not a hit.
+  legitimate text (a Secrets section, say) and is not a hit.
 - `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
 - Confirm the instructions file loads the floor (the `@` line, or the read-first line, names an existing file).
@@ -388,8 +388,9 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
 detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
-cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
-gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
+cast"), which types' `build` steps have no per-story budget in the process read back (a run of them is
+limited only by the round caps, and a person sets one with `sdlc-tune`), and what follows from an answer the
+human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
 declined (run prompts for every command), an allow-list added without `git push` (each push prompts
 until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
 install: they are theirs, not the install's.

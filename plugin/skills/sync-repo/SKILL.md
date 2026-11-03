@@ -1,6 +1,6 @@
 ---
 name: sync-repo
-description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, and the new shaping and planning flow offered to a product process still on the old one, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
+description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, the new shaping and planning flow offered to a product process still on the old one, and a run budget left in .sdlc/CONFIG.md offered a move into the process, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
 ---
 
 # Sync the repo with this release
@@ -35,7 +35,8 @@ answer is not: do not write that copy. A copy with no escalation yet gets one no
 remain open. Never write a copy on an unanswered question. The `filing-work:` question is the exception:
 step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
 (step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new
-flow (step 1), by `Sync process: to <this version>:`.
+flow (step 1), by `Sync process: to <this version>:`, and so is the budget move (step 1), by
+`Sync budget: to <this version>:`.
 
 ## 0. Before anything
 
@@ -110,6 +111,41 @@ Then the product's process, which lives in Leeway, not in the repo:
   nothing is written. It is a Leeway write, not a repo copy: nothing on the branch records it, and a no gets no
   `Kept` row, so the next release asks again.
 
+Then the per-story budget, which `run` reads from the process and no longer from `.sdlc/CONFIG.md`:
+
+- **No `Per-story budget` row in `.sdlc/CONFIG.md`** → nothing to offer.
+- **A row, and no `.sdlc/leeway.md`** → nothing to offer: there is no product to move it into. The row stays, and
+  no skill reads it; say so in the summary.
+- **A row that does not convert** (below) → show it, naming what does not fit, and do not offer it. The row stays.
+- **Otherwise** offer the move once, as one question asked with the copies in step 3 (its escalation's question
+  begins `Sync budget: to <this version>:`), showing the row, the budget it becomes, and every type with a `build`
+  step, that step's `params.budget` before → after. Two options, each with its argument: "Move it" first (the
+  budget goes on every type's `build` step, where `run` reads it, and the row leaves `.sdlc/CONFIG.md`), then
+  "Leave it" (nothing is written; the row stays, and no skill reads it). The question says that a no is asked again
+  at the next release.
+
+**Converting the row.** Each dimension of `<n> subagent tokens · <n> rounds · <n> h wall-clock` becomes `tokens`,
+`rounds` and `hours`, with the thousands separators dropped (`2,000,000 subagent tokens · 15 rounds · 4 h
+wall-clock` is `{"tokens": 2000000, "rounds": 15, "hours": 4}`), and a trailing `, whichever comes first` is
+dropped too. A dimension written `none` is left out, and a row with every dimension `none` becomes no `budget` at
+all. A wall-clock not in whole hours is rounded up to the next one, and the question says so. A row that does not
+read this way, or a value outside the process's bounds (`tokens` 1 to 1,000,000,000, `rounds` 1 to 500, `hours` 1
+to 720), does not convert.
+
+**On "Move it"**, in this order, each only once the one before it holds:
+
+1. **Write.** Read the definition (`<cli> process get <KEY> --json`), set `params.budget` on every `build` step to
+   the budget (or remove it, when the row became no `budget`), change nothing else, and send the whole definition
+   back as sdlc-tune's Step 4 does, `--as <alias>/agent`. When every `build` step already carries it, skip the
+   write.
+2. **Read back.** `<cli> process get <KEY> --json`: every `build` step's `params.budget` equals the budget (is absent,
+   when the row became no `budget`).
+3. **Only then remove the row** from `.sdlc/CONFIG.md`, on the sync branch, with the `<!-- Per-story budget: … -->`
+   comment that describes it, where there is one, and nothing else.
+
+A write the server refuses, or a read-back that does not carry the budget, removes nothing: the row stays, say
+which and why in the summary, and the next release asks again. Like the new flow, a no gets no `Kept` row.
+
 ## 2. Compare each copy
 
 **At most the copies in this table. There is no scan of the repo for others.**
@@ -153,7 +189,8 @@ its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer 
   whichever of the two keys it carries. `friction-project:`
   replaces the legacy `friction-collector:` line in place: that one key is renamed and given the new value.
   Nothing else in the file is touched.
-- `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4).
+- `.sdlc/CONFIG.md`, except its `## Repo copies` section (step 4) and a `Per-story budget` row, with its comment,
+  that the budget move removes (step 1).
 - The contract docs under the doc map (`VISION.md`, `TESTING.md` and the rest): they belong to the
   repo from the moment they are generated. If a release needs a change there, its notes say so.
 
@@ -176,8 +213,8 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   say so in the summary.
 
 One question per differing copy and per missing line, step 1's `filing-work:` question when the
-binding lacks the line, step 1's friction migration for a legacy binding with a ref, and step 1's new flow
-when a type is offered it (one or more left), no more. A copy
+binding lacks the line, step 1's friction migration for a legacy binding with a ref, step 1's budget move when a row is offered it,
+and step 1's new flow when a type is offered it (one or more left), no more. A copy
 that is the same, or kept with a matching hash, is not asked.
 
 ## 4. One branch, one pull request
@@ -208,5 +245,7 @@ outside the branch.
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
 version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
 none and a legacy friction line replaced by `friction-project:`; the process is changed only on a yes to the
-new flow; and the pull request is open, or the user said why not. End with one line: the version synced to,
-each copy as taken, kept or unchanged, and the process as moved to the new flow, left, or not offered.
+new flow, and the budget only on a yes to its move; a `Per-story budget` row is removed only after the process
+read back carries it; and the pull request is open, or the user said why not. End with one line: the version
+synced to, each copy as taken, kept or unchanged, the process as moved to the new flow, left, or not offered, and
+the budget as moved, left, or not offered.

@@ -836,9 +836,13 @@ A refusal here writes nothing: say in the session which precondition failed and 
 3. **Take the baseline.** Run the gate command and every lane in `.sdlc/CONFIG.md` in the story worktree, and note
    which are green. A lane red here that is not in *Known-red* is stop 6 before the first task: building on a red
    branch hides whatever the tasks break.
-4. **Start the budget** from `.sdlc/CONFIG.md`, *Per-story budget*. It reads as up to three dimensions, whichever is
-   hit first (for example "2,000,000 subagent tokens · 15 rounds · 4 h wall-clock"), and `none` for a dimension
-   means it is not enforced. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
+4. **Start the budget** from the process: `params.budget` on the story's build step (precondition 1), never from
+   `.sdlc/CONFIG.md`. It has up to three dimensions, whichever is hit first: `tokens`, `rounds` and `hours`, the
+   wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build
+   step with no `budget` limits none, so stop 9 never fires; say so in the session when the run starts. A *Per-story
+   budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves it into the process. Read the
+   budget again with the totals at each round boundary, so one a person changed while the run waited is the one
+   checked. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
    `leeway --json issue get <story>`, over the story's own records and its sub-issues' ("Recording spend").
    **Rounds** are `totals.rounds`, round-0 attempts included; **tokens** are `totals.tokens`, and **wall-clock** is
    `totals.minutes`. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment.
@@ -961,7 +965,9 @@ Do these, in this order, and nothing else:
    ```
 
    The *Spend* line is a readout of the story's `totals`: `<tokens>` reads `at least <totals.tokens>, incomplete`
-   when `tokensIncomplete` is true, and `<elapsed>` likewise when `minutesIncomplete` is.
+   when `tokensIncomplete` is true, and `<elapsed>` likewise when `minutesIncomplete` is. Each `<budget>` is that
+   dimension of the build step's `budget`, the wall-clock in hours (`4 h`); a dimension it leaves out drops its
+   `of <budget>` (`7 rounds`).
 
 5. **Raise the stop's one escalation** (the last column of "Hard stop conditions"). One the issue run raises is on the story, as
    `<alias>/agent`, tied to the status comment (`--comment cN`, its `comment.number`), with the human's real
@@ -1119,8 +1125,8 @@ relaxes it.
    or the blockers not done), and the issues not started, in the order they would have run. When an issue's story
    gate, or "Nothing left", ran "The plan's end", say last what it left the Plan record reading, as its ending does.
 
-**Bounds.** The per-story budget (*Per-story budget* in `.sdlc/CONFIG.md`) applies to each issue as it does to an
-issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway
+**Bounds.** The per-story budget (the `budget` of each issue's build step, "Start the budget") applies to each issue
+as it does to an issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway
 except what "The plan's end" writes when "Nothing left" runs it: the records, the status comments and the escalations
 of each issue are its issue run's. **Re-invoking it is the human's**: once a
 stopped issue's escalation is answered after its wait ended, `run` on the project again goes on from there. A project run has no

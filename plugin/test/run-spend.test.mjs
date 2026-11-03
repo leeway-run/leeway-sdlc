@@ -144,7 +144,9 @@ test('the Spend line stays, as a readout that says when a total is incomplete', 
   assert.equal(
     from(stop, 'The *Spend* line is a readout', '5. **Raise'),
     "The *Spend* line is a readout of the story's `totals`: `<tokens>` reads `at least <totals.tokens>, incomplete` " +
-      'when `tokensIncomplete` is true, and `<elapsed>` likewise when `minutesIncomplete` is. ',
+      'when `tokensIncomplete` is true, and `<elapsed>` likewise when `minutesIncomplete` is. Each `<budget>` is that ' +
+      "dimension of the build step's `budget`, the wall-clock in hours (`4 h`); a dimension it leaves out drops its " +
+      '`of <budget>` (`7 rounds`). ',
   );
 });
 
