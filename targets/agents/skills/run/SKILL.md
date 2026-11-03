@@ -130,7 +130,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    | Exit | It means | So |
    |---|---|---|
    | 0 | answered; `{"label","note","by"}` on stdout | carry on (step 5) |
-   | 2 | no answer by the deadline | stop the turn: the escalation and any `# Run status` comment stay, and re-invoking `run` resumes |
+   | 2 | no answer by the deadline | stop the turn: the escalation and any `# Run status` comment stay, and re-invoking `run` resumes (for a wait in "The plan's end", `run` on the project) |
    | 4 | the CLI asked for `leeway login` | a blocker outside Leeway: stop the turn, and name the action, `leeway login --server <server>`, after which re-invoking `run` resumes |
    | 3 | Leeway did not answer | stop the turn and say so, as stop 10 ("Hard stop conditions") does |
    | 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
@@ -220,6 +220,17 @@ converged mean the task is mis-specified, and that is a human decision.
    |---|---|---|---|---|
    | story | `.worktrees/<story branch>` | the branch the story's `issue.base` names (the plan branch or the integration branch in `.sdlc/CONFIG.md`) | once, when the story's first task starts | at the story gate |
    | task | `.worktrees/<task branch>` | the story branch | when the task starts | when the task is done |
+
+   **A plan branch that does not exist yet** (a plan planned before `plan-project` cut it, or in a repository it had
+   no checkout of) is yours to cut, from the integration branch, fetched fresh, and push. Link it on the project when
+   you cut it, as `plan-project` does (its step 5.8, "The plan branch: cut it, and link it on the project when you
+   cut it"), leaving a repository linked with another branch as it is (name it in the ending), and read it back
+   under `project.links`:
+
+   ```sh
+   leeway --as <alias>/agent project link <KEY> <project> --branch <plan branch> --repository <owner/repo>
+   leeway --json project get <KEY> <project>   # project.links: per repository, the branch, and pr null
+   ```
 
    `.worktrees/` must be ignored by git; check once per repo. Run every git command of your own as `git -C
    <absolute path>`, and **pass the absolute task-worktree path in every subagent prompt**: a subagent starts in
@@ -623,15 +634,71 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    - **No next step** → `leeway --as <alias>/agent issue update <story> --status done`.
 
    Read the story back (`issue get <story>`) and check the step or status reads as written. Nothing else moves it.
-6. **Afterwards.** If the story went `done` and was the
+6. **Afterwards: the plan's last story.** If the story went `done` and was the
    project's last open story (`leeway --json issue list <KEY> <project.id>`: everything else `done` or `cancelled`,
-   the collector aside), post the project's status update as a comment on the nit collector
-   (`comment add <collector> --stdin body`, as `<alias>/agent`) and set the collector `--status done`: it is an
-   issue of the project, and would hold the project's progress short while it sits open.
+   the collector aside), the plan is **not done**: a plan is done once it has merged into `main` (the integration
+   branch in `.sdlc/CONFIG.md`), and that waits for the person's word. Go on with "The plan's end", in the same
+   session.
 
 **A red gate is not a task FAIL.** The tasks passed; the assembled state did not. Open work for what broke and run
 it through the loop. **A story with open findings is not a story with no findings:** check the deferred ones exist
 where you filed them, and say in the status update which are still open.
+
+### The plan's end
+
+Reached from the story gate's step 6, and from a project run that finds nothing left while the Plan record is not
+`done` ("Run a project", step 2, "Nothing left"). That second way in is how a plan's end is picked up again when a
+wait below ended without an answer, the session ended before it, or the last story reached `done` outside the gate
+(a person moved it past a `manual` step): `run` refuses a `done` story and the Plan record, so re-invoking `run` **on
+the project** is the way back. Each step reads before it writes, so running it again writes only what is missing. By
+you, as `<alias>/agent`:
+
+- **With a plan branch**, in each repository the plan changes (its stories' `issue.repository.fullName`):
+  1. **Set the collector `--status in_review`, never `done`**, unless it reads `in_review` already. It is an issue of
+     the project, so it counts in the project's progress: in `backlog` it holds the project short, and `done` would
+     read the plan as finished while its pull request is open. It goes first, so a wait below that ends without an
+     answer leaves the Plan record reading `in_review`.
+  2. **Open the draft pull request to `main`**, unless one from the plan branch is open or merged, and link it on the
+     project when you open it (one not yet in `project.links` is linked the same way; a merged one goes on to "When
+     the plan merges into `main`", step 2). Open it with
+     `gh pr create --draft --base <integration branch> --head <plan branch> --title "<project name>" --body-file <body.md>`
+     where `gh` is installed, with a body naming the project and its stories; without `--title` and a body, `gh`
+     exits 1 in a shell with no terminal. Where `gh` is not installed, or `gh pr create` fails, the person opens it.
+     Read the collector's escalations first (`leeway --json issue get <collector>`, `escalations[]`): wait on an open
+     one that asks for it, and take the number from an answered one's note. Only with neither, raise an escalation on
+     the nit collector asking them to open it as a draft (naming the `gh` error, if any) and to answer with its number
+     in the note, and wait ("Wait, then carry on"). A wait that ends without an answer stops the turn, and re-invoking
+     `run` on the project resumes here.
+
+     ```sh
+     leeway --as <alias>/agent project link <KEY> <project> --branch <plan branch> --repository <owner/repo> --number <PR>
+     leeway --json project get <KEY> <project>   # project.links: the branch, and pr.number with pr.state open
+     ```
+
+     `github_unavailable` means try again; any other refusal (`pr_not_found`, `github_access_lost`,
+     `github_not_configured`) leaves the pull request unlinked: name it in the ending.
+  3. **Post the plan's status update** as a comment on the nit collector (`comment add <collector> --stdin body`),
+     naming each pull request that waits for the person's test, unless the collector's latest comment is already one
+     naming the same pull requests.
+  4. **End by saying** that the project reads "in review" and naming each pull request (its number and URL) that
+     waits on the person's test, where it is linked and open (a pull request that had already merged ends as "When
+     the plan merges into `main`" does). Otherwise name the pull request that is not linked (a refused link), or
+     say none is open yet, and say the project reads "in review" only once one is linked and open. Where they test it is theirs to
+     choose: locally, on a dev server, anywhere.
+     Nothing merges it into `main` until they say so ("When the plan merges into `main`").
+- **With no plan branch** (*Plan branch* `none`), each story was merged into the integration branch at step 5 as the
+  repo's convention says, which may be a pull request that waits for the person. So **read back that every `done`
+  story of the project is in `main`** before anything closes (a cancelled one has nothing to merge): its pull
+  request reads `MERGED` (`gh pr view <story branch> --json number,state,url`), or, with no pull request or no `gh`,
+  its branch head is in the fetched integration branch (`git merge-base --is-ancestor <story head> origin/<integration
+  branch>` exits 0).
+  - **Every story reads merged:** post the plan's final status update on the nit collector and set the collector
+    `--status done`. End by saying that the plan has merged into `main` and the Plan record reads `done`.
+  - **Any story does not:** set the collector `--status in_review` unless it reads `in_review` already, post the
+    status update naming each story's pull request (or branch) not yet in `main` unless the collector's latest
+    comment is already one naming the same ones, and end by saying that the Plan record reads `in_review` and naming
+    each of them (number and URL, or branch) as waiting on the person. "When the plan merges into `main`" goes on
+    from there.
 
 ### The verification gate
 
@@ -880,7 +947,10 @@ where the run ends ("verify on dev"), with the story waiting for a person.
 
 The end posts one `# Run status — <story ref> · finished` comment on the story, with *Landed* (every task), the
 story's new step or status, the *Spend* line and the friction proposal, so the next reader and a continuation run
-have the spend. No escalation, except the friction proposal below.
+have the spend. No escalation, except the friction proposal below and, where `gh` is not installed or fails, the
+ask for the plan's pull request ("The plan's end"). When the story was the plan's last, the comment and the session's last words say what "The plan's end" left the
+Plan record reading, as its ending does: "in review" and the pull request that waits on the person's test, or the
+plan merged into `main` once it reads `done`.
 
 #### The friction harvest
 
@@ -909,11 +979,14 @@ that was written down; this is where it leaves them.
 
 A run is only unattended if nothing in it waits for a keypress. That needs four things, set up before the first run.
 
-- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it, covering at least the following and every command the skill names: the lane and
+- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it, covering at least the following and every command the skill names but `gh pr merge`: the lane and
   setup commands `.sdlc/CONFIG.md` names; `git add`, `commit`, `push`, `fetch`, `merge`, `switch`, `worktree`,
   `branch -d`, `ls-remote`, `rev-parse` and `diff --cached`; `node -e` for the counting one-liner;
   and the `leeway` CLI's write verbs for the orchestrator. A subagent is stopped from those by the plugin's
   `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
+  **`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the
+  pre-push guard does not cover it, and its prompt is where the person's yes is their word ("When the plan merges
+  into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
   plugin, and this skill only states the requirement. It runs on every push from any process, refuses an update to
   the integration branch named in `.sdlc/CONFIG.md` and refuses a force push to any ref: an allow-listed `git push`
@@ -980,7 +1053,12 @@ relaxes it.
    - **Nothing runnable left** (issues remain and none is runnable: each is blocked, in a blocking cycle, waiting at a
      step after `build`, or already skipped in this run; the Plan record aside): the run ends there, and step 5
      reports what it ran, what it skipped and why, naming the blockers.
-   - **Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so, and stop.
+   - **Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so. If the Plan record is not
+     `done`, run "The plan's end", which writes only what is missing: it picks up a plan's end that a wait, a lost
+     session or a last story moved to `done` outside the gate left half done, and moves nothing to `done` that has
+     not merged into `main`. Then stop, and end as "The plan's end" ends: "in review" and its pull request
+     (`project.links`) while the Plan record reads `in_review`, or the plan merged into `main` once it reads `done`;
+     once the person says merge, "When the plan merges into `main`" goes on from there.
 3. **Run the next issue**, as "Run an issue" from its preconditions to its end or its stop, with fresh subagents.
    **Re-read the list before each issue**: Leeway, not this session's memory, says what is left, except the issues
    this run has already skipped because their issue run refused them. Those stay skipped for the rest of this run:
@@ -996,14 +1074,38 @@ relaxes it.
    of the story ref, so the human who answers it goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
    status` comment's `cN` and the escalation id), every issue it skipped and why (the precondition that refused it,
-   or the blockers not done), and the issues not started, in the order they would have run.
+   or the blockers not done), and the issues not started, in the order they would have run. When an issue's story
+   gate, or "Nothing left", ran "The plan's end", say last what it left the Plan record reading, as its ending does.
 
 **Bounds.** The per-story budget (*Per-story budget* in `.sdlc/CONFIG.md`) applies to each issue as it does to an
-issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway:
-the records, the status comments and the escalations are its issue runs'. **Re-invoking it is the human's**: once a
+issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway
+except what "The plan's end" writes when "Nothing left" runs it: the records, the status comments and the escalations
+of each issue are its issue run's. **Re-invoking it is the human's**: once a
 stopped issue's escalation is answered after its wait ended, `run` on the project again goes on from there. A project run has no
 unattended mode of its own: an issue whose type does not say unattended is refused by its precondition 1, and the
 project run skips it and goes on. A skipped issue costs nothing: it runs no round and spends none of any budget.
+
+## When the plan merges into `main`
+
+**The plan merges into `main` on the person's word; no run merges it by itself.** A green gate, a passing CI or an
+approved review is not that word, and neither is the end of a run. Once the person says merge, in the session:
+
+1. **Merge the pull request** as the repo's convention says: `gh pr merge <PR>` where `gh` is installed, or the person
+   merges it. With no plan branch, that is each story's pull request "The plan's end" named as not yet in `main`.
+   Never push the integration branch yourself (the pre-push guard in "Unattended prerequisites").
+2. **Read it back:** `leeway --json project get <KEY> <project>`, which refreshes a stale open pull request's state.
+   Every link's `pr.state` must read `merged`. A link with no pull request, or one that reads `open` or `closed`,
+   has not merged into `main`: say so, and leave the Plan record as it is. With no plan branch, the read-back is "The
+   plan's end"'s, for every `done` story, and the same holds for a story that does not read merged.
+3. **Only then close the Plan record:** post the plan's final status update on the nit collector and move it to
+   `done`. End by saying that the plan has merged into `main` and the Plan record reads `done`.
+
+   ```sh
+   leeway --as <alias>/agent comment add <collector> --stdin body <status.md
+   leeway --as <alias>/agent issue update <collector> --status done
+   ```
+
+The person may close the Plan record themselves; if it already reads `done`, leave it.
 
 ## Done when
 
@@ -1015,3 +1117,9 @@ worktree and branch where the run left it.
 **On a project:** every issue other than the Plan record is `done`, `cancelled`, waiting at a `manual` step or on a
 blocker, or skipped because its issue run refused it, or the run stopped at the first issue that stopped, and the
 session says which, where each issue ended, what it skipped and why, and what was not started.
+
+**At the plan's end:** after its last story, the Plan record is `in_review` with the pull request to `main` linked on
+the project, and the ending says the project reads "in review" and names it; it is `done` only once that pull request
+has merged into `main` on the person's word, or, with no plan branch, once every `done` story reads merged into `main`,
+and the ending then says the plan has merged into `main`. With no plan branch, while a story does not, the ending says
+the Plan record reads `in_review` and names each story's pull request not yet in `main`.

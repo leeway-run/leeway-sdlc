@@ -339,6 +339,25 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 
    A sub-issue gets `--branch` only: it takes its story's repository.
 
+8. **The plan branch: cut it, and link it on the project when you cut it.** Only when *Plan branch* in `CONFIG.md`
+   asks for one; with `none` the stories branch from the integration branch and there is nothing to cut. In each
+   repository the plan changes (the `issue.repository.fullName` of its stories), cut the plan branch the project
+   description names from that repository's integration branch, fetched fresh, unless it is there already, and push
+   it. Then link it on the project, so the project shows it rather than only naming it:
+
+   ```sh
+   <cli> --server <server> --as <alias>/planner project link <KEY> <projectId> --branch <plan branch> --repository <owner/repo>
+   <cli> --server <server> --json project get <KEY> <projectId>   # project.links: per repository, the branch, and pr null
+   ```
+
+   One link per repository per project. Linking a repository again replaces its branch and its pull request, and a
+   link without `--number` has none, so a repository already in `project.links` with this branch is left as it is.
+   A repository linked with another branch (a renamed plan, a link a person made) is left as it is too, because
+   linking it again would drop its pull request: name it in the ending, for the person to relink or unlink it.
+   Nothing changes on GitHub. A refusal of `repository_required` or `invalid_repository` is step 3's. A repository
+   the plan changes that this session has no checkout of is cut and linked by `run` when its first story starts
+   (`run`, "Worktrees: mandatory, and yours alone"): say which in the ending.
+
 ## 6. What a task description contains
 
 **Title:** short imperative, around 60 characters, reads well on a card.
@@ -473,7 +492,8 @@ good. A criterion nobody wrote down cannot be found missing.
 ## Done when
 
 There is a project (adopted or created) with its design doc linked from it where the type asks for one and its
-plan branch named where `CONFIG.md` asks for one, a hierarchy in dependency order under it, the Plan record with
+plan branch named where `CONFIG.md` asks for one, and cut and linked on the project in each repository the plan
+changes (read back under `project.links`) or named in the ending as left to `run`, a hierarchy in dependency order under it, the Plan record with
 its ref in the project description and a row in `.sdlc/leeway.md`, branch names read back, and a first task
 someone could pick up from its description alone.
 
