@@ -115,12 +115,18 @@ test('with a plan branch the Plan record waits in review, never done, and nothin
   assert.doesNotMatch(rest, /\bmerges?\b/i, 'the plan\'s end merges the plan into main');
 });
 
+test('a plan\'s end run twice with a plan branch writes neither the status nor the status update twice', () => {
+  const step = withPlanBranch();
+  assert.match(step, /1\. \*\*Set the collector `--status in_review`, never `done`\*\*, unless it reads `in_review` already\. /);
+  assert.match(step, /3\. \*\*Post the plan's status update\*\* as a comment on the nit collector \(`comment add <collector> --stdin body`\), naming each pull request that waits for the person's test, unless the collector's latest comment is already one naming the same pull requests\. 4\. /);
+});
+
 test('the Plan record reads in review before any wait for the pull request', () => {
   const step = withPlanBranch();
   const review = step.indexOf('`--status in_review`');
   const ask = step.indexOf('raise an escalation');
   assert.ok(review >= 0 && ask > review, 'a wait that times out leaves the Plan record in backlog');
-  assert.match(step, /It goes first, so a wait below that ends without an answer leaves the project reading "in review"/);
+  assert.match(step, /It goes first, so a wait below that ends without an answer leaves the Plan record reading `in_review`\./);
 });
 
 test('the ask for the pull request reads the collector\'s escalations before it raises one', () => {
@@ -135,7 +141,11 @@ test('a plan\'s end left half done is picked up again by run on the project', ()
   assert.match(planEnd(), /Reached from the story gate's step 6, and from a project run that finds nothing left while the Plan record is not `done`/);
   assert.match(planEnd(), /re-invoking `run` \*\*on the project\*\* is the way back/);
   assert.match(planEnd(), /running it again writes only what is missing/);
-  assert.match(nothingLeft(), /If the Plan record is not `done`, run "The plan's end"/);
+  assert.equal(
+    nothingLeft(),
+    "**Nothing left** (every issue `done` or `cancelled`, the Plan record aside): say so. If the Plan record is not `done`, run \"The plan's end\", which writes only what is missing: it picks up a plan's end that a wait, a lost session or a last story moved to `done` outside the gate left half done, and moves nothing to `done` that has not merged into `main`. Then stop, and end as \"The plan's end\" ends: \"in review\" and its pull request (`project.links`) while the Plan record reads `in_review`, or the plan merged into `main` once it reads `done`; once the person says merge, \"When the plan merges into `main`\" goes on from there. ",
+    '"Nothing left" carries a condition, a close or a merge',
+  );
   const left = nothingLeft()
     .replace('If the Plan record is not `done`', '')
     .replace('a last story moved to `done` outside the gate', '')
@@ -149,7 +159,11 @@ test('a plan\'s end left half done is picked up again by run on the project', ()
 
 test('with no plan branch the Plan record closes only once every story reads merged into main', () => {
   const step = noPlanBranch();
-  assert.match(step, /\*\*read back that every `done` story of the project is in `main`\*\* before anything closes \(a cancelled one has nothing to merge\)/);
+  assert.equal(
+    from(step, 'So **read back', '- **Every story reads merged:**'),
+    "So **read back that every `done` story of the project is in `main`** before anything closes (a cancelled one has nothing to merge): its pull request reads `MERGED` (`gh pr view <story branch> --json number,state,url`), or, with no pull request or no `gh`, its branch head is in the fetched integration branch (`git merge-base --is-ancestor <story head> origin/<integration branch>` exits 0). ",
+    'the read-back carries another way to read merged',
+  );
   assert.match(merges(), /With no plan branch, the read-back is "The plan's end"'s, for every `done` story/);
   assert.match(step, /gh pr view <story branch> --json number,state,url/);
   assert.match(step, /git merge-base --is-ancestor <story head> origin\/<integration branch>` exits 0/);
@@ -163,7 +177,7 @@ test('with no plan branch the Plan record closes only once every story reads mer
 });
 
 test('each ending says what the Plan record reads: in review and the pull request, or merged into main', () => {
-  assert.match(withPlanBranch(), /\*\*End by saying\*\* that the project reads "in review" and naming each pull request \(its number and URL\) that waits on the person's test \(a pull request that had already merged ends as "When the plan merges into `main`" does\)/);
+  assert.match(withPlanBranch(), /\*\*End by saying\*\* that the project reads "in review" and naming each pull request \(its number and URL\) that waits on the person's test, where it is linked and open \(a pull request that had already merged ends as "When the plan merges into `main`" does\)\. Otherwise name the pull request that is not linked \(a refused link\), or say none is open yet, and say the project reads "in review" only once one is linked and open\./);
   assert.match(withPlanBranch(), /Where they test it is theirs to choose/);
   assert.match(from(noPlanBranch(), '**Every story reads merged:**', '**Any story does not:**'), /End by saying that the plan has merged into `main` and the Plan record reads `done`/);
   assert.match(from(noPlanBranch(), '**Any story does not:**'), /end by saying that the Plan record reads `in_review` and naming each of them \(number and URL, or branch\) as waiting on the person/);
@@ -190,6 +204,11 @@ test('the plan merges into main only on the person\'s word, and closes only once
     'the person\'s word carries a condition or an exception',
   );
   const steps = from(section, '1. **Merge the pull request**', '3. **Only then close the Plan record:**');
+  assert.equal(
+    steps,
+    "1. **Merge the pull request** as the repo's convention says: `gh pr merge <PR>` where `gh` is installed, or the person merges it. With no plan branch, that is each story's pull request \"The plan's end\" named as not yet in `main`. Never push the integration branch yourself (the pre-push guard in \"Unattended prerequisites\"). 2. **Read it back:** `leeway --json project get <KEY> <project>`, which refreshes a stale open pull request's state. Every link's `pr.state` must read `merged`. A link with no pull request, or one that reads `open` or `closed`, has not merged into `main`: say so, and leave the Plan record as it is. With no plan branch, the read-back is \"The plan's end\"'s, for every `done` story, and the same holds for a story that does not read merged. ",
+    'merge steps 1 and 2 carry a condition or an exception',
+  );
   assert.doesNotMatch(steps.replace('leave the Plan record as it is', ''), CLOSES, 'the Plan record closes before the read-back');
   assert.match(section, /Every link's `pr\.state` must read `merged`\. A link with no pull request, or one that reads `open` or `closed`, has not merged into `main`: say so, and leave the Plan record as it is\./);
   assert.match(section, /3\. \*\*Only then close the Plan record:\*\*/);
@@ -204,8 +223,24 @@ test('the plan merges into main only on the person\'s word, and closes only once
   assert.match(section, /if it already reads `done`, leave it/);
 });
 
+test('gh pr merge stays off the unattended allow-list, so the merge prompts for the person\'s word', () => {
+  const prereqs = under(run, 'Unattended prerequisites');
+  assert.match(prereqs, /covering at least the following and every command the skill names but `gh pr merge`: /);
+  assert.equal(
+    from(prereqs, '**`gh pr merge` stays off', '- **A pre-push guard'),
+    "**`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the pre-push guard does not cover it, and its prompt is where the person's yes is their word (\"When the plan merges into `main`\"). ",
+    'gh pr merge can be allow-listed, or the pre-push guard is said to cover it',
+  );
+  const install = flat(read('skills/sdlc-install/SKILL.md'));
+  assert.match(install, /`git push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
+});
+
 test('nothing outside that section merges the plan\'s pull request', () => {
-  const rest = flat(run).replace(merges(), '');
+  const offList = from(under(run, 'Unattended prerequisites'), '**`gh pr merge` stays off', '- **A pre-push guard');
+  const rest = flat(run)
+    .replace(merges(), '')
+    .replace(offList, '')
+    .replace('every command the skill names but `gh pr merge`:', '');
   assert.doesNotMatch(rest, MERGES);
 });
 

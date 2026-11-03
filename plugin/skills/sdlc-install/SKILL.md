@@ -234,7 +234,8 @@ shown as a diff first like every patch.
 - **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
   place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
   `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
-  push` stays off it until the pre-push guard run names exists. A place outside the repo is not
+  push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
+  pre-push guard does not cover a merge through GitHub). A place outside the repo is not
   written: print the entries for the human.
 
 ### Generate all seven contract docs, always

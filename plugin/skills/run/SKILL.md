@@ -651,7 +651,7 @@ you, as `<alias>/agent`:
   1. **Set the collector `--status in_review`, never `done`**, unless it reads `in_review` already. It is an issue of
      the project, so it counts in the project's progress: in `backlog` it holds the project short, and `done` would
      read the plan as finished while its pull request is open. It goes first, so a wait below that ends without an
-     answer leaves the project reading "in review".
+     answer leaves the Plan record reading `in_review`.
   2. **Open the draft pull request to `main`**, unless one from the plan branch is open or merged, and link it on the
      project when you open it (one not yet in `project.links` is linked the same way; a merged one goes on to "When
      the plan merges into `main`", step 2). Open it with
@@ -675,8 +675,10 @@ you, as `<alias>/agent`:
      naming each pull request that waits for the person's test, unless the collector's latest comment is already one
      naming the same pull requests.
   4. **End by saying** that the project reads "in review" and naming each pull request (its number and URL) that
-     waits on the person's test (a pull request that had already merged ends as "When the plan merges into `main`"
-     does). Where they test it is theirs to choose: locally, on a dev server, anywhere.
+     waits on the person's test, where it is linked and open (a pull request that had already merged ends as "When
+     the plan merges into `main`" does). Otherwise name the pull request that is not linked (a refused link), or
+     say none is open yet, and say the project reads "in review" only once one is linked and open. Where they test it is theirs to
+     choose: locally, on a dev server, anywhere.
      Nothing merges it into `main` until they say so ("When the plan merges into `main`").
 - **With no plan branch** (*Plan branch* `none`), each story was merged into the integration branch at step 5 as the
   repo's convention says, which may be a pull request that waits for the person. So **read back that every `done`
@@ -971,11 +973,14 @@ that was written down; this is where it leaves them.
 
 A run is only unattended if nothing in it waits for a keypress. That needs four things, set up before the first run.
 
-- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it, covering at least the following and every command the skill names: the lane and
+- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it, covering at least the following and every command the skill names but `gh pr merge`: the lane and
   setup commands `.sdlc/CONFIG.md` names; `git add`, `commit`, `push`, `fetch`, `merge`, `switch`, `worktree`,
   `branch -d`, `ls-remote`, `rev-parse` and `diff --cached`; `node -e` for the counting one-liner;
   and the `leeway` CLI's write verbs for the orchestrator. A subagent is stopped from those by the plugin's
   `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
+  **`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the
+  pre-push guard does not cover it, and its prompt is where the person's yes is their word ("When the plan merges
+  into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
   plugin, and this skill only states the requirement. It runs on every push from any process, refuses an update to
   the integration branch named in `.sdlc/CONFIG.md` and refuses a force push to any ref: an allow-listed `git push`
