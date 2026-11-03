@@ -182,9 +182,10 @@ written down cannot be found missing.
 One task at a time, each through the full loop, in a worktree of its own. Do not batch several into one
 implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
 issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
-`unattended`; it stops for a human only where one of its stop conditions fires, each ending in one
-escalation. `run` on a project runs its issues that way, one after another, and stops at the first that stops. It
-skips an issue its issue run refuses, and goes on.
+`unattended`; it waits for a human only where one of its stop conditions fires, each ending in one
+escalation that it waits on, carrying on when the answer comes ("Questions to the human are escalations"). `run`
+on a project runs its issues that way, one after another, and stops at the first that stops. It skips an issue its
+issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
@@ -214,9 +215,10 @@ attempts are the iterations recorded before the `step_set` entry whose `to` is `
 
 **The round cap.** The `build` step's `roundCap` is the most adversarial rounds a task gets. If the cap is
 reached without convergence the task is mis-specified, not mis-implemented. That is a human decision,
-not another loop: one escalation, and the work stops. **You may override a PASS, and you may not override
-the cap.** If a finding is under-rated and you can say why, send it back and record the reason. An
-override spends a round; the cap is what stops you spending them forever.
+not another loop: one escalation, and the work waits on its answer ("Questions to the human are
+escalations"). **You may override a PASS, and you may not override the cap.** If a finding is under-rated
+and you can say why, send it back and record the reason. An override spends a round; the cap is what stops you
+spending them forever.
 
 **Why it is shaped this way**, worth thirty seconds before shortcutting it:
 
@@ -271,14 +273,22 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   with six has not been thought through.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
-- **Then stop the turn**, naming the escalation and the issue. Do not continue the work that depends on
-  the answer, and do not ask again somewhere else.
+- **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
+  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), and on an answer carry on
+  as a re-invoke would, writing nothing twice. It stops the turn only when the wait ends without an
+  answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
+  outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
+  answer that needs a person to act first is put to them as an escalation and waited on too (run's
+  "Wait, then carry on"). **Every other skill stops the turn**, naming the escalation
+  and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
+  somewhere else.
 - **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
-  no answer means do not proceed.
+  no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
+  description is not.
 
 An implementer that returns `BLOCKED` carries a `## Question` section. The orchestrator does not
 paraphrase it: it runs the gate on the brief, posts the brief as a comment, raises the escalation from the
-block, and stops. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
+block, and waits. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
 
 ## Records
 

@@ -4,7 +4,7 @@ description: Change the process of this repo's Leeway product in the human's wor
 ---
 
 > **leeway-sdlc for agents other than Claude Code.** This plugin's files (`PROCESS.md`, `HARNESS.md`, `craft/`,
-> `agents/`, `hooks/` and the skills' own files) are in **`.sdlc/kit/`** at the repo root once `sdlc-install` has
+> `agents/`, `hooks/`, `scripts/` and the skills' own files) are in **`.sdlc/kit/`** at the repo root once `sdlc-install` has
 > run: "in this plugin" below means there, except that `skills/<name>/SKILL.md` is the `<name>` skill itself
 > (load it as a skill; its other files are in `.sdlc/kit/skills/<name>/`). Read `.sdlc/kit/HARNESS.md` for how this agent delegates, marks a
 > subagent's run and updates. With no `.sdlc/kit/` yet, run `sdlc-install` first; it reads them from its own `kit/`.

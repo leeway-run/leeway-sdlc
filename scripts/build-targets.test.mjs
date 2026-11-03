@@ -5,10 +5,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execSync, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { harness, TARGETS } from './targets.mjs'
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const KIT = join(ROOT, 'targets', 'agents', 'skills', 'sdlc-install', 'kit')
@@ -38,6 +39,34 @@ test('the committed package is what the build produces', () => {
   assert.equal(r.status, 0, r.stderr)
 })
 
+// The section run's "Wait, then carry on" points at, with a `wait:` line; `background` only with a probe record saying so.
+test('every HARNESS.md says how a run waits, and waits only where a probe showed it', () => {
+  const harnesses = [
+    ['claude', join(ROOT, 'plugin', 'HARNESS.md')],
+    ['any', join(ROOT, 'targets', 'agents', 'HARNESS.md')],
+    ['any', join(KIT, 'HARNESS.md')],
+    ...readdirSync(join(KIT, 'harness')).map((f) => [f.replace(/\.md$/, ''), join(KIT, 'harness', f)]),
+  ]
+  assert.equal(harnesses.length, 3 + TARGETS.length)
+  for (const [id, path] of harnesses) {
+    const text = readFileSync(path, 'utf8')
+    const section = /^## Waiting for an answer\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1]
+    assert.ok(section, `${path}: no "## Waiting for an answer" section`)
+    const wait = /^wait: (background|stop)$/m.exec(section)?.[1]
+    assert.ok(wait, `${path}: no wait line`)
+    // run's step 4 lets a wait that blocks nothing (a debt proposal after the task is done) carry on; stop must too.
+    if (wait === 'stop') assert.match(section, /blocks nothing[^.]*carries on/, `${path} stops a wait that blocks nothing`)
+    if (wait === 'background') {
+      const record = join(ROOT, 'docs', 'targets', `${id}.md`)
+      assert.ok(existsSync(record), `${path} waits, but there is no probe record ${record}`)
+      assert.match(readFileSync(record, 'utf8'), /^wait: background$/m, `${record} does not record a wait`)
+    }
+  }
+  for (const t of TARGETS) {
+    assert.equal(/^wait: (\S+)$/m.exec(harness(t, 'x', ''))[1], t.wait ? 'background' : 'stop', t.id)
+  }
+})
+
 for (const [agent, hook] of Object.entries(HOOKS)) {
   test(`${agent}: the wired hook allows the orchestrator and blocks under the marker`, () => {
     const repo = installInto(agent)
@@ -55,6 +84,11 @@ for (const [agent, hook] of Object.entries(HOOKS)) {
       governed(repo, 'off')
       assert.equal(run('git commit -m x').status, 0, 'marker off: the orchestrator commits again')
       assert.match(readFileSync(join(repo, '.sdlc', 'kit', 'HARNESS.md'), 'utf8'), new RegExp(`^agent: ${agent}$`, 'm'))
+      assert.deepEqual(
+        readFileSync(join(repo, '.sdlc', 'kit', 'scripts', 'wait-answer.mjs')),
+        readFileSync(join(ROOT, 'plugin', 'scripts', 'wait-answer.mjs')),
+        'the kit carries the answer-wait script',
+      )
     } finally {
       rmSync(repo, { recursive: true, force: true })
     }
