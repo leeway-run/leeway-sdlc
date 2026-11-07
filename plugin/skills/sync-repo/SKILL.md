@@ -21,7 +21,9 @@ request, and only with an answer per copy.
   it is the named issue's (`issue get <issue>`: `project.id`); this mode always has one. The CLI's roles are `implementer`,
   `reviewer`, `planner` and `agent`; a skill acting for the orchestrator writes as `agent`.
 
-Raising, all together, once steps 0 to 2 have found which copies need an answer:
+Raising, all together, once steps 0 to 2 have found which copies need an answer (`PROCESS.md`, "Questions to the human are escalations"):
+the only question held for a later round is the contract block's, while `filing-work:` is open (step 1), and a later
+round drops what an answer settled.
 
 1. Per differing copy, `comment add <issue> --stdin body` with the diff and your guess at who changed it,
    then `escalation raise <issue> --comment cN` with a question that **begins with the copy's name**
@@ -31,9 +33,8 @@ Raising, all together, once steps 0 to 2 have found which copies need an answer:
    (`PROCESS.md`, "Questions to the human are escalations").
 
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
-`question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3. An open one with no
-answer is not: do not write that copy. A copy with no escalation yet gets one now; stop again if any
-remain open. Never write a copy on an unanswered question. The `filing-work:` question is the exception:
+`question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3, once no question remains open. The latest answered one for a copy is its answer. An open one with no
+answer is not: do not write that copy. A copy with no escalation yet gets one now. **While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, stop the turn, and do not go on to step 3's writes or to step 4.** So the tree stays clean for step 0 at every resume, and every `--meanwhile` stays true. Never write a copy on an unanswered question. The `filing-work:` question is the exception only in how it is found:
 step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
 (step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new
 flow (step 1), by `Sync process: to <this version>:`, and so is the budget move (step 1), by
@@ -74,10 +75,12 @@ Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill th
 - **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
   `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
   named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
-  <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
+  <this version>:`. Answered → use its answer. Open → leave it open and go on. None → raise it, with the others.
 
-This is the one question raised before the others, because the block cannot be compared without its
-answer; the copies are compared, and their questions raised, once it is answered. The answer fills the
+Only the contract block waits on this answer, because the block cannot be compared without it: while the question is
+open, step 2 skips the block and its question is held for the next round, once the answer has filled the block (a
+block that then matches is not asked). Every other copy and step 1's other offers depend on no answer here, so they
+are compared and go out in the same round as this question. An open `filing-work:` question stops the turn like any other open question ("On resume"), even with every copy answered: step 4 never runs on it, so nothing stamps `Synced to` over a block never compared. The answer fills the
 block in step 2 and is written in step 4.
 
 Then the friction line of `.sdlc/leeway.md`:
@@ -211,7 +214,7 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
   `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
   compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
-- **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy). Record a `Kept` row too, since the repo copy
+- **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy, before anything is written, since that question is open). Record a `Kept` row too, since the repo copy
   now differs on purpose.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
   the local-notes file, account ids and local paths the contract block sends there get committed; without

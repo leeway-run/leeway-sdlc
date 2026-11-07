@@ -99,12 +99,15 @@ You change nothing in the repo. This session writes only to Leeway.
 ## 3. Walk the gaps with the PO
 
 First decide which checklist rows apply to this story, by their *Applies when*. Then go through
-those rows, the *What must not happen* rule and hidden scope, **one area at a time, and only the
+those rows, the *What must not happen* rule and hidden scope, **area by area, and only the
 ones the story leaves open**. Never ask a row that does not apply. Say what exists today, then ask. Take the PO's
 answer as given; where they are unsure, it is an `OPEN:` line, not a nudge toward an answer.
 
 Each area is one comment (what exists today) and one escalation (the question, the likely answers as options).
-Raise the ones that do not depend on each other together, so the PO answers in one sitting, then stop. The round's
+**Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
+question, merge them into one, or hold the dependent one for the next round. Every other question goes out now,
+together, so the PO answers in one sitting and the first round covers as much ground as it can. Do not ration them.
+Then stop. The round's
 first comment also quotes the description as it is (or "none yet") under the line `Description at this round:`; the
 latest round's quote is what step 5 checks before it writes.
 
@@ -144,7 +147,8 @@ what the work is checked against, not its background.
 ## 5. Write the body, then stop at the shaped step
 
 **Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
-that does is a follow-up: raise it as in step 3 and stop. No escalation asks whether to write the body: the PO's
+that does is a follow-up: raise it as in step 3 and stop. A later round drops what an answer settled: it is not asked
+again, and it is not raised for confirmation. No escalation asks whether to write the body: the PO's
 answers are the approval, and moving the story on from the shaped step is theirs. The two exceptions are under
 "When the approval round stays" below.
 

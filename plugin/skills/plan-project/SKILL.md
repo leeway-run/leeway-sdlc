@@ -75,10 +75,17 @@ whatever happened.
    terminal question: it is a Leeway escalation on the story, and then you stop the turn. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
    '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
-   2 to 5 options, each with its argument, one open escalation per comment. **On resume**, read the answers with
+   2 to 5 options, each with its argument, one open escalation per comment. **The recommended option comes first**,
+   its argument opening `Recommended:` and saying why (`PROCESS.md`, "Questions to the human are escalations"). The
+   options a step below names are the choices, not their order. Where you truly have no pick, invent none: the first
+   argument opens `No recommendation:` and says why. **On resume**, read the answers with
    `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first thing not
    done; an open escalation with no answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and
    this skill cannot run.
+
+   **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
+   question, merge them into one, or hold the dependent one for the next round. Independent questions go out
+   together, not rationed, and a later round drops what an answer settled.
 
 ## Does this need planning at all?
 
@@ -140,7 +147,7 @@ to plan-project."* On a type with no shaped step, where shaping ends at `shape`,
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
-has N product gaps: how do we proceed?"*, with the options *Hold; the PO answers with shape-project*, *Split the story
+has N product gaps: how do we proceed?"*, with the options, your recommended one first, *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
 into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then stop. The answer has to
 reach the body before planning: planning on a comment makes a second source that drifts from the first.
@@ -293,18 +300,20 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    written). The **repository** is the one connected to the product: `product get <KEY> --json` shows
    `repositoryCount`. With one, a `--branch` alone uses it; with more than one, or on a `repository_required` or
    `invalid_repository` refusal, take `owner/repo` from `git remote get-url origin`, and where there is none, ask
-   once by escalation. Then `issue update <story> --repository <owner/repo>`, once, on the story; its sub-issues
+   once by escalation, in one round with step 4's floor questions, since neither depends on the other. Then `issue update <story> --repository <owner/repo>`, once, on the story; its sub-issues
    inherit it.
 
 4. **Floor questions, per story, before its tasks.** Read the repo's floor (`ENGINEERING.md`) and the intent doc
    for a rule that asks for a decision on each user-facing story before it is built (for example whether a
    feature belongs on every surface a person uses). **User-facing** means a story whose acceptance criteria name
    something a person does through a surface. For each such story post the context as a comment, quoting the
-   rule's own sentence, and raise that rule's question as an escalation. Its options are the alternatives the
+   rule's own sentence, and raise that rule's question as an escalation. Its options, your recommended one first, are the alternatives the
    rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
-   on any surface*, so leaving it out is a decision. **Stop**, report the escalation ids,
-   and create no tasks for a story whose question is open. On resume write each answer into every task of that
-   story under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
+   on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
+   together share one comment and one escalation, naming each, and a story whose question another answer would
+   change is held for the next round; the rest go out together. **Stop**, report the escalation ids,
+   and create no tasks for a story whose question is open or held. A held question goes out on resume, unless an answer settled it, and stops the same way. On resume write each answer into every task of each
+   story it names, under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
    skips this step; say which.
 
 5. **The tasks**, each under its story, with `--parent` **set explicitly on every one**, never relying on
@@ -455,16 +464,25 @@ Raise the QUESTIONs, when the report has any (below), and **stop**.
 A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Post each QUESTION as **its own top-level
 comment** on the story, as `<alias>/planner` (`comment add <story> --stdin body`), with a body opening
 `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment. Then raise its escalation with
-`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5). A comment holds one open
+`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your recommended one first). A comment holds one open
 escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment of its own. They are questions about
-the plan, not the gate decision. **A report's QUESTIONs are the escalations on the comments opening
+the plan, not the gate decision.
+
+**Check the round before raising it.** QUESTIONs where one answer would settle or change another are merged into
+one, under the lowest number, its comment naming the numbers it stands for. Where the merge would need more than 5 options, hold the dependent
+QUESTION for the next round instead, and withhold the `# QUESTIONs applied` reply until it is answered or an answer
+settled it: `run` counts only the escalations on these comments, so a QUESTION not yet raised holds the story through
+that reply alone. Every other QUESTION goes out now, together.
+
+**A report's QUESTIONs are the escalations on the comments opening
 `# QUESTION … of c<report>`**; an escalation on no comment, or on the report itself, is not one. Say in the session,
 in this order: answer every QUESTION, run plan-project to apply the answers, then move the story to `ready`. `run`
 refuses the story until they are applied.
 
-On resume, when every one is answered, change what an answer changes in a description or a task, then **reply to
+On resume, raise a held QUESTION (one the report has with no comment yet), unless an answer settled it, and stop
+again. When every one is answered, change what an answer changes in a description or a task, then **reply to
 the report** (`comment add <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line
-per escalation, its answer and what it changed, or that it changed nothing. That reply is what makes them
+per escalation, its answer and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is what makes them
 applied. Say so, and stop again: move nothing, so the story stays where it was, at the plan gate or at `ready`.
 
 **A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
@@ -481,6 +499,8 @@ does not say what anyone means by it. Give two options, each naming what plan-pr
 - *Stop planning it*: the next plan-project says the story is stopped and stops, writing and raising nothing. To
   plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again. To drop
   it, they close it.
+
+The order above is not a pick: put first the one you recommend, or say you have none, as step 0 says.
 
 The same escalation is not raised twice. After a *Re-plan once more* answer, three more reports raise a new one on
 the latest report. When the latest is answered *Stop planning it*, say so and stop, unless the person asks in this
@@ -505,5 +525,5 @@ to the PO as one comment and it has no tasks. Every planned story has its *Techn
 a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
 *planned by* half on its Status line. Every story and task, and the Plan record, has a summary.
 And, for a type with a plan gate, the report is posted, every QUESTION in it is a comment of its own with an
-escalation on it, and the story waits
+escalation on it, or held for the next round as "The QUESTIONs" says, and the story waits
 at the plan gate for a person to move it; for a type without one, the story is `--status ready`.

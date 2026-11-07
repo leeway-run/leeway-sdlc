@@ -45,7 +45,8 @@ already include it.
 
 **You have no user to ask.** If something is unclear, you cannot stop and ask, in the terminal or
 anywhere else. Write the doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
-`## Question` block (one sentence; 2 to 5 options, each with its argument; what you did meanwhile)
+`## Question` block (one sentence; 2 to 5 options, each with its argument, the recommended one first with its
+argument opening `Recommended:` and saying why, or `No recommendation:` and why where you truly have no pick; what you did meanwhile)
 that the orchestrator raises as an escalation. **Guessing silently is the one failure that corrupts
 everything downstream.**
 

@@ -106,10 +106,15 @@ human will read it:
 
 - **Question:** one sentence, at most 500 characters. Longer context goes above, under *Uncertainties*.
 - **Options:** 2 to 5, each a `label` (at most 60 characters) with its `argument` (why pick it, at most 1,000).
-  1. `<label>` — <argument>
+  The recommended option comes first, so the human sees your pick and it survives being raised. Where you truly have
+  no pick, invent none: the first argument opens `No recommendation:` and says why.
+  1. `<label>` — Recommended: <why, and the rest of its argument>
   2. `<label>` — <argument>
 - **Meanwhile:** what you did before stopping, and what stays untouched until the answer. You stop implementing
   the blocked part; you do not guess.
+
+Two decisions: where one answer would settle or change the other, merge them into this one block; where neither
+would, write a second `## Question` block, so both go out in one round.
 
 ## Friction
 

@@ -184,7 +184,8 @@ exists.
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
    comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
-   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. No
+   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
    escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
    `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
    `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
@@ -207,7 +208,7 @@ One task at a time, each through the full loop, in a worktree of its own. Do not
 implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
 issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
 `unattended`; it waits for a human only where one of its stop conditions fires, each ending in one
-escalation that it waits on, carrying on when the answer comes ("Questions to the human are escalations"). `run`
+escalation, or one per independent question where a round has more, that it waits on, carrying on when every answer has come ("Questions to the human are escalations"). `run`
 on a project runs its issues that way, one after another, and stops at the first that stops. It skips an issue its
 issue run refuses, and goes on.
 
@@ -295,6 +296,11 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
 
 - **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
   with six has not been thought through.
+- **From `plan-project` and `run`, the recommended option comes first**, and its argument opens `Recommended:` and
+  says why. Where the agent truly has no pick it invents none: the first argument opens `No recommendation:` and says
+  why. An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block keeps its order.
+  `shape-project` does not recommend: it puts the likeliest answer first, states no pick and takes the PO's answer as
+  given.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
 - **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
@@ -309,6 +315,15 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
 - **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
+
+**Escalations go out in rounds.** A round is the escalations raised together, for one person to answer in one
+sitting. These hold for every skill, however few or many questions it has:
+
+- **Check the round before raising it.** Would one answer settle or change another question? Merge them into
+  one, or hold the dependent one for the next round.
+- **Independent questions go out together.** Do not ration them: the first round covers as much ground as it
+  can, and later rounds are follow-ups only.
+- **A later round drops what an answer settled.** It is not asked again, and it is not raised for confirmation.
 
 An implementer that returns `BLOCKED` carries a `## Question` section. The orchestrator does not
 paraphrase it: it runs the gate on the brief, posts the brief as a comment, raises the escalation from the
