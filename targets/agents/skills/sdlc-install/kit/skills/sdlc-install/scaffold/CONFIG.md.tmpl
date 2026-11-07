@@ -55,13 +55,7 @@ its glob (repo-relative, `**` across folders). No rows: the hook and the gate do
 | Plans directory | {{PLANS_DIR}} — design docs written as `<dir>/<ref lower>-<slug>.md` |
 | Per-worktree setup | {{WORKTREE_SETUP}} |
 | Evidence directory | {{EVIDENCE_DIR}} {{EVIDENCE_GITIGNORED}} |
-| Per-story budget | {{PER_STORY_BUDGET}} |
 | Ticket templates | `.sdlc/templates/` — `STORY.md`, `TASK.md` |
-
-<!-- Per-story budget: what one run of an issue may spend on one story, summed across runs, before it stops
-     for a human. Three dimensions, whichever is hit first: subagent tokens as the harness reports them,
-     rounds (round-0 attempts included), and wall-clock. "none" for a dimension means it is not
-     enforced - say so rather than leave it blank. -->
 
 Branch names come from the process (each type's branch prefix) and are `<prefix>/<ref lower>-<slug>`,
 the slug at most 40 characters, written back with `issue update --branch`.
