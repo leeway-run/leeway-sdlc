@@ -148,7 +148,9 @@ as `cN`. Check each against the code at this sha.
   - **Concerns:** the `F<n>` it is about, or `the round as a whole`. The orchestrator ties the escalation to that
     finding's comment; a question about the whole round is tied to none.
   - **Question:** one sentence, at most 500 characters.
-  - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000).
+  - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000). The recommended
+    option comes first, its argument opening `Recommended:` and saying why. Where you truly have no pick, invent none:
+    the first argument opens `No recommendation:` and says why.
   - **Meanwhile:** what stays blocked and what does not.
 
 ## Rules read
@@ -238,7 +240,7 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
   - **Concerns:** F1
   - **Question:** Should the cache key include the linter's rules version?
   - **Options:**
-    1. `Include the version` — a rule change invalidates every entry automatically; costs one full lint per upgrade.
+    1. `Include the version` — Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically.
     2. `Leave it out, document the manual clear` — keeps upgrades fast; a forgotten clear hides every new violation.
   - **Meanwhile:** LWY-12.3 stays `in_progress`; LWY-12.4 does not touch the linter and carries on.
 
@@ -262,4 +264,4 @@ The orchestrator posts, in order (alias `kestrel-b1`; `LWY-12.3`; `it.2`):
 2. `leeway --as kestrel-b1/reviewer comment add LWY-12.3 --stdin body` with the `F2` block (no `--anchor`); `c7`.
 3. `leeway --as kestrel-b1/reviewer comment add LWY-12.3 --stdin body` with the `F3` block (no `--anchor`): the finding that re-raises the disputed `c3`; `c8`.
 4. `leeway --as kestrel-b1/reviewer comment add LWY-12.3 --kind review --iteration 2 --settles '["c2"]' --disputes '["c3"]' --raises '["c6","c7","c8"]' --stdin body`, with the verdict as the body: the finding-body blocks removed, `F1`/`F2`/`F3` in the tables rewritten as `c6`/`c7`/`c8`, and the ledger's `Raises:` line the same. `c9`.
-5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway --as kestrel-b1/reviewer escalation raise LWY-12.3 --question "Should the cache key include the linter's rules version?" --options '[{"label":"Include the version","argument":"A rule change invalidates every entry automatically; costs one full lint per upgrade."},{"label":"Leave it out, document the manual clear","argument":"Keeps upgrades fast; a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6`. Then the orchestrator stops and reports the escalation id and the issue. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.
+5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway --as kestrel-b1/reviewer escalation raise LWY-12.3 --question "Should the cache key include the linter's rules version?" --options '[{"label":"Include the version","argument":"Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically."},{"label":"Leave it out, document the manual clear","argument":"Keeps upgrades fast; a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6`. Then the orchestrator stops and reports the escalation id and the issue. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.
