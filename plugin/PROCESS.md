@@ -272,6 +272,11 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
 
 - **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
   with six has not been thought through.
+- **From `plan-project` and `run`, the recommended option comes first**, and its argument opens `Recommended:` and
+  says why. Where the agent truly has no pick it invents none: the first argument opens `No recommendation:` and says
+  why. An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block keeps its order.
+  `shape-project` does not recommend: it puts the likeliest answer first, states no pick and takes the PO's answer as
+  given.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
 - **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on

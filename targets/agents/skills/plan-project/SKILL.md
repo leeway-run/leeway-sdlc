@@ -79,7 +79,10 @@ whatever happened.
    terminal question: it is a Leeway escalation on the story, and then you stop the turn. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
    '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
-   2 to 5 options, each with its argument, one open escalation per comment. **On resume**, read the answers with
+   2 to 5 options, each with its argument, one open escalation per comment. **The recommended option comes first**,
+   its argument opening `Recommended:` and saying why (`PROCESS.md`, "Questions to the human are escalations"). The
+   options a step below names are the choices, not their order. Where you truly have no pick, invent none: the first
+   argument opens `No recommendation:` and says why. **On resume**, read the answers with
    `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first thing not
    done; an open escalation with no answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and
    this skill cannot run.
@@ -148,7 +151,7 @@ to plan-project."* On a type with no shaped step, where shaping ends at `shape`,
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
-has N product gaps: how do we proceed?"*, with the options *Hold; the PO answers with shape-project*, *Split the story
+has N product gaps: how do we proceed?"*, with the options, your recommended one first, *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
 into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then stop. The answer has to
 reach the body before planning: planning on a comment makes a second source that drifts from the first.
@@ -308,7 +311,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    for a rule that asks for a decision on each user-facing story before it is built (for example whether a
    feature belongs on every surface a person uses). **User-facing** means a story whose acceptance criteria name
    something a person does through a surface. For each such story post the context as a comment, quoting the
-   rule's own sentence, and raise that rule's question as an escalation. Its options are the alternatives the
+   rule's own sentence, and raise that rule's question as an escalation. Its options, your recommended one first, are the alternatives the
    rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
    on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
    together share one comment and one escalation, naming each, and a story whose question another answer would
@@ -465,7 +468,7 @@ Raise the QUESTIONs, when the report has any (below), and **stop**.
 A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Post each QUESTION as **its own top-level
 comment** on the story, as `<alias>/planner` (`comment add <story> --stdin body`), with a body opening
 `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment. Then raise its escalation with
-`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5). A comment holds one open
+`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your recommended one first). A comment holds one open
 escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment of its own. They are questions about
 the plan, not the gate decision.
 
@@ -500,6 +503,8 @@ does not say what anyone means by it. Give two options, each naming what plan-pr
 - *Stop planning it*: the next plan-project says the story is stopped and stops, writing and raising nothing. To
   plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again. To drop
   it, they close it.
+
+The order above is not a pick: put first the one you recommend, or say you have none, as step 0 says.
 
 The same escalation is not raised twice. After a *Re-plan once more* answer, three more reports raise a new one on
 the latest report. When the latest is answered *Stop planning it*, say so and stop, unless the person asks in this
