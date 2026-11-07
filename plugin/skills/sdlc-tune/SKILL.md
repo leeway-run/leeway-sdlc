@@ -11,8 +11,10 @@ runtime"), so a change in Leeway is a change everywhere, and nothing in the repo
 
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call.
 `<cli>` is `cli:` in `.sdlc/leeway.md`, `<KEY>` its `product:`, `<server>` its `server:`. Pass `--server
-<server>` on every call. Writes carry `--as <alias>/agent` (the alias is this session's, `<word>-<two hex
-digits>`, chosen as `PROCESS.md`, "The cast", describes). **No token, credential or server secret is shown or
+<server>` on every call. Writes carry `--as <alias>/agent` (the alias is this session's, an adjective and
+a bird, `quiet-wren`, chosen as `PROCESS.md`, "The cast", describes: against the project of the issue named for the
+escalations, `issue get <ref>`'s `project.id`, or, in the terminal with no issue named, a pair at random, as there is
+no project to read). **No token, credential or server secret is shown or
 written anywhere.** Without `.sdlc/leeway.md` the repo was never installed: ask for the command and the
 product key, or point to `sdlc-install`; write neither down.
 
