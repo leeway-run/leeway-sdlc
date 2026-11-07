@@ -766,7 +766,8 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    exit from `merge-base --is-ancestor` means the base moved: remove this worktree and go back to step 1, before any merge,
    even one that would be clean, so nothing reaches the base ungated. The check reads the merge worktree's detached `HEAD`,
    which only this worktree changes, because worktrees share `origin/<base>` and a parallel session's fetch moves it. With
-   that exit 0 the story already holds `HEAD`, so the merge cannot conflict.
+   that exit 0 the story already holds `HEAD`, so the merge cannot conflict. If the merge fails all the same, a hook refused it:
+   `git -C <primary> worktree remove --force <primary>/.worktrees/merge-<story>`, stop and say what git printed.
 
    **If the merge push of `HEAD:<base>` fails,** whatever git printed, run `git -C <primary> fetch origin <base>` and
    `git -C <primary> merge-base --is-ancestor origin/<base> <story branch>`. Non-zero: the base moved, so remove this
@@ -1167,7 +1168,7 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
   pre-push guard does not cover it, and its prompt is where the person's yes is their word ("When the plan merges
   into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
-  plugin, and this skill only states the requirement. It refuses an update to the integration branch named in
+  plugin, and this skill only states the requirement; `sdlc-install` offers to write it (question 16). It refuses an update to the integration branch named in
   `.sdlc/CONFIG.md` and a force push to any ref, deciding from the refs git passes on its stdin, so it refuses
   `HEAD:<integration branch>` from a detached HEAD, which is how the story gate pushes. It does so on a push from any
   process that does not skip it: `--no-verify` and
