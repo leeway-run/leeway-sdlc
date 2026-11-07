@@ -42,6 +42,14 @@ posts what the path posts, says which escalation on which issue it stopped on, a
 any `# Run status` comment stay, and re-invoking `run` once it is answered resumes where there is work left to
 resume (run, "Land the task", step 5).
 
+## Counting tokens
+
+tokens: none
+
+A run in OpenCode cannot count tokens: `session-tokens.mjs` reads Claude Code's transcripts, and no probe has shown
+where OpenCode keeps its own or in what shape. So every record leaves `--tokens` out (run, "Recording spend"): never
+`--tokens 0`, never an estimate. Every total then reads `tokensIncomplete`, a floor, and the run carries on.
+
 ## Required reading
 
 run pastes the *Required reading* rows into each brief; no hook injects them here.

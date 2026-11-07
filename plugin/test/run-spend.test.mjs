@@ -49,21 +49,44 @@ test('every round records its spend, and Leeway, not prose, holds the totals', (
   );
 });
 
-test('unreported tokens are left out, never sent as 0', () => {
+test('a token is a new token, the same unit for a subagent and the orchestrator, and never the harness count', () => {
   assert.equal(
-    from(spend(), '- **Tokens are', '- **The round**'),
-    "- **Tokens are the subagents' counts as the harness reports them when each returns.** A count the harness did not " +
-      'report is left out: never `--tokens 0`, never an estimate. Leeway then marks the total incomplete ' +
-      "(`tokensIncomplete`), and every readout of it says so. Until the harness can count the orchestrator's own " +
-      "tokens, a span of yours (the baseline, landing a task, the story gate's own work) leaves them out of its " +
-      "record, so every story `run` touches reads `tokensIncomplete`: its token total is a floor, and the run carries " +
-      'on (stop 9). ',
+    from(spend(), '- **A token is a new token', '- **`session-tokens.mjs` counts them**'),
+    '- **A token is a new token: `input_tokens + cache_creation_input_tokens + output_tokens`, summed over every model ' +
+      'call of the agent in the span; `cache_read_input_tokens` is never counted.** It is the same unit for a subagent ' +
+      "and for you. A harness's own count for a subagent is not it: Claude Code's `subagent_tokens` is the agent's " +
+      'final context size, not a sum, and no record carries it. ',
+  );
+  assert.equal(
+    from(spend(), '- **`session-tokens.mjs` counts them**', '- **What cannot be counted'),
+    "- **`session-tokens.mjs` counts them**, in `scripts/` under `HARNESS.md`'s `plugin-files:`, one call per span, as " +
+      '`HARNESS.md`, "Counting tokens", says. It only reads, and prints one whole number: ' +
+      '```sh node <plugin-files>/scripts/session-tokens.mjs --subagent <its transcript> ' +
+      'node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end> ``` ' +
+      "`<start>` and `<end>` are the span's two `date +%s`. Count a subagent once it has returned, and a span of yours " +
+      'when it ends. ',
+  );
+  for (const doc of [skill, contract, brief]) {
+    assert.doesNotMatch(flat(doc), /as the harness report|harness reported|harness did not report|subagent tokens|subagents' counts/);
+  }
+});
+
+test('what cannot be counted is left out, never sent as 0', () => {
+  assert.equal(
+    from(spend(), '- **What cannot be counted', '- **The round**'),
+    '- **What cannot be counted is left out: never `--tokens 0` in its place, never an estimate.** That is every record ' +
+      'in a harness whose "Counting tokens" says it cannot, a span whose start or subagent this session did not see, ' +
+      'and any exit of the script but 0: then it prints no number. Leeway marks the total incomplete ' +
+      '(`tokensIncomplete`), and every readout of it says so: the token total is a floor, and the run carries on (stop ' +
+      '9). A 0 the script prints means it found no model call, and it says so on stderr. Pass it only if that is true, ' +
+      'as for a subagent that ended before its first call; a span in which you made calls has the wrong window or ' +
+      'file, so leave `--tokens` out. ',
   );
   const record = from(under(skill, '2. Gate, commit, push, record'), '4. **Record the iteration**', '`iteration.number` is `N`');
   assert.equal(
     from(record, '`--addresses` is', '```sh'),
     "`--addresses` is the brief's `Addresses:` as a JSON list, omitted when `none`; the round's spend is as \"Recording " +
-      'spend" says, `--tokens` left out when the harness reported none, never `0`: ',
+      'spend" says, `--tokens` left out when it cannot be counted, never `0`: ',
   );
   assert.match(
     record,
@@ -78,35 +101,44 @@ test('the round, its review, a round with no iteration and the run\'s own time e
   assert.equal(
     from(spend(), '- **The round**', '- **Its review**'),
     '- **The round**, on its iteration ("Gate, commit, push, record", step 4): `--minutes` from delegating to the ' +
-      "implementer to the iteration record; `--tokens` the implementer's; `--testMinutes` the brief's *Test minutes*, " +
+      "implementer to the iteration record; `--tokens` the implementer's, from its transcript; `--testMinutes` the brief's *Test minutes*, " +
       'left out when it says `unknown` and never more than `--minutes` (pass the smaller); `--note` what the round did, ' +
       'in a few words ("round 0: 4 red tests", "addresses c6, c7"). ',
   );
   assert.equal(
-    from(spend(), '- **Its review**', '- **A round that records no iteration**'),
+    from(spend(), '- **Its review**', "- **A round's orchestration**"),
     '- **Its review**, on the same sub-issue once the verdict is posted, because a recorded iteration is never edited: ' +
       '`leeway --as <alias>/reviewer --json spend record <ref> <minutes> [--tokens <N>] --note "review of it.N"`, the ' +
-      'minutes from delegating to the reviewer to the verdict posted. ',
+      "minutes from delegating to the reviewer to the verdict posted, `--tokens` the reviewer's, from its transcript. ",
+  );
+  assert.equal(
+    from(spend(), "- **A round's orchestration**", '- **A round that records no iteration**'),
+    "- **A round's orchestration**, the tokens you spent on it, on the same sub-issue after that record: `leeway --as " +
+      '<alias>/agent --json spend record <ref> 0 [--tokens <N>] --note "orchestrating it.N"`, `--tokens` from your ' +
+      'transcript, from delegating to the implementer to the verdict posted. Its minutes are 0 because that time is ' +
+      "already in the round's and the review's. ",
   );
   assert.equal(
     from(spend(), '- **A round that records no iteration**', '- **The run\'s own time**'),
     '- **A round that records no iteration** (a stalled round, a BLOCKED brief with nothing staged) still cost what it ' +
       'cost: `leeway --as <alias>/agent --json spend record <ref> <minutes> [--tokens <N>] --note "<stalled round | ' +
-      'BLOCKED, nothing staged>"`, before its escalation. ',
+      'BLOCKED, nothing staged>"`, before its escalation, `--tokens` the implementer\'s, from its transcript. Its ' +
+      'orchestration follows it as above, its span ending at that record. ',
   );
   assert.equal(
     from(spend(), '- **The run\'s own time**'),
     "- **The run's own time**, on the story: `leeway --as <alias>/agent --json spend record <story> <minutes> [--tokens " +
-      '<N>] --note "<what>"`, one record per span: the baseline ("Story start", step 3), landing each task (from "Land ' +
+      '<N>] --note "<what>"`, `--tokens` from your transcript over the span, one record per span: the baseline ("Story start", step 3), landing each task (from "Land ' +
       'the task", step 1, through the lanes run after it lands), and the story gate (from its step 1 to the story read ' +
-      'back at its step 5, with the tokens of a reviewer pass at its step 3). The moments between spans, posting ' +
+      'back at its step 5, adding the count from the transcript of a reviewer pass at its step 3, and leaving `--tokens` ' +
+      'out if either cannot be counted). The moments between spans, posting ' +
       'records and reading Leeway, are not recorded. ',
   );
 });
 
 test('time is measured, and a wait is never in a record', () => {
   assert.equal(
-    from(spend(), '- **Time is measured', '- **Tokens are'),
+    from(spend(), '- **Time is measured', '- **A token is a new token'),
     '- **Time is measured, never estimated.** Take `date +%s` when a span starts and again when it ends; its minutes ' +
       'are the difference in whole minutes, rounded to the nearest (`$(( (end - start + 30) / 60 ))`). **A wait ends a ' +
       'span**: record what came before it, and start a new span once the answer arrives. Time waiting on a person is ' +
@@ -139,7 +171,7 @@ test('the Spend line stays, as a readout that says when a total is incomplete', 
   const stop = under(skill, 'On a stop');
   assert.match(
     stop,
-    /- \*\*Spend:\*\* <rounds> of <budget> rounds · <tokens> of <budget> subagent tokens · <elapsed> of <budget> wall-clock\./,
+    /- \*\*Spend:\*\* <rounds> of <budget> rounds · <tokens> of <budget> tokens · <elapsed> of <budget> wall-clock\./,
   );
   assert.equal(
     from(stop, 'The *Spend* line is a readout', '5. **Raise'),
@@ -154,8 +186,8 @@ test('stop 9: a round with unreported tokens never counts as free', () => {
   assert.equal(
     from(under(skill, 'Hard stop conditions'), '- **9: check at round boundaries', '- **10:'),
     '- **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been ' +
-      "real. Read the story's `totals` at each boundary (\"Start the budget\"). Tokens are the subagents' counts as " +
-      'the harness reports them when each returns ("Recording spend"). Stop when `totals.tokens` reaches the token ' +
+      "real. Read the story's `totals` at each boundary (\"Start the budget\"). Tokens are new tokens, counted from " +
+      'the transcripts where the harness can ("Recording spend"). Stop when `totals.tokens` reaches the token ' +
       'budget; while `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it ' +
       '(the status comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include ' +
       'round-0 attempts. ',
@@ -163,8 +195,8 @@ test('stop 9: a round with unreported tokens never counts as free', () => {
   assert.doesNotMatch(flat(skill), /that dimension is not enforced/);
   assert.equal(
     from(under(skill, 'What is lost'), 'The budget is checked at round boundaries', ' A span the session ends inside'),
-    'The budget is checked at round boundaries, so one long round can overshoot it, and a token count the harness ' +
-      'does not report leaves the token total a floor, not a count.',
+    'The budget is checked at round boundaries, so one long round can overshoot it, and a token count that cannot ' +
+      'be made leaves the token total a floor, not a count.',
   );
 });
 
@@ -185,18 +217,19 @@ test('a round with no iteration points at its spend record, before its escalatio
 test('the round records, the contract and the brief carry the spend fields', () => {
   const writes = under(skill, 'The writes of one round, in order');
   assert.match(writes, /\| 4 \| iteration \| `--as <alias>\/implementer iteration record <ref> <sha> --tests "…" \[--passed\] \[--addresses '\[…\]'\] \[--tokens N\] \[--minutes N\] \[--testMinutes N\] --note "…"` \|/);
-  assert.match(writes, /then `--as <alias>\/reviewer spend record <ref> <minutes> \[--tokens N\] --note "review of it\.X"` \|/);
+  assert.match(writes, /then `--as <alias>\/reviewer spend record <ref> <minutes> \[--tokens N\] --note "review of it\.X"` and `--as <alias>\/agent spend record <ref> 0 \[--tokens N\] --note "orchestrating it\.X"` \|/);
   assert.equal(
     row(contract, '| round |'),
     '| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] ' +
       "--addresses '[\"c1\",\"c2\"]' [--tokens N] [--minutes N] [--testMinutes N] --note \"…\" --as <impl>/implementer` " +
       '(`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`; `--tokens` is ' +
-      'left out when the harness did not report them, never `0`); the round count is the iterations; round-0 attempts ' +
+      "new tokens, input + cache writes + output summed over the agent's model calls and never cache reads, counted by " +
+      '`scripts/session-tokens.mjs` as `HARNESS.md`, "Counting tokens", says, and left out when they cannot be counted, never `0`); the round count is the iterations; round-0 attempts ' +
       'are those before the `step_set {to: implementing}` entry |',
   );
   assert.equal(
     row(contract, '| spend outside a round |'),
-    '| spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round\'s review, or a round ' +
+    '| spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round\'s review, its orchestration, or a round ' +
       "that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story " +
       'gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |',
   );
@@ -210,8 +243,8 @@ test('the round records, the contract and the brief carry the spend fields', () 
     '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as kestrel-b1/implementer iteration record ' +
       'LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" ' +
       "--passed --addresses '[\"c2\",\"c3\"]' --tokens 48210 --minutes 9 --testMinutes 2 --note \"addresses c2, c3\"` " +
-      '(`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer\'s as the harness reported them, left ' +
-      "out when it reported none, and `--minutes` is the orchestrator's own timing: `run`, \"Recording spend\") |",
+      '(`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer\'s new tokens, counted from its transcript, left ' +
+      "out when they cannot be counted, and `--minutes` is the orchestrator's own timing: `run`, \"Recording spend\") |",
   );
   assert.equal(
     from(flat(implementer), '*Test minutes* is', ' **Addresses.**'),

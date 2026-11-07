@@ -272,25 +272,46 @@ back from prose.
   record; Leeway counts it from the escalations. A round whose start this session did not see (resumed from an
   earlier session) has no minutes: its iteration leaves `--minutes` and `--testMinutes` out, and Leeway marks the
   total incomplete (`minutesIncomplete`).
-- **Tokens are the subagents' counts as the harness reports them when each returns.** A count the harness did not
-  report is left out: never `--tokens 0`, never an estimate. Leeway then marks the total incomplete
-  (`tokensIncomplete`), and every readout of it says so. Until the harness can count the orchestrator's own tokens,
-  a span of yours (the baseline, landing a task, the story gate's own work) leaves them out of its record, so every
-  story `run` touches reads `tokensIncomplete`: its token total is a floor, and the run carries on (stop 9).
+- **A token is a new token: `input_tokens + cache_creation_input_tokens + output_tokens`, summed over every model
+  call of the agent in the span; `cache_read_input_tokens` is never counted.** It is the same unit for a subagent and
+  for you. A harness's own count for a subagent is not it: Claude Code's `subagent_tokens` is the agent's final context
+  size, not a sum, and no record carries it.
+- **`session-tokens.mjs` counts them**, in `scripts/` under `HARNESS.md`'s `plugin-files:`, one call per span, as
+  `HARNESS.md`, "Counting tokens", says. It only reads, and prints one whole number:
+
+  ```sh
+  node <plugin-files>/scripts/session-tokens.mjs --subagent <its transcript>
+  node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end>
+  ```
+
+  `<start>` and `<end>` are the span's two `date +%s`. Count a subagent once it has returned, and a span of yours when
+  it ends.
+- **What cannot be counted is left out: never `--tokens 0` in its place, never an estimate.** That is every record in
+  a harness whose "Counting tokens" says it cannot, a span whose start or subagent this session did not see, and any
+  exit of the script but 0: then it prints no number. Leeway marks the total incomplete (`tokensIncomplete`), and
+  every readout of it says so: the token total is a floor, and the run carries on (stop 9). A 0 the script prints
+  means it found no model call, and it says so on stderr. Pass it only if that is true, as for a subagent that ended
+  before its first call; a span in which you made calls has the wrong window or file, so leave `--tokens` out.
 - **The round**, on its iteration ("Gate, commit, push, record", step 4): `--minutes` from delegating to the
-  implementer to the iteration record; `--tokens` the implementer's; `--testMinutes` the brief's *Test minutes*, left
+  implementer to the iteration record; `--tokens` the implementer's, from its transcript; `--testMinutes` the brief's *Test minutes*, left
   out when it says `unknown` and never more than `--minutes` (pass the smaller); `--note` what the round did, in a
   few words ("round 0: 4 red tests", "addresses c6, c7").
 - **Its review**, on the same sub-issue once the verdict is posted, because a recorded iteration is never edited:
   `leeway --as <alias>/reviewer --json spend record <ref> <minutes> [--tokens <N>] --note "review of it.N"`, the
-  minutes from delegating to the reviewer to the verdict posted.
+  minutes from delegating to the reviewer to the verdict posted, `--tokens` the reviewer's, from its transcript.
+- **A round's orchestration**, the tokens you spent on it, on the same sub-issue after that record: `leeway --as
+  <alias>/agent --json spend record <ref> 0 [--tokens <N>] --note "orchestrating it.N"`, `--tokens` from your
+  transcript, from delegating to the implementer to the verdict posted. Its minutes are 0 because that time is
+  already in the round's and the review's.
 - **A round that records no iteration** (a stalled round, a BLOCKED brief with nothing staged) still cost what it
   cost: `leeway --as <alias>/agent --json spend record <ref> <minutes> [--tokens <N>] --note "<stalled round |
-  BLOCKED, nothing staged>"`, before its escalation.
+  BLOCKED, nothing staged>"`, before its escalation, `--tokens` the implementer's, from its transcript. Its
+  orchestration follows it as above, its span ending at that record.
 - **The run's own time**, on the story: `leeway --as <alias>/agent --json spend record <story> <minutes> [--tokens
-  <N>] --note "<what>"`, one record per span: the baseline ("Story start", step 3), landing each task (from "Land the
+  <N>] --note "<what>"`, `--tokens` from your transcript over the span, one record per span: the baseline ("Story start", step 3), landing each task (from "Land the
   task", step 1, through the lanes run after it lands), and the story gate (from its step 1 to the story read back at
-  its step 5, with the tokens of a reviewer pass at its step 3). The moments between spans, posting records and
+  its step 5, adding the count from the transcript of a reviewer pass at its step 3, and leaving `--tokens` out if
+  either cannot be counted). The moments between spans, posting records and
   reading Leeway, are not recorded.
 
 ### Round 0: red tests first
@@ -443,7 +464,7 @@ a step that fails stops the round.
 4. **Record the iteration**, as the implementer. `--tests` is the brief's lane line (at most 200 characters);
    `--passed` is present only when the brief says `Passed: yes` (for `no` or `n/a` omit it; a failed lane is already
    in the text as `FAILED: …`); `--addresses` is the brief's `Addresses:` as a JSON list, omitted when `none`; the
-   round's spend is as "Recording spend" says, `--tokens` left out when the harness reported none, never `0`:
+   round's spend is as "Recording spend" says, `--tokens` left out when it cannot be counted, never `0`:
 
    ```sh
    leeway --as <alias>/implementer --json iteration record <ref> <sha> --tests "<lane line>" [--passed] [--addresses '["c1","c3"]'] [--tokens <N>] [--minutes <N>] [--testMinutes <N>] --note "<note>"
@@ -758,7 +779,7 @@ moves an issue.
 | 6 | hand over | `issue update <ref> --status in_review`, in round 0 too |
 | 7 | reviewer | none |
 | 8 | findings | `--as <alias>/reviewer comment add <ref> [--anchor '{…}'] --stdin body`, one each |
-| 9 | verdict | `--as <alias>/reviewer comment add <ref> --kind review --iteration X --settles … --disputes … --raises … --stdin body`, then `--as <alias>/reviewer spend record <ref> <minutes> [--tokens N] --note "review of it.X"` |
+| 9 | verdict | `--as <alias>/reviewer comment add <ref> --kind review --iteration X --settles … --disputes … --raises … --stdin body`, then `--as <alias>/reviewer spend record <ref> <minutes> [--tokens N] --note "review of it.X"` and `--as <alias>/agent spend record <ref> 0 [--tokens N] --note "orchestrating it.X"` |
 | 10 | a human is needed | `--as <alias>/reviewer escalation raise <ref> … [--comment <the finding's cN>]` (never the verdict's), then wait |
 | 11 | nits, follow-ups | comment on the nit collector; `issue create` for a security follow-up; an escalation for a debt proposal |
 | 12 | outcome | round-0 PASS: `issue update <ref> --step implementing`. Code-round PASS: merge, `issue update <ref> --status done`. FAIL: `issue update <ref> --step implementing` (round-0 FAIL: `--step red-tests`) |
@@ -924,8 +945,8 @@ Notes on the ones that need them:
   anything a person wrote stops the run: abort the merge, so the story worktree is left at the commit before it, and
   put the conflicting paths in the status comment.
 - **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been real.
-  Read the story's `totals` at each boundary ("Start the budget"). Tokens are the subagents' counts as the harness
-  reports them when each returns ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
+  Read the story's `totals` at each boundary ("Start the budget"). Tokens are new tokens, counted from the transcripts
+  where the harness can ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
   `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it (the status
   comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include round-0 attempts.
 - **10: no comment and no escalation can be written.** Put the status comment, word for word, in the session output,
@@ -954,7 +975,7 @@ Do these, in this order, and nothing else:
    - **Not started:** <task refs, in the order they would have run>.
    - **Next human action:** <one action, imperative, saying where the answer goes>. Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on <story ref> again.
    - **Left in place:** <story worktree path>, <task worktree path>, <branch names>.
-   - **Spend:** <rounds> of <budget> rounds · <tokens> of <budget> subagent tokens · <elapsed> of <budget> wall-clock.
+   - **Spend:** <rounds> of <budget> rounds · <tokens> of <budget> tokens · <elapsed> of <budget> wall-clock.
    - **Friction so far:** <one line each, with task and round, harvested per "The friction harvest">; or "none".
    ```
 
@@ -1056,8 +1077,8 @@ The human sees the story at the end, not per task. The round records are all the
 happen, so a task that passed review on a misread criterion is found at the story gate, after later tasks were built
 on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up holds the run on
 its answer rather than waiting in a queue, so a debt-heavy codebase waits often; the alternative is filing tickets nobody
-approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count the
-harness does not report leaves the token total a floor, not a count. A span the session ends inside, before its
+approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count that
+cannot be made leaves the token total a floor, not a count. A span the session ends inside, before its
 record is written, is not recorded at all. And dropping each task's subagent context means a pattern noticed in
 task 2 reaches task 5 only if a round record wrote it down.
 
