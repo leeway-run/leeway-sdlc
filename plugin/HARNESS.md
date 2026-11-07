@@ -33,6 +33,29 @@ on the exit code as run's table says. If the session ends first, the run has sto
 escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
 docs/targets/claude.md records the probe.
 
+## Counting tokens
+
+tokens: transcripts
+
+Claude Code writes each agent's transcript under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, and the Bash tool's
+environment names the session in `CLAUDE_CODE_SESSION_ID`. Run `session-tokens.mjs` (run, "Recording spend") with the
+Bash tool, on one of these:
+
+- **A subagent:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID/subagents/agent-<agent id>.jsonl`.
+  The Agent tool's result says `agentId: <agent id>`, and a background agent's completion notice says
+  `<task-id><agent id></task-id>`: keep it from the delegation until its record.
+- **Your session:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID.jsonl`.
+
+The `*` is the project directory, named after where the session started, not where you are now. An empty variable or
+a transcript that is not there makes the script exit non-zero, so that record leaves `--tokens` out, as it does when
+a subagent's agent id is lost. Never take `subagent_tokens` from the completion notice instead: it is the agent's
+final context size.
+
+Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch.
+A call's lines reach the transcript after its command starts, so a count from inside that call misses it. They are
+timed before the command runs, so the stamp, to the millisecond, takes in the call that took it.
+docs/targets/claude.md records the probe.
+
 ## Required reading
 
 `required-reading` (SubagentStart) also injects the *Required reading* rows into the implementer and the reviewer.

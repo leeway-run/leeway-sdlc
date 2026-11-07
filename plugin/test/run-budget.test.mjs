@@ -104,7 +104,7 @@ test('sdlc-install writes the old default budget on the preset path only, and sa
   assert.equal(
     from(install, '**Written without asking, with a preset only: the per-story budget**', ' ## Step 5'),
     '**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15, ' +
-      '"hours": 4}` (2,000,000 subagent tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
+      '"hours": 4}` (2,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
       '`params.budget` on each `build` step that has none (step 5). No preset sets one, so the install does, as a ' +
       'default the human did not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) ' +
       'the process is the human\'s and no budget is written. Step 7 says which `build` steps have one.',
