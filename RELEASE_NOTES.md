@@ -3,8 +3,10 @@
 ## 0.3.0
 
 The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
-of an approval question. **0.3.0 needs a Leeway server with the process model that allows two `gate` steps in a
-type, and no deployed server has it yet** (see *Known limits*).
+of an approval question. A run now waits for the answer to its escalation and carries on, a plan ends at merged into
+`main`, and a run's spend and its per-story budget live in Leeway. **0.3.0 needs a Leeway server with the process
+model that allows two `gate` steps in a type, project links and spend records. dev.leeway.run has them; whether
+`app.leeway.run` has them is not verified** (see *Known limits*).
 
 - **New names (LWY-114).** `shape-work` is now `shape-project`, and `plan-work` is now `plan-project`. `run-task`
   and `run-story` are one skill, `run`, which takes any ref. On a sub-issue it runs one task; on an issue it runs
@@ -53,16 +55,64 @@ type, and no deployed server has it yet** (see *Known limits*).
   keeps only facts, in plain words.
 - **A summary on every issue (LWY-119).** Every `issue create` the plugin runs passes `--summary`. A skill that
   adopts an issue with an empty summary fills one in. `PROCESS.md`, under "Records", says so.
-- **In Leeway (LWY-129, LWY-125).** The steps these skills rely on come from two stories in the Leeway app. LWY-129
-  adds the product process, an issue's `type` and `step`, `process get`, and `--type` and `--step`. LWY-125 names
-  every stage as a step in the default presets and allows two `gate` steps per type. A new product gets
-  `maintained`, stored at version 1, and a product with no stored process reads `mvp` at version 0.
+- **A run waits for the answer (LWY-131).** An escalation no longer ends a run. `run` raises it, says once what it
+  waits on and until when, and waits on `scripts/wait-answer.mjs`, which only reads Leeway: a first check after about
+  a minute, then less and less often, never more than 15 minutes apart, for up to 16 hours per escalation. On an
+  answer it carries on as a re-invoke would, writing nothing twice, and only the answer counts: a comment or a status
+  change does not. With no answer by the deadline it stops the turn, the escalation stays, and re-invoking `run`
+  resumes. It also stops the turn when Leeway stops answering or the CLI asks for `leeway login`. A wait on something
+  that blocks nothing, such as a sub-issue run's debt proposal, carries on instead. Every other skill still stops the
+  turn at its escalation.
+  - **Claude Code** waits in the background (`wait: background` in `HARNESS.md`): the harness wakes the session when
+    the script exits, so no turn is spent per check. If the session ends first, the run has stopped as at the
+    deadline.
+  - **The six other agents** do not wait (`wait: stop`), because no probe has shown that they can run a long command
+    without a turn per check and resume the session. `run` posts what it posts, says which escalation it stopped on
+    and stops the turn; re-invoke it once the escalation is answered.
+- **No description length (LWY-137).** The skills, `PROCESS.md` and the ticket templates state no length for a
+  description. Agents no longer count a description's characters, and `plan-project` keeps *Technical criteria* in
+  the body instead of moving them to a comment. A story planned before that keeps them in a `# Technical criteria`
+  comment is still read, and a re-plan moves them back into the body.
+- **A plan ends at merged into `main` (LWY-138).** `plan-project` cuts the plan branch, where `.sdlc/CONFIG.md` asks
+  for one, and links it on the project (`project link`, read back under `project.links`), and `run` does the same for
+  a plan branch that does not exist yet. After the last story the Plan record reads `in_review`, not `done`: the
+  draft pull request to `main` is open (by `gh`, or by the person, through an escalation) and linked on the project,
+  and the run ends by naming it. The plan merges only on the person's word, and `gh pr merge` stays off the
+  allow-list so that its prompt is that word. The Plan record goes `done` only once `project get` reads every link's
+  pull request as `merged`. With no plan branch, it goes `done` once every `done` story reads merged into `main`.
+  `run` on the project picks up a plan's end left half done.
+- **Spend is recorded in Leeway (LWY-139).** Each round records its minutes, test minutes and tokens on its
+  iteration. The review, the orchestration and the run's own time are `spend record`s, and time waiting on a person
+  is never in a record: Leeway counts it from the escalations, and it does not count toward the budget's wall-clock.
+  `run` reads every sum from `totals` in `issue get`, no longer from the `Spend` line of a `# Run status` comment.
+  Time is measured from stamps in milliseconds, never estimated. The implementer's brief now reports timed *Test
+  minutes*. What cannot be counted is left out, never written as 0: Leeway marks the total incomplete, every readout
+  says so, the total is a floor, and the run carries on.
+- **The token unit changed (LWY-139).** `--tokens` is now new tokens: input + cache writes + output, summed over
+  every model call, cache reads never. `scripts/session-tokens.mjs` counts them from the transcripts, for subagents
+  and the orchestrator alike, on Claude Code; other agents record none (`tokens: none` in `HARNESS.md`), so their
+  totals read incomplete. Counts recorded before this release, in a `Spend` line or on a record, are final context
+  sizes. They stay as recorded, so old and new totals do not compare. The `Spend` line now says "tokens", not
+  "subagent tokens".
+- **The budget moved (LWY-139).** The per-story budget now lives in the process, as `params.budget` on `build` steps,
+  and `run` no longer reads `.sdlc/CONFIG.md` for it. A run on a `build` step with no budget is limited only by the
+  round caps. `sdlc-tune` changes it. `sdlc-install` writes the old default (2,000,000 tokens, 15 rounds, 4 h) on the
+  preset path, and only when the preset applied; a refused preset, or a process the person keeps, gets no budget.
+- **In Leeway (LWY-129, LWY-125, LWY-132, LWY-133, LWY-134).** The steps these skills rely on come from stories in
+  the Leeway app. LWY-129 adds the product process, an issue's `type` and `step`, `process get`, and `--type` and
+  `--step`. LWY-125 names every stage as a step in the default presets and allows two `gate` steps per type. A new
+  product gets `maintained`, stored at version 1, and a product with no stored process reads `mvp` at version 0.
+  LWY-132 is the server's half of LWY-137, LWY-133 of LWY-138 (`project link`) and LWY-134 of LWY-139
+  (`spend record`, `spend get`, `iteration record` with tokens). All five are on the app's `main`.
 
 ### Upgrading a repo
 
 A minor release. Update the plugin with the update skill, then one person runs the sync-repo skill. **Before
 upgrading:**
 
+- **Check the server the repo uses** (`server:` in `.sdlc/leeway.md`). Logged in, `leeway --server <url> --help`
+  lists that server's commands: 0.3.0 needs `process get`, `project link`, `spend get` and `spend record` (see
+  *Known limits*).
 - **Finish or restart any story that is mid-shaping under 0.2.0.** Its rounds carry no `Description at this round:`
   quote, so a UI edit made after the 0.2.0 approval was answered is not guarded.
 - **Decide every plan gate still open under 0.2.0.** Answer its PASS / PASS WITH DECISIONS / RETURN escalation and
@@ -90,40 +140,96 @@ upgrading:**
 - **The product's process.** When a type is still on the old flow, sync-repo offers the new flow as one question.
   It is a write to Leeway, not to the repo, and a no is asked again at the next release. `sdlc-tune` offers it as
   well.
+- **The per-story budget.** A `Per-story budget` row in `.sdlc/CONFIG.md` is no longer read, so until it moves, a run
+  of that repo is limited only by the round caps, unless the process already has a budget. sync-repo offers the move
+  once, showing the row, the budget it becomes and every `build` step's budget before and after. "Move it" writes the
+  budget on every type's `build` step and removes the row only after the process reads back; a write the server
+  refuses removes nothing. "Leave it" writes nothing, the row stays unread, and the next release asks again. A row
+  that does not convert is shown and not offered. **A row with every dimension `none` becomes no budget at all: "Move
+  it" on it removes a budget a person set in the process**, and only the before and after shows that. **The same
+  number is reached sooner:** a moved `2,000,000 subagent tokens` becomes 2,000,000 new tokens, which also cover the
+  orchestrator's spans (see *Known limits*).
+- **A story part-built under 0.2.x.** Its rounds carry over, because they are iterations. Its tokens and wall-clock
+  were only in the `Spend` line, which is no longer read, so they count from the first round under 0.3.0. Its total
+  reads incomplete.
+- **A plan still open under 0.2.x.** Its plan branch stays unlinked until its end. Once its stories are done, `run`
+  on the project opens and links the draft pull request, or links the one already open, and sets the Plan record
+  `in_review`. The record goes `done` only once the pull request has merged into `main`.
+- **The unattended allow-list, by hand.** sync-repo does not touch it. `run` needs every command it names but
+  `gh pr merge`, and this release names `node <plugin-files>/scripts/wait-answer.mjs` and `session-tokens.mjs`,
+  `leeway spend record` and `project link`, `gh pr create` and `gh pr view`. Keep `gh pr merge` off it, and mind that
+  a prefix entry such as `gh pr:*` covers it.
 - **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
   `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
-  `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, and a 0.2.0 kit `Kept` row is asked about again.
+  `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, the new `scripts/wait-answer.mjs` and
+  `scripts/session-tokens.mjs`, and each `HARNESS.md`'s new "Waiting for an answer" and "Counting tokens". A 0.2.0
+  kit `Kept` row is asked about again.
 - **The subagent files in the agent's own directory**, for an agent other than Claude Code: `sdlc-implementer`,
   `sdlc-reviewer` and `sdlc-divergence-reviewer` under `.codex/agents/`, `.github/agents/`, `.cursor/agents/`,
   `.gemini/agents/`, `.grok/agents/` or `.opencode/agents/`. The release changed all three: the implementer and the
-  reviewer name the friction project, and the divergence reviewer names `plan-project`. sync-repo asks about each
-  one on its own, and a `Kept` row on one is asked about again.
+  reviewer name the friction project, the implementer times *Test minutes*, and the divergence reviewer names
+  `plan-project`. sync-repo asks about each one on its own, and a `Kept` row on one is asked about again.
 - **By hand, if you want the new words.** sync-repo never compares the installed `.sdlc/CONFIG.md` (outside
-  `## Repo copies`) or the contract docs. A 0.2.x `.sdlc/CONFIG.md` still names `run-task` and `run-story` and says
-  "before a story merges", and `EVIDENCE-STANDARD.md` still says "task". Edit them to `run`, "an issue" and
-  "sub-issue" if you want them to match.
+  `## Repo copies`, and apart from the budget row its move removes) or the contract docs. A 0.2.x `.sdlc/CONFIG.md`
+  still names `run-task` and `run-story` and says "before a story merges", and `EVIDENCE-STANDARD.md` still says
+  "task". Edit them to `run`, "an issue" and "sub-issue" if you want them to match.
 
 ### How it was checked
 
-- The three CI lanes, on the release branch: `node --test "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs"
-  "plugin/test/*.test.mjs" "scripts/*.test.mjs"` passes 300 of 300; `node scripts/build-targets.mjs --check` prints
-  "generated files are up to date"; `node .github/scripts/check-manifests.mjs` prints "manifests ok: leeway-sdlc
-  and leeway-sdlc-agents 0.3.0".
+- The three CI lanes, on the release branch on this machine's Node v26.13.0, not on CI's Node 22: `node --test
+  "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs" "plugin/test/*.test.mjs" "scripts/*.test.mjs"` passes
+  402 of 402; `node scripts/build-targets.mjs --check` prints "generated files are up to date"; `node
+  .github/scripts/check-manifests.mjs` prints "manifests ok: leeway-sdlc and leeway-sdlc-agents 0.3.0".
 - Each story is pinned by tests over the skill text in `plugin/test/`: `filing-work`, `plan-project-description`
-  (LWY-113); `friction-project` (LWY-115); `install-questions` (LWY-116); `issue-summary` (LWY-119);
-  `skill-names`, `skill-descriptions`, `run-skill-fill`, `run-refusals`, `run-project-skips` (LWY-114);
-  `shape-ends-at-shaped`, `plan-ends-at-planned`, `moves-when-asked`, `new-flow` (LWY-126).
-- Not checked: a live run of `shape-project`, `plan-project`, `run`, `sdlc-install`, `sdlc-tune` or `sync-repo`
-  against a Leeway server, because no deployed server has LWY-125. Not checked either: a live install in a fresh
-  repo, a new agent session choosing `plan-project` on its own, and any agent other than Claude Code.
+  (LWY-113); `friction-project` (LWY-115); `install-questions` (LWY-116); `issue-summary` (LWY-119); `skill-names`,
+  `skill-descriptions`, `run-skill-fill`, `run-refusals`, `run-project-skips` (LWY-114); `shape-ends-at-shaped`,
+  `plan-ends-at-planned`, `moves-when-asked`, `new-flow` (LWY-126); `wait-answer`, `run-waits` (LWY-131);
+  `description-length` (LWY-137); `plan-ends-at-main` (LWY-138); `run-spend`, `run-budget`, `session-tokens`
+  (LWY-139). `scripts/build-targets.test.mjs` pins what every `HARNESS.md` says about waiting and counting tokens.
+- Run live on dev.leeway.run, each piece on its own:
+  - **The budget (LWY-139.2):** on a throwaway product, deleted afterwards, the CLI calls of sync-repo's "Move it":
+    the budget on every `build` step with the rest byte-identical, a row that became no budget, a partial budget, and
+    a refused write that left the version where it was. No row was removed from a real repo's `.sdlc/CONFIG.md`.
+  - **The tokens (LWY-139.3):** three real rounds recorded with `session-tokens.mjs`'s counts for the subagents and
+    the orchestrator's spans, in Claude Code on Linux. Those rounds were run by following `run` by hand with
+    general-purpose agents, because the plugin was not installed in that session, so its hooks and named agents did
+    not run.
+  - **The description (LWY-137.1):** a 6,000-character description written and read back whole. Nothing far above
+    that.
+  - **The project link (LWY-138.1):** a plan branch linked with `project link` and read back through `project get`,
+    with another repository's link untouched. Not run live: `gh pr create` from a pushed plan branch, `gh pr view` on
+    a deleted story branch, and `project get` refreshing a linked pull request to merged.
+- The wait was probed in a live Claude Code session against a fake `leeway` (`docs/targets/claude.md`), for seconds
+  and with no server. Not shown: a wait of hours, a wait started by the main session, and what happens to the command
+  when the session ends.
+- Not checked: a live end-to-end run of `shape-project`, `plan-project`, `sdlc-install`, `sdlc-tune` or `sync-repo`;
+  the `run` skill as an installed plugin; a real concurrent run under the overlap rule; `/clear`, `--resume` and a
+  compaction's call; macOS. Not checked either: a live install in a fresh repo, a new agent session choosing
+  `plan-project` on its own, and any agent other than Claude Code.
 
 ### Known limits
 
-- **No deployed Leeway server supports 0.3.0 yet.** The Leeway app's `main` has no process model. LWY-129 and
-  LWY-125 are on the app's v4 plan branch only, so dev.leeway.run, deployed from `main`, serves no `process get`,
-  `--type` or `--step`. 0.3.0's skills set and read steps, so they need a server with the process model and
-  LWY-125's two `gate` steps per type. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and
-  sync-repo.
+- **0.3.0 needs a server that has these, and only dev.leeway.run was checked.** The skills set and read steps, link
+  branches and pull requests on a project, and record spend, so they need `process get`, two `gate` steps per type,
+  `project link`, `spend get`, `spend record` and `iteration record` with tokens. dev.leeway.run serves them; the
+  last of them reached the app's `main` in app PR #22, merged on 2026-11-03. **Whether `app.leeway.run`, the CLI's
+  default server, has them is not verified.** It did not resolve from where this was checked, and the app's
+  `docs/ARCHITECTURE.md` on `main` says it is not deployed yet. No workflow in the app repo deploys the app
+  (dev.leeway.run is deployed by hand with `wrangler deploy --env dev`), so a merge there says nothing about what
+  another server runs. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and sync-repo.
+  Nothing was run against a server without the others.
+- **The default budget is reached sooner.** Its 2,000,000 tokens now also cover the orchestrator's spans, in the new
+  unit. The one real reading so far: story LWY-139 recorded 2,341,236 tokens over 8 rounds, marked incomplete and
+  mixing both units. That is a data point, not a recommendation.
+- **A token total can read low.** Orchestrator calls between spans (composing a brief, posting records after a
+  verdict) are never counted, while the total can still read complete; that debt question is open on LWY-139.3. Spans
+  of two concurrent tasks that overlap leave their tokens out, and the budget is checked at round boundaries, so one
+  long round can overshoot it.
+- **Comments keep a stated length.** LWY-137 covers descriptions. The plugin still states one for comments, and `run`
+  still splits long briefs and verdicts on it; that debt question is open on LWY-137.1.
+- **With no plan branch**, a story's merge into `main` at its gate is not tied to the person's word, because
+  `gh pr merge` by the orchestrator is not a push and the pre-push guard does not stop it. That debt question is open
+  on LWY-138.1.
 - **Old skills outside Claude Code.** It is not verified whether re-running `npx skills add` or `gemini skills
   install` leaves `shape-work`, `plan-work`, `run-task` and `run-story` installed beside the new skills. If they
   are still listed, remove them by hand from where that agent installed them.
