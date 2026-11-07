@@ -37,6 +37,10 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
   id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it is the
   yes option. No answer there, or an answer only on another escalation, is "not yet": write nothing and stop
   again.
+
+  **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
+  question, merge them into one, or hold the dependent one for the next round. Independent questions go out
+  together, not rationed, each with its own noted id, and a later round drops what an answer settled.
 - **Without it**, ask in the terminal, one question at a time.
 
 ## Step 1 - read what is there
@@ -60,7 +64,10 @@ step after `shape` with no `plan` step between them" (`PROCESS.md`, "Before the 
 `shape` before its `plan` step, or after `shape` at all when it has no `plan`. Its shaping ends at no step a person
 moves on. When any type is, offer the new flow (Step 2) as a change of its own, alongside anything the invocation
 asked for: Steps 3 to 6 run for it alone, with its own question. Offer it once per run. On a yes, a request is
-turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
+turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request. In escalation
+mode that order holds only for a request on a type the new flow changes, whose before and after that answer changes.
+A request on any other type depends on no open answer: its question goes out in the same round, and each yes is
+written in turn, from a fresh Step 1 read. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
 that differs from the new flow only in its labels; neither is offered it. A relabel is an ordinary request.
 
 ## Step 2 - turn the request into an edit
@@ -152,10 +159,10 @@ their type, status and step. For each, offer a move the human can pick:
   and refused as `invalid_step`.
 - or **leave the process as it was** and finish the issue first.
 
-This is a second question to the human (escalation mode: a second escalation, with the refs and the moves in
+This is a second question to the human, in a later round because it follows a refused write (escalation mode: a second escalation, with the refs and the moves in
 a comment first, one option per plan of moves and one for "Leave it"; note its id as above and read only that
 entry's `answer`). Make no move without the answer. After
-it, make the moves, **retry the write once**, and if it is refused again report the refs that remain and stop.
+it, make the moves, **retry the write once, rebuilt from a fresh Step 1 read** (a new `before.json` and `after.json`: a write replaces the whole definition and no version guards it, so the old file would undo a yes written since), and if it is refused again report the refs that remain and stop.
 
 ## Step 6 - read it back
 
