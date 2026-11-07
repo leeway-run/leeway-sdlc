@@ -144,6 +144,7 @@ as `cN`. Check each against the code at this sha.
 - **Raises:** this round's findings, `F1, F2, …`; the orchestrator replaces them with the `cN` they are posted as.
   Every finding above is raised; a follow-up row is not.
 - **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round.
+  One block per question that depends on no other; where one answer would settle or change another, merge them.
   Write it as the human will read it, not as an instruction to the implementer:
   - **Concerns:** the `F<n>` it is about, or `the round as a whole`. The orchestrator ties the escalation to that
     finding's comment; a question about the whole round is tied to none.

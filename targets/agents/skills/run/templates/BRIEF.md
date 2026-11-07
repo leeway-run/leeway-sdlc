@@ -113,6 +113,9 @@ human will read it:
 - **Meanwhile:** what you did before stopping, and what stays untouched until the answer. You stop implementing
   the blocked part; you do not guess.
 
+Two decisions: where one answer would settle or change the other, merge them into this one block; where neither
+would, write a second `## Question` block, so both go out in one round.
+
 ## Friction
 
 A tooling, test-data, local-setup or process gap that cost this round time, one line each: what it cost and what
