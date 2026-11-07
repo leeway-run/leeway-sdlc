@@ -29,7 +29,9 @@ absolutely.
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call. Below,
 `<cli>` is the command the repo is configured with (step 3 settles it), and `<server>` the server URL. Pass
 `--server <server>` on every call. Writes carry `--as <alias>/agent`, the alias being this session's, chosen as
-`PROCESS.md` ("The cast") describes (`<word>-<two hex digits>`, for example `kestrel-b1`); the CLI's roles are
+`PROCESS.md` ("The cast") describes (an adjective and a bird, `quiet-wren`). The install's issue, when one is named,
+gives the project to read for it (`issue get`: `project.id`); with none named there is no project to read, so take a
+pair at random. The CLI's roles are
 `implementer`, `reviewer`, `planner` and `agent`, and a skill acting for the orchestrator is `agent`. **No token, no credential, no
 server secret is written to any file, and none is shown in the transcript.**
 
