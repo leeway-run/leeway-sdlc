@@ -45,7 +45,7 @@ the first in the list, so two sessions rarely land on the same pair:
   puffin, raven, robin, rook, starling, tern, thrush, warbler, wren.
 
 Two sessions running at once, or two people's agents, must not share one. Before taking the pair, read the aliases
-active in the project the work belongs to (`leeway --json project get <KEY> <projectId>`, with the project id from
+active in the project the work belongs to (`leeway project get <KEY> <projectId> --json`, with the project id from
 `issue get`'s `project.id`; its `activeAgents` lists those that acted in the last 24 hours, at most 50) and the ones
 already visible on the issue (`issue get`'s `agents`). If the pair is in either, add `-2`, then `-3` and so on, until
 the alias is in neither (`quiet-wren-2`). A server that predates the field returns no `activeAgents`; then the issue's
@@ -102,6 +102,9 @@ the one failure that corrupts everything downstream.**
   call; the CLI's own default, `https://app.leeway.run`, is only what `leeway login` uses without one.
 - **No token in any repo file.** `leeway login` keeps it on the machine. A subagent is never handed a
   token, and `leeway-guard` stops its writes.
+- **Verb first.** The plugin prints a call as `<cli> --server <server> <resource> <verb> <args> --as <alias>/<role> --json`,
+  because a permission rule matches the text before its first `*` as written (`run`, "Unattended prerequisites"). The CLI
+  takes the flags on either side, so an attended skill that still prints them before the verb works: it only prompts.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
 - **Size limits.** A comment body is 1 to 20,000 characters, a title at most 200, `--tests` at most 200,
@@ -291,7 +294,7 @@ as a decision record on the issue. This replaces "returns `BLOCKED`" for anythin
 an implementer still writes the doubt it can live with under *Uncertainties*.
 
 ```sh
-leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{"label":"…","argument":"…"}]' --meanwhile "…"
+leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{"label":"…","argument":"…"}]' --meanwhile "…"
 ```
 
 - **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
@@ -312,7 +315,7 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   "Wait, then carry on"). **Every other skill stops the turn**, naming the escalation
   and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
   somewhere else.
-- **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
+- **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
 

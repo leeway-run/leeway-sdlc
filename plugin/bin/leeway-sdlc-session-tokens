@@ -1,0 +1,3 @@
+#!/bin/sh
+# On the Bash tool's PATH while the plugin is enabled, so an allow rule can name this script with no per-version path.
+exec node "$(dirname "$0")/../scripts/session-tokens.mjs" "$@"

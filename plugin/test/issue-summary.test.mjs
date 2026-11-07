@@ -40,7 +40,7 @@ test('every issue create the plugin runs passes --summary', () => {
 
 test('a 0.2.0 issue create or a wrapped one without --summary is caught, and a mention is not', () => {
   const v020 =
-    '| Security | **File its own issue now**: `leeway --as <alias>/agent issue create <KEY> --projectId <project.id> --title "…" --status backlog --stdin description <desc.md`, in the task\'s project |';
+    '| Security | **File its own issue now**: `leeway issue create <KEY> --as <alias>/agent --projectId <project.id> --title "…" --status backlog --stdin description <desc.md`, in the task\'s project |';
   assert.equal(creates(v020).filter((c) => !/\s--summary\s/.test(c)).length, 1);
   const wrapped = '```sh\nleeway issue create <KEY> \\\n  --projectId <id> --title "x" --stdin description <d\n```\n';
   assert.equal(creates(wrapped).filter((c) => !/\s--summary\s/.test(c)).length, 1);

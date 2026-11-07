@@ -235,7 +235,7 @@ The orchestrator fills the round's commands from it (alias `quiet-wren`, this se
 
 | Field | Becomes |
 |---|---|
-| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as quiet-wren/implementer iteration record LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" --passed --addresses '["c2","c3"]' --tokens 48210 --minutes 9 --testMinutes 2 --note "addresses c2, c3"` (`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer's new tokens, counted from its transcript, left out when they cannot be counted, and `--minutes` is the orchestrator's own timing: `run`, "Recording spend") |
-| the whole brief, sha filled in | `leeway --as quiet-wren/implementer comment add LWY-12.3 --stdin body <brief.md`; `--json` gives `comment.number` = 5, so `c5` |
-| `Status: DONE` | `leeway --as quiet-wren/agent issue update LWY-12.3 --status in_review` (and `LWY-12`) |
+| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway iteration record LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --as quiet-wren/implementer --tests "unit 31/31 green (docs-lint); typecheck n/a" --passed --addresses '["c2","c3"]' --tokens 48210 --minutes 9 --testMinutes 2 --note "addresses c2, c3"` (`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer's new tokens, counted from its transcript, left out when they cannot be counted, and `--minutes` is the orchestrator's own timing: `run`, "Recording spend") |
+| the whole brief, sha filled in | `leeway comment add LWY-12.3 --as quiet-wren/implementer --stdin body <brief.md`; `--json` gives `comment.number` = 5, so `c5` |
+| `Status: DONE` | `leeway issue update LWY-12.3 --as quiet-wren/agent --status in_review` (and `LWY-12`) |
 | `Status: BLOCKED` and `## Question` | the escalation described in the plugin's `PROCESS.md`, "Questions to the human are escalations" |

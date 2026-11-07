@@ -8,6 +8,15 @@ version: 0.3.0
 agent: claude
 plugin-files: the plugin root (this file's directory)
 
+## Running the plugin's scripts
+
+- **wait-answer:** `leeway-sdlc-wait-answer`
+- **session-tokens:** `leeway-sdlc-session-tokens`
+
+Both are in the plugin's `bin/`, which Claude Code puts on the Bash tool's `PATH` while the plugin is enabled, so a call and
+its allow rule read the same for every person and every version. **The limit:** claude.ai and Cowork don't install a plugin
+with a top-level `bin/`, so this plugin installs in Claude Code only. Other agents have no `bin/`: their harness names `node .sdlc/kit/scripts/<script>.mjs`.
+
 ## Delegating to a named agent
 
 Start a subagent with the Agent tool, `subagent_type` set to the agent's namespaced name:
@@ -39,12 +48,14 @@ tokens: transcripts
 
 Claude Code writes each agent's transcript under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, and the Bash tool's
 environment names the session in `CLAUDE_CODE_SESSION_ID`. Run `session-tokens.mjs` (run, "Recording spend") with the
-Bash tool, on one of these:
+Bash tool, in one of these forms, in place of run's `--subagent <its transcript>` and `--session <your transcript>`. The
+script finds the file itself, because a command with a variable in braces prompts whatever the allow-list says:
 
-- **A subagent:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID/subagents/agent-<agent id>.jsonl`.
-  The Agent tool's result says `agentId: <agent id>`, and a background agent's completion notice says
-  `<task-id><agent id></task-id>`: keep it from the delegation until its record.
-- **Your session:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID.jsonl`.
+- **A subagent:** `leeway-sdlc-session-tokens --subagent-id <agent id>`, which reads
+  `projects/*/<session>/subagents/agent-<agent id>.jsonl`. The Agent tool's result says `agentId: <agent id>`, and a
+  background agent's completion notice says `<task-id><agent id></task-id>`: keep it from the delegation until its record.
+- **Your session:** `leeway-sdlc-session-tokens --this-session --from <start> --to <end>`, which reads
+  `projects/*/<session>.jsonl`.
 
 The `*` is the project directory, named after where the session started, not where you are now. An empty variable or
 a transcript that is not there makes the script exit non-zero, so that record leaves `--tokens` out, as it does when
@@ -69,7 +80,34 @@ The brief carries them as well (run, "Delegate to the implementer"), so the hook
 ## Permissions for an unattended run
 
 run's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`), or in
-`.claude/settings.local.json` for one person.
+`.claude/settings.local.json` for one person. Each entry of run's list ("Unattended prerequisites") is one rule, with
+`<cli>` and `<server>` from `.sdlc/leeway.md`:
+
+| run's list names | The rule |
+|---|---|
+| a Leeway verb | `Bash(<cli> --server <server> <verb> *)`, for example `Bash(leeway --server https://app.leeway.run spend record *)` |
+| a git verb | `Bash(git -C * <verb> *)`, for example `Bash(git -C * commit *)` |
+| a lane or setup command | `Bash(<command> *)` |
+| `node -e` | `Bash(node -e *)` |
+| `gh pr create`, `gh pr view` | `Bash(gh pr create *)`, `Bash(gh pr view *)` |
+| the two scripts | `Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)` |
+| file edits under `.worktrees/` | `Edit(/.worktrees/**)`, which also covers the `Write` tool |
+
+How Claude Code reads them. A rule matches the text before its first `*` as written, so a call with flags before the verb,
+or with no `--server`, misses and prompts. `Edit(/.worktrees/**)` anchors at the directory the session started in, so
+start the session at the repo root. Writing in `.git` or `.claude`, even inside a worktree, still prompts. A subagent is
+held to the same rules as the session. `.claude/settings.json`'s allow rules apply only once the folder is trusted, and
+`claude -p` never asks: for a `claude -p` run, use `.claude/settings.local.json`, untracked, or the rules do not apply.
+
+**Say before the yes (sdlc-install, question 16).** The git rules are the price of `git -C`, which run uses because a
+`cd <path> && git` prompts:
+
+- Each `Bash(git -C * <verb> *)` shows a startup warning, "allows any option at its *": thirteen rows below the banner at
+  every session start (twelve while `git push` is off the list).
+- The warning is true, and this is what a yes also approves: `git -C <path> -c core.fsmonitor=<script> status` matches, and
+  `-c core.fsmonitor=<script>` runs a program. The verb is weak too: `git -C <path> push origin main -m commit z` matches
+  the `commit` rule, because the word only has to appear later in the command. The pre-push guard is what stops a push.
+- It adds little over what the list already allows: `node -e` and the lane commands can already run any program.
 
 ## Installed version, update and restart
 

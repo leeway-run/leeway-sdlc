@@ -10,6 +10,11 @@ version: 0.3.0
 agent: copilot
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
+- **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+
 ## Delegating to a named agent
 
 Delegate to the custom agent by name: in Copilot CLI the `task` tool with the agent `sdlc-implementer` (or ask "use the sdlc-implementer agent to …"); in VS Code, `runSubagent` with that agent. Agents are `.github/agents/<name>.agent.md`. Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -70,7 +75,10 @@ After writing them: Nothing to trust: Copilot runs `.github/hooks/*.json` from t
 
 ## Permissions for an unattended run
 
-run's allow-list goes in `.github/copilot/settings.json` (`permissions`), or `--allow-tool` flags for one run.
+run's allow-list ("Unattended prerequisites") goes in `.github/copilot/settings.json` (`permissions`), or `--allow-tool` flags for one run. Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how GitHub Copilot (CLI and VS Code agent mode) matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 

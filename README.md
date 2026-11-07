@@ -22,6 +22,9 @@ Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions. It 
 command in `.sdlc/leeway.md` (`server:` and `cli:`). For a server other than `app.leeway.run`, log in with
 `leeway login --server <url>`.
 
+The plugin ships commands in a top-level `bin/`, so it installs in Claude Code only: claude.ai and Cowork don't install a
+plugin that has one.
+
 ## Other agents
 
 Codex, GitHub Copilot (CLI and VS Code), Gemini CLI, Cursor, OpenCode and Grok Build install
