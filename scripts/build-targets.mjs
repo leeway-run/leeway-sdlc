@@ -12,7 +12,7 @@
 //     skills/sdlc-install/kit/                  what sdlc-install copies to .sdlc/kit/ in the repo:
 //       PROCESS.md, HARNESS.md, craft/, agents/, skills/ (the skills' files but not SKILL.md, for "in this plugin" paths)
 //       hooks/git-guard.mjs, hooks/leeway-guard.mjs, hooks/adapters/{guard,governed}.mjs
-//       scripts/wait-answer.mjs                 what run waits on for an escalation's answer
+//       scripts/wait-answer.mjs                 what run waits on for an escalation's answer (plugin/bin/ is Claude Code's only)
 //       scripts/session-tokens.mjs              what run counts tokens with, where HARNESS.md says it can
 //       harness/<agent>.md                      one HARNESS.md per agent (scripts/targets.mjs)
 //       wiring/<agent>/...                      that agent's subagents and guard hook, at their repo paths
@@ -88,6 +88,11 @@ ${NOTICE}
 version: ${version}
 agent: any
 plugin-files: .sdlc/kit/
+
+## Running the plugin's scripts
+
+- **wait-answer:** \`node .sdlc/kit/scripts/wait-answer.mjs\`
+- **session-tokens:** \`node .sdlc/kit/scripts/session-tokens.mjs\`
 
 This is the package's own harness file. The repo's is \`.sdlc/kit/HARNESS.md\`, which \`sdlc-install\` writes from
 \`kit/harness/<agent>.md\` for the agent you use. Until then, run \`sdlc-install\`.

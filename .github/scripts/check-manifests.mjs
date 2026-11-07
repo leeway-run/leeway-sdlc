@@ -31,6 +31,15 @@ for (const [where, v] of [
   if (v !== plugin.version) problems.push(`${where} version ${JSON.stringify(v)} != plugin.json ${plugin.version}`);
 }
 
+// A bin/ at the root of the Claude Code plugin is how run's allow rules stay the same for every person and version; the
+// generated package has none, so its scripts stay at .sdlc/kit/scripts/.
+for (const name of ["wait-answer", "session-tokens"]) {
+  const bin = new URL(`../../plugin/bin/leeway-sdlc-${name}`, import.meta.url);
+  if (!fs.existsSync(bin)) problems.push(`plugin/bin/leeway-sdlc-${name} is missing`);
+  else if (process.platform !== "win32" && !(fs.statSync(bin).mode & 0o111)) problems.push(`plugin/bin/leeway-sdlc-${name} is not executable`);
+}
+if (fs.existsSync(new URL("../../targets/agents/bin", import.meta.url))) problems.push("targets/agents has a bin/");
+
 if (problems.length) {
   for (const p of problems) console.error(p);
   process.exit(1);

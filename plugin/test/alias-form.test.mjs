@@ -57,7 +57,7 @@ test('an old alias appears only in the sentence that says old aliases keep their
 test('the rule names activeAgents, the suffix, the fallback and the CLI check', () => {
   const rule = flat(cast());
   assert.match(rule, /an adjective and a bird, two lowercase words joined by a hyphen \(`quiet-wren`\)/);
-  assert.match(rule, /`leeway --json project get <KEY> <projectId>`, with the project id from `issue get`'s `project\.id`/);
+  assert.match(rule, /`leeway project get <KEY> <projectId> --json`, with the project id from `issue get`'s `project\.id`/);
   assert.match(rule, /its `activeAgents` lists those that acted in the last 24 hours/);
   assert.match(rule, /add `-2`, then `-3` and so on, until the alias is in neither \(`quiet-wren-2`\)/);
   assert.match(rule, /returns no `activeAgents`; then the issue's aliases are the only check/);
@@ -96,7 +96,7 @@ test('each skill that chooses an alias says the new form and points at the rule'
 
 test('each skill says which project it reads, or that it has none', () => {
   const says = {
-    run: /the project's `activeAgents` \(`leeway --json project get <KEY> <project\.id>`\) or the issue's `agents`/,
+    run: /the project's `activeAgents` \(`leeway project get <KEY> <project\.id> --json`\) or the issue's `agents`/,
     'sync-repo': /the named issue's \(`issue get <issue>`: `project\.id`\); this mode always has one/,
     'plan-project': /Planning into a project this session is about to create, there is no project to read: a pair at random/,
     'sdlc-install': /with none named there is no project to read, so take a pair at random/,

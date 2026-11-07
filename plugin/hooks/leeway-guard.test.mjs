@@ -55,6 +55,23 @@ test('the other writes are blocked', () => {
   ]) expectExit(command, 2)
 })
 
+test('a verb-first write is refused as run prints it: the server first, the flags after the verb', () => {
+  for (const command of [
+    'leeway --server https://app.leeway.run spend record LWY-1 3 --as a/agent --json',
+    'leeway --server https://app.leeway.run comment add LWY-1 --as a/implementer --json --stdin body </r/.worktrees/.run/b.md',
+    'leeway --server https://app.leeway.run issue update LWY-1 --as a/agent --status done',
+    'leeway --server https://app.leeway.run escalation answer LWY-1 e1 --option A --as a/agent',
+    'node /opt/leeway.js --server https://app.leeway.run iteration record LWY-1.1 abc --as a/implementer',
+  ]) expectExit(command, 2)
+  expectExit('leeway --server https://app.leeway.run issue update LWY-1 --as a/agent', 2, REVIEWER)
+  for (const command of [
+    'leeway --server https://app.leeway.run issue get LWY-1 --json',
+    'leeway --server https://app.leeway.run review get LWY-1 --json',
+    'leeway --server https://app.leeway.run escalation list LWY --json',
+  ]) expectExit(command, 0)
+  expectExit('leeway --server https://app.leeway.run spend record LWY-1 3 --as a/agent --json', 0, null)
+})
+
 test('wrappers do not hide a write', () => {
   for (const command of [
     'cd x && leeway comment add LWY-1 x',

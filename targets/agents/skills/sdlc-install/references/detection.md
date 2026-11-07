@@ -213,8 +213,41 @@ is asked. When the file already has a `leeway-sdlc:begin` block, an earlier inst
 skip only its part: the repeated sections, what the block lacks, and the removal.
 
 **An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
-run's allow-list entries ("Unattended prerequisites") are already there. Question 16 offers only the
-missing ones.
+run's allow-list entries ("Unattended prerequisites") are already there, in the form that place's harness gives. Question
+16 offers only the missing ones. An entry an earlier install or the person wrote is never removed, but report it when it is
+out of date:
+
+- **Dead, matches nothing `run` prints:** a flag-less entry an install before 0.3.0 wrote, such as `Bash(leeway spend record:*)`
+  or `Bash(git commit:*)`, and a kit script's per-version path, such as `Bash(node <...>/cache/<marketplace>/leeway-sdlc/<version>/scripts/wait-answer.mjs:*)`.
+  These are harmless and can be deleted by hand; the new rules do their work.
+- **Too wide:** an entry that covers the verbs `run` leaves off, such as `Bash(<cli> --server <server> *)` or `Bash(leeway *)`.
+  Say that while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt, and that it is the
+  person's to remove.
+
+**A pre-push guard.** Whether the repo already has the guard `run` requires ("Unattended prerequisites"), judged on the
+push `run` makes: `push origin HEAD:<base>` from a linked worktree, and at the story gate from a detached one.
+
+```sh
+git rev-parse --git-path hooks/pre-push     # where git runs it from: .git/hooks, or under core.hooksPath
+git ls-tree origin/<integration branch> -- <that path>     # for a relative core.hooksPath: tracked there, mode 100755?
+```
+
+What counts is an executable file at that path that refuses an update to the integration branch and a force push, deciding
+from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD: read it, and what it
+calls, to see that it does. A hook keyed on the current branch, such as one reading `git rev-parse --abbrev-ref HEAD`, does
+not count: it refuses `git push origin main` on `main` and lets `HEAD:main` through from any other checkout.
+
+So it can sit in `.git/hooks` or under `core.hooksPath`, which a relative value resolves against the checkout's root. A
+relative `core.hooksPath` is therefore per checkout: it counts only when the hook file is tracked and executable on the
+integration branch, as the second command prints. One that is ignored or generated, such as Husky's `.husky/_`, does not
+count, because the merge worktree takes no setup. Nor do these: a `pre-push.sample`, a file that is not executable, a hook in a
+directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could
+not read to that effect.
+
+Report what you found, and why a hook you found does not count. Question 16 tells the person the truth by it. With no guard, `push` is not
+a missing entry, so it alone does not bring question 16 back. An existing push rule with no guard, `Bash(git -C * push *)` or
+a wider one that matches it, is reported as too wide: while it stays, a push runs with no prompt and nothing refuses it, so one
+wrong argument reaches the integration branch, and it is the person's to remove.
 
 ## Leeway
 

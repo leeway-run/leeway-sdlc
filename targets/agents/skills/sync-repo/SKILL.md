@@ -256,6 +256,9 @@ this time. A `filing-work:` or `friction-project:` answer from step 1 goes into 
 branch, as the exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing
 outside the branch.
 
+An upgrade to 0.3.0 from an install whose allow-list predates it: say that the old entries match nothing `run` prints, so
+run the sdlc-install skill again, whose question 16 adds the new ones (`references/detection.md`, "An existing allow-list").
+
 ## Done when
 
 Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this

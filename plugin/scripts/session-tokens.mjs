@@ -3,6 +3,11 @@
 //
 //   node session-tokens.mjs --subagent <transcript>                      a subagent's own transcript, whole
 //   node session-tokens.mjs --session <transcript> --from <ms> --to <ms> the session's own entries in a window
+//   node session-tokens.mjs --subagent-id <agent id>                     as --subagent, finding Claude Code's transcript
+//   node session-tokens.mjs --this-session --from <ms> --to <ms>         as --session, finding Claude Code's transcript
+//
+// The last two look under ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/ for the session CLAUDE_CODE_SESSION_ID names, so
+// the call needs no variable in braces, which Claude Code's permission check will not approve from a rule.
 //
 //   --from, --to           milliseconds since the epoch, as `node -e 'console.log(Date.now())'` prints them; the
 //                          window is from <= t < to
@@ -29,7 +34,9 @@
 //
 // Holds the ids of the window and of the slack before it, never the file. No dependencies.
 
-import { createReadStream } from 'node:fs'
+import { createReadStream, existsSync, readdirSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { createInterface } from 'node:readline'
 
 const EXIT = { counted: 0, usage: 1, unreadable: 2, incomplete: 3 }
@@ -43,25 +50,43 @@ const fail = (code, msg) => {
   process.exit(code)
 }
 const usage = (msg) =>
-  fail(EXIT.usage, `${msg}\nusage: node session-tokens.mjs --subagent <transcript>\n       node session-tokens.mjs --session <transcript> --from <ms> --to <ms>`)
+  fail(EXIT.usage, `${msg}\nusage: node session-tokens.mjs --subagent <transcript>\n       node session-tokens.mjs --session <transcript> --from <ms> --to <ms>\n       node session-tokens.mjs --subagent-id <agent id>\n       node session-tokens.mjs --this-session --from <ms> --to <ms>`)
+
+// The one file under some project directory, named after the session: the project directory is where the session started.
+const claudeTranscript = (under) => {
+  const id = process.env.CLAUDE_CODE_SESSION_ID
+  if (!id) fail(EXIT.unreadable, 'CLAUDE_CODE_SESSION_ID is not set, so no transcript can be found. No count: leave --tokens out.')
+  const projects = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects')
+  const found = (existsSync(projects) ? readdirSync(projects) : []).map((d) => join(projects, d, under(id))).find((p) => existsSync(p))
+  if (!found) fail(EXIT.unreadable, `no transcript for this session under ${projects}. No count: leave --tokens out.`)
+  return found
+}
 
 const parse = (argv) => {
   const o = {}
   for (let i = 0; i < argv.length; i++) {
     const w = argv[i]
-    if (!['--subagent', '--session', '--from', '--to'].includes(w)) usage(`unknown argument ${w}`)
+    if (w === '--this-session') {
+      o['this-session'] = true
+      continue
+    }
+    if (!['--subagent', '--subagent-id', '--session', '--from', '--to'].includes(w)) usage(`unknown argument ${w}`)
     if (argv[i + 1] === undefined) usage(`${w} needs a value`)
     o[w.slice(2)] = argv[++i]
   }
-  if (('subagent' in o) === ('session' in o)) usage('give one of --subagent and --session')
-  if ('subagent' in o) {
-    if ('from' in o || 'to' in o) usage('--from and --to go with --session')
-    return { path: o.subagent }
+  if (['subagent', 'subagent-id', 'session', 'this-session'].filter((k) => k in o).length !== 1) {
+    usage('give one of --subagent, --subagent-id, --session and --this-session')
+  }
+  if ('subagent' in o || 'subagent-id' in o) {
+    if ('from' in o || 'to' in o) usage('--from and --to go with --session or --this-session')
+    if ('subagent' in o) return { path: o.subagent }
+    if (!/^[\w-]+$/.test(o['subagent-id'])) usage('--subagent-id needs an agent id')
+    return { path: null, find: (id) => join(id, 'subagents', `agent-${o['subagent-id']}.jsonl`) }
   }
   for (const k of ['from', 'to']) if (!/^\d{13}$/.test(o[k] ?? '')) usage(`--${k} needs milliseconds since the epoch, as node -e 'console.log(Date.now())' prints them`)
   const window = { from: Number(o.from), to: Number(o.to) }
   if (window.from > window.to) usage('--from is after --to')
-  return { path: o.session, window }
+  return 'session' in o ? { path: o.session, window } : { path: null, find: (id) => `${id}.jsonl`, window }
 }
 
 const whole = (n) => Number.isSafeInteger(n) && n >= 0
@@ -131,6 +156,7 @@ const count = async ({ path, window }) => {
 }
 
 const options = parse(process.argv.slice(2))
+if (options.find) options.path = claudeTranscript(options.find)
 let result
 try {
   result = await count(options)

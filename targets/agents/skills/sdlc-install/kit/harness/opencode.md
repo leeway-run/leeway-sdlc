@@ -10,6 +10,11 @@ version: 0.3.0
 agent: opencode
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
+- **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+
 ## Delegating to a named agent
 
 Use the Task tool with `subagent_type` set to the agent name, for example `sdlc-implementer`. Agents are `.opencode/agents/<name>.md` with `mode: subagent`. Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -70,7 +75,10 @@ After writing them: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.
 
 ## Permissions for an unattended run
 
-run's allow-list goes in `opencode.json` (`permission.bash`).
+run's allow-list ("Unattended prerequisites") goes in `opencode.json` (`permission.bash`). Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how OpenCode matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 
