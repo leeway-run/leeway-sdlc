@@ -136,7 +136,8 @@ project run. Where a path below says to raise an escalation and wait, do this:
    - **Nothing is written twice.** The stop's escalations, their context comments, its `# Run status` comment, the
      round's iteration and brief are already in Leeway: no second escalation, comment or iteration for the stop you
      waited on.
-   - **An answer that ends the work** (for example "Cancel it") is followed: stop there and say so.
+   - **An answer that ends the work** (for example "Cancel it") is followed: stop there and say so. Say too that any
+     other escalation of the round stays open, because nothing can withdraw it, and must be answered before a re-invoke.
    - **An answer that needs a person to act first** is put to them as a new escalation, saying what to do and to
      answer it once done, and waited on the same way. Stop and name the action only when it is outside Leeway, such
      as a login on the machine.
@@ -522,7 +523,7 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    reviewer.
 
 On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
-open: wait on it, and start no round. All answered: set the
+open and no answer ended the work: wait on it, and start no round. All answered: set the
 step back to the stage the thread shows (`--step red-tests` or `--step implementing`), and run the next round with
 all the answers pasted into the prompt.
 

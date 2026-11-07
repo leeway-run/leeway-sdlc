@@ -51,6 +51,12 @@ test('plan-project merges a report\'s dependent QUESTIONs, and a held one keeps 
   assert.match(text, /Where the merge would need more than 5 options, hold the dependent QUESTION for the next round instead, and withhold the `# QUESTIONs applied` reply until it is answered or an answer settled it: `run` counts only the escalations on these comments, so a QUESTION not yet raised holds the story through that reply alone\./);
   assert.match(text, /On resume, raise a held QUESTION \(one the report has with no comment yet\), unless an answer settled it, and stop again\. When every one is answered/);
   assert.match(text, /Every other QUESTION goes out now, together\./);
+  assert.match(text, /and one line per held QUESTION an answer settled\. That reply is what makes them applied/);
+  assert.match(text, /escalation on it, or held for the next round as "The QUESTIONs" says, and the story waits/);
+});
+
+test('PROCESS.md says a QUESTION can be held, and sends the reader to plan-project', () => {
+  assert.match(read('PROCESS.md'), /A QUESTION held for the next round goes out then, or never where an answer settled it \(`plan-project`, "The QUESTIONs"\)\./);
 });
 
 test('run raises independent questions together and does not hide the friction proposal behind a wait', () => {
@@ -67,7 +73,7 @@ test('a stop or a resume in run carries every escalation of the round, not one',
   const text = skill('run');
   assert.doesNotMatch(text, /stop's one escalation/);
   assert.match(text, /\*\*Work held on a round carries on only when every escalation of the round is answered, with all the answers reaching it\*\*/);
-  assert.match(text, /read each escalation the brief raised \(`escalations\[\]\.answer`\)\. One still open: wait on it, and start no round\. All answered:/);
+  assert.match(text, /read each escalation the brief raised \(`escalations\[\]\.answer`\)\. One still open and no answer ended the work: wait on it, and start no round\. All answered:/);
   assert.match(text, /run the next round with all the answers pasted into the prompt/);
   assert.match(text, /PASS or FAIL handling until every one is answered/);
   assert.match(text, /a second block on one finding gets a comment of its own/);
@@ -78,6 +84,11 @@ test('a stop or a resume in run carries every escalation of the round, not one',
   assert.match(text, /with the comment's `cN` and each escalation id\./);
   assert.match(text, /7\. \*\*Wait on each of the stop's escalations\*\*/);
   assert.match(text, /Two escalations are still one action/);
+  assert.match(text, /through one status comment and its escalations\./);
+});
+
+test('an answer that ends the work in run says the other escalation stays open', () => {
+  assert.match(skill('run'), /\*\*An answer that ends the work\*\* \(for example "Cancel it"\) is followed: stop there and say so\. Say too that any other escalation of the round stays open, because nothing can withdraw it, and must be answered before a re-invoke\./);
 });
 
 test('the brief and verdict templates can carry two independent questions, and merge dependent ones', () => {
@@ -103,6 +114,7 @@ test('sdlc-tune holds a request behind the new flow only when that answer change
   assert.match(text, /A request on any other type depends on no open answer: its question goes out in the same round/);
   assert.match(text, /each with its own noted id/);
   assert.match(text, /each yes is written in turn, from a fresh Step 1 read\./);
+  assert.match(text, /A yes the fresh read already carries is not written again; one it does not carry is\./);
   assert.match(text, /\*\*retry the write once, rebuilt from a fresh Step 1 read\*\* \(a new `before\.json` and `after\.json`/);
 });
 
@@ -121,5 +133,6 @@ test('sync-repo stops the turn on any open question, filing-work included, and w
   assert.match(text, /\*\*While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, stop the turn, and do not go on to step 3's writes or to step 4\.\*\*/);
   assert.match(text, /An open `filing-work:` question stops the turn like any other open question \("On resume"\), even with every copy answered: step 4 never runs on it/);
   assert.match(text, /An answered one is acted on in step 3, once no question remains open\./);
+  assert.match(text, /The latest answered one for a copy is its answer\./);
   assert.match(text, /raise one follow-up escalation for that copy, before anything is written/);
 });

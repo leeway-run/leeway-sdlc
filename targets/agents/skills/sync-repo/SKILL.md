@@ -38,7 +38,7 @@ round drops what an answer settled.
    (`PROCESS.md`, "Questions to the human are escalations").
 
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
-`question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3, once no question remains open. An open one with no
+`question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3, once no question remains open. The latest answered one for a copy is its answer. An open one with no
 answer is not: do not write that copy. A copy with no escalation yet gets one now. **While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, stop the turn, and do not go on to step 3's writes or to step 4.** So the tree stays clean for step 0 at every resume, and every `--meanwhile` stays true. Never write a copy on an unanswered question. The `filing-work:` question is the exception only in how it is found:
 step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
 (step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new
