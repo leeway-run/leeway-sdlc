@@ -11,7 +11,8 @@
 //   --call-timeout <s>     the longest one `issue get` may take (default 60)
 //   --max-failures <n>     give up after this many failed checks in a row (default 4)
 //
-// Each check runs `<cli> --server <url> --json issue get <ref>` and reads `escalations[]`, the entry whose `number` is N.
+// Each check runs `<cli> --server <url> --json issue get <ref>` and reads `escalations[]`, the entry whose `ref` is <ref> and `number` is N:
+// a parent's list also holds its sub-issues', oldest first, with numbers that collide.
 // Only its `answer` ends the wait; a comment, a status change or another escalation's answer does not.
 //
 // Exit codes, with a line on stderr for every one but 0:
@@ -116,7 +117,7 @@ const wait = async (o) => {
       }
     } else {
       failures = 0
-      const esc = r.issue.escalations.find((e) => e.number === o.number)
+      const esc = r.issue.escalations.find((e) => e.ref === o.ref && e.number === o.number)
       if (!esc) return { code: EXIT.usage, message: `${o.ref} has no escalation e${o.number}` }
       if (esc.answer) return { code: EXIT.answered, answer: { label: esc.answer.label, note: esc.answer.note, by: esc.answer.by } }
     }

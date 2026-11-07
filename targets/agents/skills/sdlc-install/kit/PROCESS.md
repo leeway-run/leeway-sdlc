@@ -126,7 +126,7 @@ nothing else:
 | Step kind | What the plugin does for it |
 |---|---|
 | `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-project` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-project` takes the issue as written |
-| `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
+| `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment. Before the design doc it interviews the developer in rounds of escalations on the technical decisions the code leaves open (`plan-project`, "The developer interview") |
 | `gate` | One of two, told apart by position, never by id. The **shaped step**, a `gate` between `shape` and `plan`: shaping ends there ("Before the plan: shaping"). The **plan gate**, the type's first `gate` after its `plan` step: planning ends there (below). A type without a plan gate goes from plan to ready with no gate |
 | `build` | The loop (below), run by `run` for each sub-issue, for a whole story and for a project. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended`, and the optional per-story `budget` |
 | `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it moves the issue past it only when a person asks ("The cast") |
@@ -312,7 +312,8 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
   answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
   outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
   answer that needs a person to act first is put to them as an escalation and waited on too (run's
-  "Wait, then carry on"). **Every other skill stops the turn**, naming the escalation
+  "Wait, then carry on"). `plan-project` waits the same way while its developer interview holds it, on any open
+  escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
   and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
   somewhere else.
 - **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
