@@ -39,7 +39,8 @@ already include it.
 
 **You have no user to ask.** If something is unclear, you cannot stop and ask, in the terminal or
 anywhere else. Write the doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
-`## Question` block (one sentence; 2 to 5 options, each with its argument; what you did meanwhile)
+`## Question` block (one sentence; 2 to 5 options, each with its argument, the recommended one first with its
+argument opening `Recommended:` and saying why, or `No recommendation:` and why where you truly have no pick; what you did meanwhile)
 that the orchestrator raises as an escalation. **Guessing silently is the one failure that corrupts
 everything downstream.**
 
@@ -160,7 +161,9 @@ arguing — the orchestrator escalates.
 **Iteration.** The brief opens with an *Iteration* block the orchestrator turns into `iteration
 record`. You do not commit or push, so you do not know the sha: write `pending`. The *Lane line* is
 one line, at most 200 characters, of what you ran and the result; a lane that failed starts
-`FAILED:`. *Passed* is `yes`, `no`, or `n/a` when no lane owns the change.
+`FAILED:`. *Passed* is `yes`, `no`, or `n/a` when no lane owns the change. *Test minutes* is the
+whole minutes you spent running lanes, timed with `date +%s` around each run, or `unknown`; never
+an estimate.
 
 **Addresses.** Round 1 is always `none`. On a later round, name only the `cN` your prompt lists as
 live (`open` or `addressed`), the earlier findings this round fixed. A `disputed` or `settled` one
@@ -168,8 +171,8 @@ cannot be addressed again.
 
 **Friction.** A tooling, test-data, local-setup or process gap that cost this round time goes under
 *Friction* in the brief, one line each: what it cost and what would have saved it. You only propose it;
-the orchestrator files it on the friction collector, and only on a human yes. Write "none" when there is
-none.
+the orchestrator files it as an issue in the friction project, and only on a human yes. Write "none"
+when there is none.
 
 **Rules read.** The brief lists every rules file you read under *Rules read*; the hook's context names that section.
 

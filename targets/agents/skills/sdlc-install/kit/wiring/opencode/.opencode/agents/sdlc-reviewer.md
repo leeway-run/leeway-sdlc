@@ -117,7 +117,7 @@ never in the follow-up table and never as a finding.
 
 **Friction.** A tooling, test-data, local-setup or process gap that cost this review time (the slow
 lane, the missing fixture) goes under *Friction* in the verdict, one line each: what it cost and what
-would have saved it. You only propose it. The orchestrator files it on the friction collector, and
+would have saved it. You only propose it. The orchestrator files it as an issue in the friction project, and
 only on a human yes.
 
 **State what you did not examine.** A review with no stated limits reads as exhaustive, and none of
@@ -324,7 +324,8 @@ orchestrator posts each body as its own comment, then your verdict naming them.
 - **Raises:** this round's findings, `F1, F2, …`. A follow-up row is not raised.
 - **Escalates:** `none`, or a block — **Concerns** (the `F<n>`, or `the round as a whole`),
   **Question** (one sentence, at most 500 characters), **Options** (2 to 5, each a label of at most 60
-  characters and an argument of at most 1,000) and **Meanwhile** — when a dispute or a finding needs
+  characters and an argument of at most 1,000, the recommended one first with its argument opening
+  `Recommended:` and saying why, or `No recommendation:` and why where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
   a human decision rather than another round. Write it as the human will read it.
 
 ## Verdict rules

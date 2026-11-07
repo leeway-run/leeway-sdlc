@@ -1,8 +1,8 @@
 # The contract for delegated work
 
-**Status at this version.** `0.2.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
+**Status at this version.** `0.3.0` holds everything this file names: the hooks (`git-guard`, `leeway-guard`,
 `version-notice`, and the adapters that run the guards in other agents), the three agents, the templates and the
-skills (`sdlc-install`, `sdlc-tune`, `shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo`).
+skills (`sdlc-install`, `sdlc-tune`, `shape-project`, `plan-project`, `run`, `update`, `sync-repo`).
 
 **This file is the same in every agent; `HARNESS.md` is not.** It sits beside this file and says how the agent
 running the loop delegates to a named agent, how the guards know a subagent's call from the orchestrator's,
@@ -33,11 +33,42 @@ Five roles, three of them subagents:
 The human is not a role the loop plays. The human decides what only a human can, and is reached by an
 escalation.
 
-**The alias and the role.** The orchestrator chooses an alias per session of the form `<word>-<two hex digits>` (for
-example `kestrel-b1`, matching `^[a-z][a-z0-9-]{1,23}$`), never one already visible on the issue. Every write carries
-`--as <alias>/<role>`, the role being `implementer`, `reviewer`, `planner` or `agent` (the CLI's four). The
-orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the plan
-gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their role.
+**The alias and the role.** Every write carries `--as <alias>/<role>`, the role being `implementer`, `reviewer`,
+`planner` or `agent` (the CLI's four). The alias names the agent instance: the orchestrator chooses one when the
+session starts, before its first write, and keeps it for the session: an adjective and a bird, two lowercase words
+joined by a hyphen (`quiet-wren`), which Leeway displays as a two-word name (Quiet Wren). Pick each word at random, not
+the first in the list, so two sessions rarely land on the same pair:
+
+- **Adjectives:** amber, bold, brave, bright, calm, candid, clever, deft, eager, fair, frank, gentle, keen, lively,
+  merry, nimble, patient, plain, quiet, rapid, steady, tidy, wise.
+- **Birds:** crane, curlew, dunnock, egret, finch, grebe, heron, kestrel, lark, magpie, osprey, owl, petrel, plover,
+  puffin, raven, robin, rook, starling, tern, thrush, warbler, wren.
+
+Two sessions running at once, or two people's agents, must not share one. Before taking the pair, read the aliases
+active in the project the work belongs to (`leeway --json project get <KEY> <projectId>`, with the project id from
+`issue get`'s `project.id`; its `activeAgents` lists those that acted in the last 24 hours, at most 50) and the ones
+already visible on the issue (`issue get`'s `agents`). If the pair is in either, add `-2`, then `-3` and so on, until
+the alias is in neither (`quiet-wren-2`). A server that predates the field returns no `activeAgents`; then the issue's
+aliases are the only check. Given a project and no issue, `activeAgents` is the only check. Every alias this produces
+matches `^[a-z][a-z0-9-]{1,23}$`, the CLI's check: the longest pair with `-99` is 19 characters. Aliases already in a
+thread (`kestrel-b1`) keep their old form and still display as themselves. A task resumed in a later session carries
+that session's alias, a new one chosen the same way, and the thread shows the handover.
+
+**With no project in hand** there is nothing to read, and no `project get` can run without a project id. A session
+whose first write creates the project, or changes the product's process with no issue named, takes a pair at random
+and checks it against nothing, not sweeping other projects for aliases. It keeps that alias if it reaches a project
+later. A session with an issue named has a project: its `issue get` gives `project.id`.
+
+The orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the
+plan gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their
+role.
+
+**A move the person asks for.** Any skill makes any move the person asks for in the session, from whatever step or
+status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says
+which move it made, from where to where, and what it leaves unmet (an open or unapplied QUESTION, no coverage
+report, no tasks). No skill tells the person to make a move in the UI because the skill may
+not. What no skill does is move a story out of the shaped step or the plan gate on its own initiative: those moves
+are a person's, made by them or by a skill they asked.
 
 **Two invariants make it work.**
 
@@ -73,8 +104,8 @@ the one failure that corrupts everything downstream.**
   token, and `leeway-guard` stops its writes.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
-- **Size limits.** A comment body is 1 to 20,000 characters, a description at most 5,000, a title at most
-  200, `--tests` at most 200, and `--stdin` is capped at 64 KiB. A brief over the comment cap goes in whole
+- **Size limits.** A comment body is 1 to 20,000 characters, a title at most 200, `--tests` at most 200,
+  and `--stdin` is capped at 64 KiB. A brief over the comment cap goes in whole
   across the comment and a reply (`comment add <ref> --parent cN --stdin body`), never cut. A verdict that
   would exceed it shrinks: each finding is its own comment, posted before the verdict and anchored where it
   can be, and the verdict only names them by `cN`.
@@ -91,38 +122,52 @@ nothing else:
 
 | Step kind | What the plugin does for it |
 |---|---|
-| `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-work` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-work` takes the issue as written |
+| `shape` | The product owner shapes the story: scope, acceptance criteria (`AC-n`), design link, out of scope, the questions left for a developer. `shape-project` writes the body into the issue description. Nothing is coded. A type without `shape` skips this and `plan-project` takes the issue as written |
 | `plan` | The planner works the issue into tasks (sub-issues) with `dependency add` between them, writes the design doc when the step's `designDoc` param is true, and adds technical criteria (`TC-n`) to the story. When the type also has `shape`, a product check comes first: it reads the product owner's part, writes nothing to it and sends any gap back as one comment |
-| `gate` | The plan gate (below). A type without `gate` goes from plan to ready with no gate |
-| `build` | The loop (below), run by `run-task` for each sub-issue and by `run-story` for a whole story. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended` |
-| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it never moves the issue past it |
+| `gate` | One of two, told apart by position, never by id. The **shaped step**, a `gate` between `shape` and `plan`: shaping ends there ("Before the plan: shaping"). The **plan gate**, the type's first `gate` after its `plan` step: planning ends there (below). A type without a plan gate goes from plan to ready with no gate |
+| `build` | The loop (below), run by `run` for each sub-issue, for a whole story and for a project. Its params set the rest: `redTests`, `round0Cap`, `roundCap`, `review`, `blockingRungs`, `unattended`, and the optional per-story `budget` |
+| `manual` | A human step: "try it", "verify on dev", "keep or drop". The plugin sets the step, says what it is waiting for and stops. It never does the work, and it moves the issue past it only when a person asks ("The cast") |
 
-**A type without a `build` step is one the plugin does not run.** `run-task` says so and stops.
+**A type without a `build` step is one the plugin does not run.** `run` says so and stops.
 
 **Statuses and steps are set, never inferred.** The plugin moves an issue only with an explicit
 `issue update <ref> --step <id>` or `--status <status>`. Setting a step also sets its status in the same
 write. No iteration, escalation or comment moves an issue; a lasting state is something a person or the
-orchestrator chose. After a gate passes the orchestrator sets `--status ready`; `run-task` sets the build
-step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
+orchestrator chose. A person passes the plan gate by moving the issue to `ready`; on a type without one,
+`plan-project` sets `--status ready`. `run` sets the build step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
 its own, `red-tests` and `implementing`, and is `in_review` while the reviewer has it.
 
 ## Before the plan: shaping
 
 A story is shaped before it is planned, and by someone else, when its type has a `shape` step. The
-**product owner** runs `shape-work` and writes the story body: scope, acceptance criteria, design link,
-out of scope, and the questions left for a developer. A developer then runs `plan-work`, whose first
+**product owner** runs `shape-project` and writes the story body: scope, acceptance criteria, design link,
+out of scope, and the questions left for a developer. A developer then runs `plan-project`, whose first
 step is a **product check**. A story that passes gets its **technical criteria** (`TC-n`) from the
 developer, at the end of the same body, unless the change is small or trivial: the `AC-n` say what the
 user gets, the `TC-n` what the build must hold to. Together they are final, and the tasks, the red tests
-and the plan gate all work from both. An issue description holds at most 5,000 characters; where the
-technical criteria would not fit, they move to one comment that opens `# Technical criteria`, the latest
-one wins, and every reader reads it with the body.
+and the plan gate all work from both. A story planned before may point from its body to the latest comment
+that opens `# Technical criteria` instead; that comment holds its technical criteria, and every reader reads
+it with the body.
+
+**Shaping ends at the shaped step**, the type's first `gate` step after `shape` with no `plan` step between them
+(`shaped` in the presets). Once every question is answered and no answer leaves something new unclear,
+`shape-project` writes the body, posts one comment of what it inferred beyond the answers, sets that step and
+stops. No escalation asks whether to write the body: the product owner's answers are the approval, and the story
+waits at the shaped step for them to move it on. Two stories keep an approval escalation before the write: one
+already planned, whose tasks were built against its criteria, and one whose type has no shaped step.
+
+**Planning starts at the plan step.** The product owner moving the story from the shaped step to the plan step is
+their approval of the body. `plan-project` starts only there, or where shaping ends on a type with no shaped step:
+from `shape` or from no step at `backlog`, setting the plan step itself, since the approval escalation was the
+approval. A type with no `shape` starts from no step at `backlog` the same way. On a story still at the shaped step
+it says the story waits on the product owner and stops, writing nothing. A story it sends gaps back on goes back
+to `shape`.
 
 | Part of the story | Owner | Written through |
 |---|---|---|
-| The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-work`, or by hand in the same shape |
-| *Technical criteria* (`TC-n`) | the planner | `plan-work`, after the product check; the overflow comment when the body would not fit |
-| The design doc, the tasks, the dependencies | the planner | `plan-work` |
+| The body down to *Open questions for dev*: scope, `AC-n`, `OPEN:` lines | the product owner | `shape-project`, or by hand in the same shape |
+| *Technical criteria* (`TC-n`) | the planner | `plan-project`, after the product check |
+| The design doc, the tasks, the dependencies | the planner | `plan-project` |
 | A change to a frozen test | the criterion's owner: the product owner for an `AC-n`, the planner for a `TC-n` | the round record, then the body |
 
 **This does not break single-writer.** Shaping is not delegated work: no subagent runs. From the first
@@ -130,16 +175,23 @@ planned task on, the orchestrator is the one writer.
 
 ## The plan gate
 
-For a type that has a `gate` step, planned work passes one gate before any code exists.
+For a type that has a plan gate (a `gate` step after `plan`), planned work passes one gate before any code
+exists.
 
 1. The divergence reviewer gets the **refs and the doc map, never the planner's summary**, and reads the
    plan, the stories and the tasks itself.
 2. It returns a coverage table, findings tagged BLOCKER / QUESTION / NOTE, and a recommended verdict:
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
-3. The orchestrator posts the **full** report as a comment on the story, then raises one escalation so a
-   human decides, with the options PASS / PASS WITH DECISIONS / RETURN. RETURN goes back to planning. PASS
-   WITH DECISIONS needs a human answer to every QUESTION. **No task starts before PASS.** The answer moves
-   the story: `--step <next>` or `--status ready`.
+3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
+   comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
+   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
+   escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
+   `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
+   `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
+   `plan-project` to apply the answers (it replies `# QUESTIONs applied` to the report), then move the story to
+   `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
 mind, not the story as written, and fills every gap from memory without seeing one. A fresh context with
@@ -153,10 +205,12 @@ written down cannot be found missing.
 ## The loop
 
 One task at a time, each through the full loop, in a worktree of its own. Do not batch several into one
-implementer run, and do not defer review to the end. `run-task` runs one task through it; `run-story`
-runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
-`unattended`; it stops for a human only where one of its stop conditions fires, each ending in one
-escalation.
+implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
+issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
+`unattended`; it waits for a human only where one of its stop conditions fires, each ending in one
+escalation, or one per independent question where a round has more, that it waits on, carrying on when every answer has come ("Questions to the human are escalations"). `run`
+on a project runs its issues that way, one after another, and stops at the first that stops. It skips an issue its
+issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
@@ -186,9 +240,10 @@ attempts are the iterations recorded before the `step_set` entry whose `to` is `
 
 **The round cap.** The `build` step's `roundCap` is the most adversarial rounds a task gets. If the cap is
 reached without convergence the task is mis-specified, not mis-implemented. That is a human decision,
-not another loop: one escalation, and the work stops. **You may override a PASS, and you may not override
-the cap.** If a finding is under-rated and you can say why, send it back and record the reason. An
-override spends a round; the cap is what stops you spending them forever.
+not another loop: one escalation, and the work waits on its answer ("Questions to the human are
+escalations"). **You may override a PASS, and you may not override the cap.** If a finding is under-rated
+and you can say why, send it back and record the reason. An override spends a round; the cap is what stops you
+spending them forever.
 
 **Why it is shaped this way**, worth thirty seconds before shortcutting it:
 
@@ -241,32 +296,59 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
 
 - **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
   with six has not been thought through.
+- **From `plan-project` and `run`, the recommended option comes first**, and its argument opens `Recommended:` and
+  says why. Where the agent truly has no pick it invents none: the first argument opens `No recommendation:` and says
+  why. An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block keeps its order.
+  `shape-project` does not recommend: it puts the likeliest answer first, states no pick and takes the PO's answer as
+  given.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
-- **Then stop the turn**, naming the escalation and the issue. Do not continue the work that depends on
-  the answer, and do not ask again somewhere else.
+- **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
+  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), and on an answer carry on
+  as a re-invoke would, writing nothing twice. It stops the turn only when the wait ends without an
+  answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
+  outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
+  answer that needs a person to act first is put to them as an escalation and waited on too (run's
+  "Wait, then carry on"). **Every other skill stops the turn**, naming the escalation
+  and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
+  somewhere else.
 - **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
-  no answer means do not proceed.
+  no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
+  description is not.
+
+**Escalations go out in rounds.** A round is the escalations raised together, for one person to answer in one
+sitting. These hold for every skill, however few or many questions it has:
+
+- **Check the round before raising it.** Would one answer settle or change another question? Merge them into
+  one, or hold the dependent one for the next round.
+- **Independent questions go out together.** Do not ration them: the first round covers as much ground as it
+  can, and later rounds are follow-ups only.
+- **A later round drops what an answer settled.** It is not asked again, and it is not raised for confirmation.
 
 An implementer that returns `BLOCKED` carries a `## Question` section. The orchestrator does not
 paraphrase it: it runs the gate on the brief, posts the brief as a comment, raises the escalation from the
-block, and stops. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
+block, and waits. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
 
 ## Records
 
 Every artifact of the loop is a Leeway record. The orchestrator writes each one.
 
+**An issue the agent files always has a summary**: every `issue create` passes `--summary`, at most 280 characters
+saying what the issue is and why, in plain words. An issue a skill adopts with an empty summary gets one with
+`issue update <ref> --summary "…"`, naming only that field.
+
 | Loop artefact | Record |
 |---|---|
 | plan / story / task | project / issue (its type from the process) / sub-issue |
 | branch | `issue update <ref> --branch <prefix>/<ref lower>-<slug40> --repository owner/repo`, read back |
-| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
+| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' [--tokens N] [--minutes N] [--testMinutes N] --note "…" --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`; `--tokens` is new tokens, input + cache writes + output summed over the agent's model calls and never cache reads, counted by `scripts/session-tokens.mjs` as `HARNESS.md`, "Counting tokens", says, and left out when they cannot be counted, never `0`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
+| spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round's review, its orchestration, or a round that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
-| dispute needing a human; `run-story` hard stop | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
-| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); the human decision as an escalation with options PASS / PASS WITH DECISIONS / RETURN; the answer moves the story with `--step <next>` or `--status ready` |
-| technical criteria overflow (description cap 5,000) | one comment opening `# Technical criteria`, latest wins |
-| nits / friction | comments on the project's nit collector / the product's friction collector (type chore) |
-| status | always `issue update --step` or `--status`; never by iteration or escalation |
+| dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
+| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
+| technical criteria a story body points to | the comment opening `# Technical criteria`, latest wins |
+| nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
+| status | always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>/agent`, named in the session ("The cast") |
 
 ## Where a finding goes
 
@@ -277,7 +359,7 @@ Not every finding is open work. **If you cannot name the consequence of leaving 
 | Security, isolation or data exposure — any severity. Or a correctness bug reachable in production | **File it now** as an issue. No approval, no delay |
 | Technical debt — the fix is a design decision, not a chore | **Propose it, and file only on a human yes** |
 | Anything else | **One line, as a comment on the nit collector.** No issue |
-| Friction — a tooling, test-data, local-setup or process gap that cost the task time | **Propose it for the friction collector, and file only on a human yes** |
+| Friction — a tooling, test-data, local-setup or process gap that cost the task time | **Propose it for the friction project, and file only on a human yes**, one issue per item |
 
 Without this bar every finding becomes a ticket: most hang off no story, stay open, and some say in their
 own description that nothing is broken. A ticket costs a human's attention; a nit costs a line. A finding
@@ -296,3 +378,8 @@ On top of what your repo's floor says every change owes:
   in Leeway is the only lasting copy.
 - A task lands deliberately: PASS, merge into the story's worktree, `--status done`. The story is closed at
   the story gate, by the orchestrator setting `--step` or `--status`, and nothing else moves it.
+- A plan is done once it has merged into `main`, on the person's word. With a plan branch, at its last story
+  the Plan record goes `in_review`, with the plan's pull request linked on the project, and it goes `done` only
+  once that pull request reads `merged` (`run`, "When the plan merges into `main`"). With no plan branch, the
+  stories merge into `main` one by one, and the Plan record goes `done` only once every `done` story reads merged
+  into `main`, and `in_review` until then (`run`, "The plan's end").

@@ -4,7 +4,7 @@ The skills and `PROCESS.md` describe the loop in terms any coding agent can foll
 the agent running it. Each target ships its own `HARNESS.md`; this is the Claude Code one. Read it alongside
 `PROCESS.md`, and where the two disagree on a mechanism, this file wins.
 
-version: 0.2.0
+version: 0.3.0
 agent: claude
 plugin-files: the plugin root (this file's directory)
 
@@ -21,10 +21,45 @@ governed-marker: not used
 The hooks identify this plugin's agents from the `agent_type` the harness sends with each call. You never write a
 marker.
 
+## Waiting for an answer
+
+wait: background
+
+Start `wait-answer.mjs` (run, "Wait, then carry on") with the Bash tool and `run_in_background: true`, as it is,
+with nothing appended: an `; echo` after it would become the exit code the harness reports. The harness runs it
+detached and wakes the session when it exits, naming its exit code and its output file, so no turn is spent per
+check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
+on the exit code as run's table says. If the session ends first, the run has stopped as at the deadline: the
+escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
+docs/targets/claude.md records the probe.
+
+## Counting tokens
+
+tokens: transcripts
+
+Claude Code writes each agent's transcript under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, and the Bash tool's
+environment names the session in `CLAUDE_CODE_SESSION_ID`. Run `session-tokens.mjs` (run, "Recording spend") with the
+Bash tool, on one of these:
+
+- **A subagent:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID/subagents/agent-<agent id>.jsonl`.
+  The Agent tool's result says `agentId: <agent id>`, and a background agent's completion notice says
+  `<task-id><agent id></task-id>`: keep it from the delegation until its record.
+- **Your session:** `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/*/$CLAUDE_CODE_SESSION_ID.jsonl`.
+
+The `*` is the project directory, named after where the session started, not where you are now. An empty variable or
+a transcript that is not there makes the script exit non-zero, so that record leaves `--tokens` out, as it does when
+a subagent's agent id is lost. Never take `subagent_tokens` from the completion notice instead: it is the agent's
+final context size.
+
+Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch.
+A call's lines reach the transcript after its command starts, so a count from inside that call misses it. They are
+timed before the command runs, so the stamp, to the millisecond, takes in the call that took it.
+docs/targets/claude.md records the probe.
+
 ## Required reading
 
 `required-reading` (SubagentStart) also injects the *Required reading* rows into the implementer and the reviewer.
-The brief carries them as well (run-task, "Delegate to the implementer"), so the hook is only reinforcement.
+The brief carries them as well (run, "Delegate to the implementer"), so the hook is only reinforcement.
 
 ## Instructions and local notes
 
@@ -33,7 +68,7 @@ The brief carries them as well (run-task, "Delegate to the implementer"), so the
 
 ## Permissions for an unattended run
 
-run-story's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`), or in
+run's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`), or in
 `.claude/settings.local.json` for one person.
 
 ## Installed version, update and restart

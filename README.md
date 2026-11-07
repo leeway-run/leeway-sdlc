@@ -53,7 +53,7 @@ The manifests, `plugin/PROCESS.md`, the craft doc, the hooks, the agents, the te
 
 ## Versioning
 
-The rule: a **minor** when the loop would judge the same task differently, or a repo must refresh a
+The rule: a **minor** when the loop would judge the same sub-issue differently, or a repo must refresh a
 file it copied from the plugin; a **patch** otherwise. `main` is always a released state. What changed,
 what a repo must do to upgrade and how it was checked are in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 

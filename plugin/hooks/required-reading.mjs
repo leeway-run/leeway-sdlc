@@ -6,7 +6,7 @@
 // broken in a task that had asked for it. This hook makes the routing a mechanism instead: it reads
 // the *Required reading* table from the repo's `.sdlc/CONFIG.md` and injects it into the subagent's
 // context at start, so which files a path owes is never left to the orchestrator remembering to
-// paste it. Whether the agent then read them is checked by the run-task gate, from the brief's and
+// paste it. Whether the agent then read them is checked by the run gate, from the brief's and
 // the verdict's *Rules read* section; this hook only delivers the table.
 //
 // WIRED VIA hooks.json, scoped by matcher there and by `agent_type` here. Measured 2026-10-20 on
@@ -59,7 +59,7 @@ const contextFor = (rows) =>
     'Required reading for this repo (from `.sdlc/CONFIG.md`, delivered by the leeway-sdlc SubagentStart hook).',
     'Before you write, review or judge a change under a path that matches a glob below, open each listed',
     'file with the Read tool (not cat, not grep) and apply it. List every one you read under *Rules read*',
-    'in your brief or verdict, with the heading you applied. The run-task gate compares that list with the',
+    'in your brief or verdict, with the heading you applied. The run gate compares that list with the',
     'changed paths: a matching file missing from it sends your brief or verdict back.',
     '',
     ...rows,
