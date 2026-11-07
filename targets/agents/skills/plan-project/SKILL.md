@@ -79,7 +79,7 @@ whatever happened.
    and the comments since it, fix what its BLOCKERs name, and gate it again (step 8). Three or more: do not re-plan;
    step 8, "Three RETURNs".
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
-   terminal question: it is a Leeway escalation on the story, and then you stop the turn. Post the context first
+   terminal question: it is a Leeway escalation on the story, and then you stop the turn; one that stories share goes on their Plan record. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
    '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
    2 to 5 options, each with its argument, one open escalation per comment. **The recommended option comes first**,
@@ -201,8 +201,8 @@ closed` names it.
 
 ### Where it stands, from Leeway alone
 
-Every invocation starts here, after step 2, and takes nothing from an earlier session. `issue get` on each story and on
-its Plan record holds it all: `comments` and `escalations[]`, each issue's own (step 0).
+Every invocation starts here, after step 2, and takes nothing from an earlier session. `issue get` on each story, on
+its Plan record and on any `<ref>` a `Held on` names holds it all: `comments` and `escalations[]`, each issue's own (step 0).
 
 A question is **its own top-level comment**, its body opening `# Interview question <n>, round <r>: <refs>`, the stories
 it binds, with its escalation's `--comment` set to that comment's `cN`. A comment's own escalation is
@@ -214,6 +214,7 @@ row that fits decides:
 | The story has | So |
 |---|---|
 | a question comment after its latest `# Interview closed`, if any, with no escalation and no `Held on` | a session ended between the two calls: raise it now, with no second comment, unless an answer settled it, which `# Interview closed` then names. Go on down this table |
+| a question comment on the Plan record, with none on it, no open escalation on it and no `# Interview closed` | a shared question is not its first round: its own decisions go out now as "The first round", beside any shared one still open, and the next row does not hold them. Go on down this table |
 | an open escalation: its own, on one of its question comments, or one a `Held on` names | do not proceed and raise nothing new: wait (below). This holds for any open escalation of the story, not only the interview's |
 | a question comment after its latest `# Interview closed`, if any | read the answers: "The next round" |
 | a `# Interview closed` | it is finished: carry on at step 3. The answers stand on a re-plan. Where a BLOCKER or a changed `AC-n` opens a decision nobody was asked, its question goes out as the next round, naming what opened it |
@@ -226,9 +227,12 @@ would change the plan's shape or be costly to change later: a data model, a boun
 `TC-n` would bind. A local choice nobody would want a say in is yours, and goes in the design doc. Each *Open question for dev*
 is either settled from the code or asked.
 
-**Do not ask what is already settled.** Read the code first (step 2). Nothing the code, the docs, the body, a comment or
-an earlier answer settles is asked, and an earlier answer is any `escalations[].answer` on the story or the Plan record:
-the PO's, a QUESTION's (step 8), or an earlier round's.
+**Do not ask what is already settled.** Read the code first (step 2). Then read the project's questions: its open
+escalations (`escalation list <KEY> --projectId <id>`) and the answers on its other stories (`issue get` on each in
+`issue list`). That is one call a story, sub-issues skipped, and from each you keep only its own `escalations[]` (step 0), none
+of its comments. It has no cap: a story left unread is how one decision gets two answers. Nothing the code, the docs, the body, a comment or
+an earlier answer settles is asked, and an earlier answer is any `escalations[].answer` on this story, the Plan record or a sibling story:
+the PO's, a QUESTION's (step 8), or an earlier round's. A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`.
 
 **A product question is not asked here.** What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO.
 Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more, and stop. Nothing can withdraw an
@@ -254,14 +258,14 @@ show the second will be asked. They are not interview questions, and are raised 
 
 **Nothing open is the only way past the interview, and size is not one.** A one-file fix with an obvious test never gets
 here ("Does this need planning at all?"); a story that does get here has its trigger, however few its lines. With no
-decision open and no floor question left to raise, post `# Interview closed` saying why, raise nothing, and carry on at
+decision open, no floor question left to raise and no shared question naming it, post `# Interview closed` saying why, raise nothing, and carry on at
 step 3.
 
 ### Wait, then read
 
 Say once what you wait on and until when. Then wait on the first open escalation, as `run` does (`run`, "Wait, then
 carry on"), started as `HARNESS.md`, "Waiting for an answer", says, polling nothing and doing no other work of this
-plan. `<ref>` is the entry's own `ref`, the story or the Plan record:
+plan. `<ref>` is the entry's own `ref`, the story, the Plan record or a sibling story:
 
 ```sh
 node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli>
@@ -269,7 +273,7 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read every story of the round again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above |
+| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above |
 | 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
@@ -427,7 +431,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    - post the plan's first status line: `comment add <ref> --stdin body`.
 
    Adopting a project that already has a Plan record (a row there, or the interview made it): use that collector, and
-   create nothing, adding a missing row; when its `issue.summary` is empty, fill one in the same way as an adopted
+   create nothing, adding a missing row and a missing `Plan record: <ref>` line; when its `issue.summary` is empty, fill one in the same way as an adopted
    story's (step 3). **A project or record made before the design doc existed** gets the design doc link and the plan
    branch's name now, in one more resend of its description, re-read first.
 

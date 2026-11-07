@@ -76,7 +76,7 @@ test('AC-4: a partly answered round stays open, and an answer settling an open q
 test('AC-5: nothing the code or an earlier answer settles is asked', () => {
   assert.match(interview, /Nothing the code, the docs, the body, a comment or an earlier answer settles is asked/);
   assert.match(part('What is asked'), /\*\*Do not ask what is already settled\.\*\* Read the code first \(step 2\)\./);
-  assert.match(flat(part('What is asked')), /an earlier answer is any `escalations\[\]\.answer` on the story or the Plan record: the PO's, a QUESTION's \(step 8\), or an earlier round's/);
+  assert.match(flat(part('What is asked')), /an earlier answer is any `escalations\[\]\.answer` on this story, the Plan record or a sibling story: the PO's, a QUESTION's \(step 8\), or an earlier round's/);
   assert.match(step2, /Then \*\*the surfaces the story touches in the code\*\*/);
 });
 
@@ -123,7 +123,7 @@ test('floor questions join the first round, and are not raised twice; a QUESTION
 test('skipping: nothing open is the one way past it, tied to "Does this need planning at all?"', () => {
   const first = flat(part('The first round'));
   assert.match(first, /\*\*Nothing open is the only way past the interview, and size is not one\.\*\* A one-file fix with an obvious test never gets here \("Does this need planning at all\?"\); a story that does get here has its trigger, however few its lines/);
-  assert.match(first, /With no decision open and no floor question left to raise, post `# Interview closed` saying why, raise nothing, and carry on at step 3/);
+  assert.match(first, /With no decision open, no floor question left to raise and no shared question naming it, post `# Interview closed` saying why, raise nothing, and carry on at step 3/);
   assert.match(skill, /A story this section sends to `run` skips the interview with the rest of this skill; one it sends here is never too small for it/);
 });
 
@@ -147,7 +147,7 @@ test('every interview path keeps the escalation shape: 2 to 5 options, the recom
   assert.match(interview, /A decision with more than 5 options is cut to the real ones/);
 });
 
-// One rule for what used to be marked and closed across stories: where a question lives, and that a story closes only itself.
+// Where a question lives, and that a story closes only itself.
 test('a question lives on one issue: its story, or the Plan record when it binds several', () => {
   assert.match(intro, /\*\*Each question lives on one issue, and each story closes only itself\.\*\*/);
   assert.match(intro, /A question that binds one story goes on that story\. One that binds several goes on their project's Plan record, naming them, and no other story gets a mark/);
@@ -162,7 +162,7 @@ test('the Plan record is found from Leeway, and made only when such a question n
 
 test('step 5.2 holds for a record or project made early: nothing created twice, the link added late', () => {
   assert.match(step52, /one comment per nit and per status update, and any interview question that binds several stories/);
-  assert.match(step52, /Adopting a project that already has a Plan record \(a row there, or the interview made it\): use that collector, and create nothing, adding a missing row/);
+  assert.match(step52, /Adopting a project that already has a Plan record \(a row there, or the interview made it\): use that collector, and create nothing, adding a missing row and a missing `Plan record: <ref>` line/);
   assert.match(step52, /\*\*A project or record made before the design doc existed\*\* gets the design doc link and the plan branch's name now, in one more resend of its description, re-read first/);
 });
 
@@ -190,9 +190,10 @@ test('a story that does not exist yet is created first, so a question can name i
 // The state machine: every row, in order, then each rule on its own. Each pin reads one row or one part.
 const firstCell = (row) => row.split(' | ')[0];
 
-test('resume table: five rows, in this order, the crash check first, the open check before the rest', () => {
+test('resume table: six rows, in this order, the crash check first, the open check before the rest', () => {
   assert.deepEqual(resume.map(firstCell), [
     '| a question comment after its latest `# Interview closed`, if any, with no escalation and no `Held on`',
+    '| a question comment on the Plan record, with none on it, no open escalation on it and no `# Interview closed`',
     '| an open escalation: its own, on one of its question comments, or one a `Held on` names',
     '| a question comment after its latest `# Interview closed`, if any',
     '| a `# Interview closed`',
@@ -204,17 +205,20 @@ const rowPins = [
   ['crash row: raises on that comment, with no second comment', 0, /a session ended between the two calls: raise it now, with no second comment/],
   ['crash row: not when an answer settled it', 0, /unless an answer settled it, which `# Interview closed` then names/],
   ['crash row: goes on down the table', 0, /Go on down this table/],
-  ['open row: waits and raises nothing new', 1, /do not proceed and raise nothing new: wait \(below\)/],
-  ['open row: any of the story\'s, not only the interview\'s', 1, /any open escalation of the story, not only the interview's/],
-  ['answered row: goes to the next round', 2, /\| read the answers: "The next round" \|$/],
-  ['finished row: carries on at step 3, and answers stand on a re-plan', 3, /it is finished: carry on at step 3\. The answers stand on a re-plan/],
-  ['finished row: a decision a BLOCKER or a changed AC opens goes out as the next round', 3, /Where a BLOCKER or a changed `AC-n` opens a decision nobody was asked, its question goes out as the next round, naming what opened it/],
-  ['not-started row: goes to the first round', 4, /\| it has not started: "The first round" \|$/],
+  ['shared-only row: a shared question is not its first round', 1, /a shared question is not its first round: its own decisions go out now as "The first round"/],
+  ['shared-only row: beside a shared one still open, which does not hold them', 1, /beside any shared one still open, and the next row does not hold them/],
+  ['shared-only row: goes on down the table', 1, /Go on down this table/],
+  ['open row: waits and raises nothing new', 2, /do not proceed and raise nothing new: wait \(below\)/],
+  ['open row: any of the story\'s, not only the interview\'s', 2, /any open escalation of the story, not only the interview's/],
+  ['answered row: goes to the next round', 3, /\| read the answers: "The next round" \|$/],
+  ['finished row: carries on at step 3, and answers stand on a re-plan', 4, /it is finished: carry on at step 3\. The answers stand on a re-plan/],
+  ['finished row: a decision a BLOCKER or a changed AC opens goes out as the next round', 4, /Where a BLOCKER or a changed `AC-n` opens a decision nobody was asked, its question goes out as the next round, naming what opened it/],
+  ['not-started row: goes to the first round', 5, /\| it has not started: "The first round" \|$/],
 ];
 for (const [name, row, pattern] of rowPins) test(name, () => assert.match(resume[row] ?? '', pattern));
 
 const exitPins = [
-  ['exit 0: reads every story of the round again', '0', /\| answered \| read every story of the round again\./],
+  ['exit 0: reads every story this session plans again', '0', /\| answered \| read every story this session plans again\./],
   ['exit 0: another open is waited on with its own ref and 16 hours', '0', /Another still open: wait on that one, with its `ref` and 16 hours of its own\./],
   ['exit 0: none open goes back to the table', '0', /None: the table above/],
   ['exit 1: a bug in this run stops the turn', '1', /\| the call was wrong, or `<ref>` has no `eN` \| a bug in this run: stop the turn and say so \|/],
@@ -228,18 +232,23 @@ for (const [name, code, pattern] of exitPins) {
 
 const partPins = [
   ['a question is its own comment, naming its stories', 'Where it stands, from Leeway alone', /A question is \*\*its own top-level comment\*\*, its body opening `# Interview question <n>, round <r>: <refs>`, the stories it binds/],
-  ['reads each story and its Plan record, nothing from a session', 'Where it stands, from Leeway alone', /`issue get` on each story and on its Plan record holds it all: `comments` and `escalations\[\]`, each issue's own \(step 0\)/],
+  ['reads each story and its Plan record, nothing from a session', 'Where it stands, from Leeway alone', /`issue get` on each story, on its Plan record and on any `<ref>` a `Held on` names holds it all: `comments` and `escalations\[\]`, each issue's own \(step 0\)/],
   ['the tie: a question\'s escalation is set on its own comment', 'Where it stands, from Leeway alone', /with its escalation's `--comment` set to that comment's `cN`/],
   ['a comment\'s own escalation is read from comments[].escalation', 'Where it stands, from Leeway alone', /A comment's own escalation is `comments\[\]\.escalation`, `\{number, open\}` or null/],
   ['what a story\'s question comments are, on it or on the Plan record', 'Where it stands, from Leeway alone', /\*\*A story's question comments\*\* are these and any `# Floor question: <refs>`, on it or on the Plan record naming it/],
   ['the end mark is on the story, and "after" goes by createdAt', 'Where it stands, from Leeway alone', /Its interview ends at a comment on it opening `# Interview closed`, and "after" goes by `createdAt`\. The first row that fits decides/],
+  ['before asking: the project\'s open escalations, by the call that lists them', 'What is asked', /Then read the project's questions: its open escalations \(`escalation list <KEY> --projectId <id>`\)/],
+  ['before asking: the answers on its other stories, one issue get each', 'What is asked', /and the answers on its other stories \(`issue get` on each in `issue list`\)/],
+  ['the read\'s size: stories only, their own escalations, no comments', 'What is asked', /That is one call a story, sub-issues skipped, and from each you keep only its own `escalations\[\]` \(step 0\), none of its comments/],
+  ['the read has no cap, and says why', 'What is asked', /It has no cap: a story left unread is how one decision gets two answers/],
+  ['a sibling\'s open question is held on, not asked again', 'What is asked', /A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`/],
   ['first round: a question\'s comment, then the raise on the issue it is on', 'The first round', /For each, post its comment, the context and what the code shows, then `escalation raise <ref> --json`, `<ref>` the issue it is on/],
   ['first round: the raise is tied by --comment cN', 'The first round', /\(`escalation\.escalation` in the answer is the `eN`\) with `--comment cN`, 2 to 5 options/],
   ['first round: --meanwhile says nothing moves until it closes', 'The first round', /--meanwhile "Nothing: no design doc, criteria or tasks until the interview closes\."/],
   ['first round: held questions are posted, naming what they wait on with its ref', 'The first round', /Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them/],
   ['the wait: says once what it waits on', 'Wait, then read', /Say once what you wait on and until when/],
   ['the wait: as run does, on the first open one, polling nothing', 'Wait, then read', /Then wait on the first open escalation, as `run` does \(`run`, "Wait, then carry on"\), started as `HARNESS\.md`, "Waiting for an answer", says, polling nothing and doing no other work of this plan/],
-  ['the wait uses the entry\'s own ref, the story or the Plan record', 'Wait, then read', /`<ref>` is the entry's own `ref`, the story or the Plan record/],
+  ['the wait uses the entry\'s own ref, the story, the Plan record or a sibling', 'Wait, then read', /`<ref>` is the entry's own `ref`, the story, the Plan record or a sibling story/],
   ['only the answer is an answer', 'Wait, then read', /Only the answer is an answer: a comment, a status change or an edited description is not/],
   ['next round: only with every escalation answered, reading each label and note', 'The next round', /With every escalation answered, read each `label` and `note`, then re-read what they touch/],
   ['next round: raises each held question still undecided on its comment', 'The next round', /each held question that is still undecided: its comment's `Held on` escalations all answered, and raised on that comment/],
@@ -254,5 +263,6 @@ for (const [name, heading, pattern] of partPins) test(name, () => assert.match(f
 
 test("step 0's exception: the interview waits where every other question stops the turn", () => {
   assert.match(step0, /then you stop the turn/);
+  assert.match(step0, /it is a Leeway escalation on the story, and then you stop the turn; one that stories share goes on their Plan record\./);
   assert.match(step0, /\*\*The one exception to stopping is "The developer interview", which waits on its escalations first\*\* and stops the turn where that wait ends with no answer/);
 });
