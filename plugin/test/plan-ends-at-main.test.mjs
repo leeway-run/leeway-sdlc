@@ -239,8 +239,7 @@ test('nothing outside that section merges the plan\'s pull request', () => {
   const offList = from(under(run, 'Unattended prerequisites'), '**`gh pr merge` stays off', '- **A pre-push guard');
   const rest = flat(run)
     .replace(merges(), '')
-    .replace(offList, '')
-    .replace('every command the skill names but `gh pr merge`:', '');
+    .replace(offList, '');
   assert.doesNotMatch(rest, MERGES);
 });
 

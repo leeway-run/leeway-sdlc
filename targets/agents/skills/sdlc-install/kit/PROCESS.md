@@ -27,7 +27,7 @@ Five roles, three of them subagents:
 | Orchestrator | the main session | Leeway writes, branches and worktrees, commits, merges and pushes, delegation, the verification gate | writes feature code inline; skips the review; writes without `--as` |
 | Planner | the orchestrator, before work starts | the design doc and the task breakdown | starts coding before the breakdown exists and the plan gate (if the type has one) has passed |
 | Divergence reviewer | `sdlc-divergence-reviewer` subagent | the coverage report: each acceptance and technical criterion to the task that delivers it and the check that proves it, and a recommended verdict | edit anything, write to Leeway, approve its own gate |
-| Implementer | `sdlc-implementer` subagent | code, tests, `git add`, the handoff brief | commit, merge, push, write to Leeway |
+| Implementer | `sdlc-implementer` subagent | code, tests, `git -C <worktree> add <paths>`, the handoff brief | commit, merge, push, write to Leeway |
 | Reviewer | `sdlc-reviewer` subagent | running the lanes, the diff review at the depth the process sets, the verdict | fix code, commit, write to Leeway |
 
 The human is not a role the loop plays. The human decides what only a human can, and is reached by an
@@ -77,7 +77,7 @@ are a person's, made by them or by a skill they asked.
   Every write is attributed (`--as <alias>/<role>`), and a second writer makes the history unreadable.
   Reading touches none of that, so subagents read freely and are expected to: a ref in a code comment,
   a sibling task, an earlier round is context the next person to touch it needs.
-- **One writer to git.** The orchestrator. Subagents may only `git add`.
+- **One writer to git.** The orchestrator. Subagents may only `git -C <worktree> add <paths>`.
 
 **Both are enforced for this plugin's own agents, by hooks.** `git-guard` blocks a governed agent's
 git writes; `leeway-guard` blocks a governed agent's `leeway` call whose verb is outside
@@ -225,7 +225,7 @@ task whose type says `redTests: false` goes straight to implementing.
 1. Delegate to the implementer. **Embed critical inputs; do not reference them.** A prompt carrying its
    own content survives a failed tool call; an agent whose first call fails silently fabricates
    everything downstream.
-2. **Gate.** Independently run `git status --short` and `git diff --cached --stat` and compare against
+2. **Gate.** Independently run `git -C <worktree> status --short` and `git -C <worktree> diff --cached --stat` and compare against
    what the brief reported. That comparison is what catches a round that never happened.
 3. Commit and push the task branch, then record the round (see the records table). Not a summary: the
    full brief, because nothing else keeps it.

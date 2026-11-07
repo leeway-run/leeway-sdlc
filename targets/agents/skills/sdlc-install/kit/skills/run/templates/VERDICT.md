@@ -8,7 +8,7 @@
 - **Iteration:** it.<N> · <the pushed head sha, 40 hex> (your prompt names it; anchors are lines of the files at this sha)
 - **Review depth:** light | standard | adversarial, as your prompt names it.
 - **Lanes run:** which, and why those. Name any you did not run and why not.
-- **Red tests:** the freeze checked (`git diff <round-0 commit> -- <frozen paths>` shows removed skip markers
+- **Red tests:** the freeze checked (`git -C <worktree> diff <round-0 commit> -- <frozen paths>` shows removed skip markers
   and nothing else), or "no round 0 for this task" when your prompt says no red tests ran.
 - **Verified:** yes, read directly | partially — say which findings were not confirmed by reading
 - **Not examined:** paths not read, lanes not run, behaviour not reachable from here. **A review
@@ -171,10 +171,10 @@ only propose it, and the orchestrator files it as an issue in the friction proje
 The round is committed and pushed, so nothing should be staged and the tree should be clean. Verbatim:
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 <output>
 
-$ git rev-parse HEAD
+$ git -C <worktree> rev-parse HEAD
 <output>
 ```
 
@@ -252,9 +252,9 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
 ## Verification
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 
-$ git rev-parse HEAD
+$ git -C <worktree> rev-parse HEAD
 ce84f32a32c79f634395275e24549a2a035b7255
 ```
 ````

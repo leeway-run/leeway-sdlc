@@ -12,7 +12,7 @@
 ## Iteration
 
 What the orchestrator turns into `iteration record`. You do not commit or push, so you do not know the sha:
-leave it `pending` and the orchestrator writes `git rev-parse HEAD` here after committing the round, before it
+leave it `pending` and the orchestrator writes `git -C <worktree> rev-parse HEAD` here after committing the round, before it
 posts this brief.
 
 - **Head sha:** pending (a BLOCKED round with nothing staged has no sha; the orchestrator writes
@@ -127,10 +127,10 @@ only on a human yes. Write "none" when there is none.
 Verbatim, not summarised. You stage; the orchestrator commits afterwards, so this is the staged state:
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 <output>
 
-$ git diff --cached --stat
+$ git -C <worktree> diff --cached --stat
 <output>
 ```
 
@@ -210,12 +210,12 @@ none
 ## Verification
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 M  docs/TESTING.md
 M  scripts/lint-docs.mjs
 M  scripts/lint-docs.test.mjs
 
-$ git diff --cached --stat
+$ git -C <worktree> diff --cached --stat
  docs/TESTING.md            |  2 +-
  scripts/lint-docs.mjs      | 21 ++++++++++++++++++---
  scripts/lint-docs.test.mjs | 14 ++++++++++++++

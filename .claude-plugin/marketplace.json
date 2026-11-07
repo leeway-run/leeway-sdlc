@@ -8,7 +8,7 @@
     {
       "name": "leeway-sdlc",
       "source": "./plugin",
-      "description": "An agent SDLC on Leeway: roles, a plan gate, an adversarial implement-review loop, a risk-based evidence ladder, and a process you read from Leeway at runtime."
+      "description": "An agent SDLC on Leeway: roles, a plan gate, an adversarial implement-review loop, a risk-based evidence ladder, and a process you read from Leeway at runtime. Claude Code 2.1.91 or later only: claude.ai and Cowork don't install a plugin with a top-level bin/."
     },
     {
       "name": "leeway-sdlc-agents",

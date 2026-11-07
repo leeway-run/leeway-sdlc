@@ -185,8 +185,8 @@ asked in step 5, once the process they compare with has been read.
     place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
     every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
     Pre-filled yes. **Before the yes, tell the person what it approves and what it leaves open**, in plain words: what
-    `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the startup warnings, what the git rules also
-    approve, and why that adds little), then what no list closes. A rule stops the call an agent ordinarily writes, not a
+    `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
+    approve, that those rules let a push skip the pre-push guard, and why the rest adds little), then what no list closes. A rule stops the call an agent ordinarily writes, not a
     determined one. `node -e` and the lane commands can run anything, including `leeway escalation answer`, and
     `leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt
     that way: the skill's rule forbids it, and the list does not stop it. An improvised command off the list still prompts, so a
@@ -259,7 +259,7 @@ shown as a diff first like every patch.
   is not edited. The doc's answer was written in step 5.
 - **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
   place `HARNESS.md` names, in the form it gives (for Claude Code, the rules of its table in
-  `permissions.allow` of `.claude/settings.json`, with `cli:` and `server:` from `.sdlc/leeway.md`), adding the
+  `permissions.allow` of `.claude/settings.json`, with `cli:` and `server:` from `.sdlc/leeway.md`, its `Read` rule as `HARNESS.md` says when `CLAUDE_CONFIG_DIR` is set), adding the
   missing entries and keeping the rest. `git
   push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
   pre-push guard does not cover a merge through GitHub). A place outside the repo is not

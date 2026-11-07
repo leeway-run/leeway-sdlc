@@ -22,7 +22,10 @@ task and story, the sibling tasks, and the earlier rounds of this task:
 
 Your prompt names the real `<cli>` (`leeway`, or `node <path>/leeway.js` as `.sdlc/leeway.md` says) and the `<server>`.
 Write a read as printed here, verb first and with the server, and git as `git -C <the worktree's absolute path>`: in an
-unattended run those are the forms the allow-list matches. Anything else prompts, `cd <path> && git` included.
+unattended run those are the forms the allow-list matches. Anything else prompts, `cd <path> && git` included. A git verb
+needs at least one argument to match: `git -C <worktree> status --short`, `git -C <worktree> diff HEAD`,
+`git -C <worktree> show HEAD`, `git -C <worktree> log -5`, `git -C <worktree> fetch origin`; with nothing after the verb it prompts. A lane runs as
+`cd <worktree> && <lane>`, which is allowed where `cd` with git is not.
 Your verdict is never written to a file, so the round record is the only lasting account of what a
 previous round already found and how it was resolved — re-raising a finding the implementer answered
 two rounds ago is a cost you can avoid. When a diff touches code carrying a ticket ref in a comment,
@@ -193,6 +196,16 @@ The depth table rates a missing or weak test and places the gate bullets below. 
 **For every test the diff adds or changes, break what it guards and watch it fail.** Revert the
 guard, corrupt the fixture, flip the condition — run it, record the red output, then put it back
 byte for byte and say that you did.
+
+You have no edit tools, and `sed`, `cp` and `checkout` prompt or are refused, so a mutation and its restore go through
+`node -e`, on the file's absolute path, and `status --short` confirms the restore:
+
+```sh
+node -e 'const fs=require("fs"),f="<absolute path>";fs.copyFileSync(f,f+".keep");fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace("<what it guards>","<broken>"))'
+cd <worktree> && <lane>
+node -e 'const fs=require("fs"),f="<absolute path>";fs.renameSync(f+".keep",f)'
+git -C <worktree> status --short
+```
 
 A green test proves the test ran. It proves nothing about whether the test covers anything, and that
 gap is the most expensive thing this review has ever missed:

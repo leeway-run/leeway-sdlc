@@ -81,7 +81,8 @@ override, and you never paste a credential into a prompt. Hold the line yourself
 **Where `run`'s own files go.** A brief, a finding, a verdict, a status comment, a commit message or a pull request body goes
 in `.worktrees/.run/` of the primary checkout, named after the ref and passed by absolute path. `.worktrees/` is ignored by
 git, and it is inside the working directory, so a redirect from it (`--stdin body <file`) does not prompt, where one from the
-system's temp directory does. No branch can be called `.run`, so it never meets a worktree. A quoted heredoc also works
+system's temp directory does. Create the directory by writing the first file there with the `Write` tool: `mkdir` is not on the
+allow-list, and `Write` makes the directories it needs. No branch can be called `.run`, so it never meets a worktree. A quoted heredoc also works
 while the whole command stays short (Claude Code prompts for any command over 10,000 characters, which a brief can be).
 Nothing cleans the directory, and it is safe to delete between runs.
 
@@ -144,6 +145,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    | 4 | the CLI asked for `leeway login` | a blocker outside Leeway: stop the turn, and name the action, `leeway login --server <server>`, after which re-invoking `run` resumes |
    | 3 | Leeway did not answer | stop the turn and say so, as stop 10 ("Hard stop conditions") does |
    | 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
+   | any other | the wait never ran (126 or 127: the script is not executable, or not on the `PATH` because the plugin is disabled or the agent too old for it) | stop the turn and say so, naming the exit code |
 
 5. **On an answer, carry on exactly as a re-invoke of `run` would.** Read the issue again (`leeway issue get <ref> --json`): `escalations[].answer` is the answer a re-invoke reads, and its `label` and `note` reach the work as that
    path's own resume says (the next prompt, the decision in the thread). Carry on from the first thing not done, as
@@ -244,14 +246,28 @@ converged mean the task is mis-specified, and that is a human decision.
    under `project.links`:
 
    ```sh
+   git -C <primary> fetch origin <integration branch>
+   git -C <primary> worktree add -b <plan branch> <primary>/.worktrees/<plan branch> origin/<integration branch>
+   git -C <primary>/.worktrees/<plan branch> push -u origin <plan branch>
+   git -C <primary> worktree remove <primary>/.worktrees/<plan branch>
    leeway project link <KEY> <project> --as <alias>/agent --branch <plan branch> --repository <owner/repo>
    leeway project get <KEY> <project> --json   # project.links: per repository, the branch, and pr null
    ```
 
+   The story and task worktrees are made the same way, `<primary>` being the primary checkout's absolute path:
+
+   ```sh
+   git -C <primary> fetch origin <base>
+   git -C <primary> worktree add -b <story branch> <story worktree> origin/<base>
+   git -C <primary> worktree add -b <task branch> <task worktree> <story branch>
+   ```
+
+   A branch that already exists, on a resume, is added without `-b`.
+
    `.worktrees/` must be ignored by git; check once per repo, by reading `.gitignore`. Run every git command of your own as `git -C
    <absolute path>`, and **pass the absolute task-worktree path in every subagent prompt**: a subagent starts in
    the primary checkout, so a relative path lands where every concurrent session reads and writes the same
-   files. If `.sdlc/CONFIG.md` names a per-worktree setup command, run it in each new worktree: a worktree isolates
+   files. If `.sdlc/CONFIG.md` names a per-worktree setup command, run it in each new worktree, as `cd <worktree> && <setup command>`: a worktree isolates
    files, not databases or ports. **Two concurrent stories must agree a migration number, or any other monotonic
    counter, before either generates one.**
 
@@ -431,7 +447,7 @@ the marker on if it is required. Pass, in the prompt:
 
   > You may **read** Leeway through the CLI, with no actor and no `--as`: `<cli> --server <server> issue
   > get <ref> --json`, `... review get <ref> --json`, `... escalation list <KEY> --json`, verb first and with the server as
-  > printed here. Run git as `git -C <the worktree's absolute path>`, never `cd <path> && git`, which prompts. Read the story, the siblings and earlier rounds
+  > printed here. Run git as `git -C <the worktree's absolute path>`, with at least one argument after the verb, never `cd <path> && git`, which prompts. Run a lane as `cd <worktree> && <lane>`. Read the story, the siblings and earlier rounds
   > when the code points at them. You **never write** to Leeway: no `issue create` or `update`, no `comment add`,
   > `iteration record`, `escalation raise` or `answer`, `dependency`, `pr link`, `project` or `process` write, no
   > `login`. A hook (`leeway-guard`) denies the write verbs for you, but the rule is yours to keep without it. You
@@ -454,7 +470,7 @@ the marker on if it is required. Pass, in the prompt:
 ### 2. Gate, commit, push, record
 
 **Run the verification gate before anything reaches Leeway.** The brief must have arrived as the agent's final
-message and carry a `## Verification` section with verbatim `git status --short` and `git diff --cached --stat`.
+message and carry a `## Verification` section with verbatim `git -C <task worktree> status --short` and `git -C <task worktree> diff --cached --stat`.
 **Then run both yourself, in the task worktree (`git -C <task worktree> status --short`, `git -C <task worktree> diff --cached --stat`), and compare.** That comparison is what catches a round that never
 happened. Where `.sdlc/CONFIG.md` has *Required reading* rows owed by the staged paths, also check that the brief's
 *Rules read* section names each owed file; a missing one sends the brief back.
@@ -671,7 +687,8 @@ On a PASS of a code round.
 
 3. **Set the task done**, and read it back: `leeway issue update <ref> --as <alias>/agent --status done`, then
    `issue get <ref>` shows `done`.
-4. **Remove the task worktree** and delete the local task branch.
+4. **Remove the task worktree** and delete the local task branch: `git -C <primary> worktree remove <task worktree>`, then
+   `git -C <primary> branch -d <task branch>`, which accepts a squashed branch because its pushed upstream holds it.
 5. **Wait on each debt proposal, only when `run` was invoked on the sub-issue itself** (an issue run has already
    waited on it, as its stop 4). Step 6's friction proposal depends on no answer here, so where there is a wait to
    do, do step 6's collecting and raise its proposal first, in the same round, and do not raise it again at step 6.
@@ -704,12 +721,13 @@ On a PASS of a code round.
 When the story's last task has landed, in the **story worktree**. The order is fixed: the story branch is merged into
 its base (step 5) before the story's next step is written, so a `manual` next step never skips the merge.
 
-1. **Merge the story's base into the story branch** (fetched fresh), and resolve conflicts **yourself**. A conflict
+1. **Merge the story's base into the story branch** (fetched fresh: `git -C <story worktree> fetch origin <base>`, then
+   `git -C <story worktree> merge --no-edit origin/<base>`), and resolve conflicts **yourself**. A conflict
    in a file a human wrote that is not mechanical (a lockfile the package manager regenerates is) is a stop: abort the
-   merge so the worktree is at the commit before it, escalate and wait ("Wait, then carry on"). Migrations or other
+   merge (`git -C <story worktree> merge --abort`) so the worktree is at the commit before it, escalate and wait ("Wait, then carry on"). Migrations or other
    ordered generated files are not merged textually: use the recipe the recipes doc in the doc map names, or escalate
    and wait if it names none.
-2. Run the **gate command** from `.sdlc/CONFIG.md`, plus any lane the story's changes touched that the gate does not
+2. Run the **gate command** from `.sdlc/CONFIG.md` (`cd <story worktree> && <gate command>`), plus any lane the story's changes touched that the gate does not
    cover.
 3. Only if the tasks interact in a way no single task's tests cover (a shared migration, a changed contract) delegate
    one reviewer pass over the combined diff. Skip it when they are independent; this is a gate against integration
@@ -718,10 +736,31 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    none, the lowest rung in `blockingRungs`), commit the record under the evidence directory in `.sdlc/CONFIG.md`.
    The round records keep the working copy; the repo keeps the one that survives.
 5. **Push the story branch and merge it, then close the story by the process.** Merge the story branch into its
-   base before any next step is written, so a `manual` stop cannot skip the merge: push the base as the
-   orchestrator when it is a plan or story branch; the integration branch is reached only as the repo's convention
-   says (the pre-push guard in "Unattended prerequisites" enforces it). Remove the story worktree. Then read the type's steps: the step
-   after `build`.
+   base before any next step is written, so a `manual` stop cannot skip the merge. When the base is a plan or story
+   branch, push the base as the orchestrator:
+
+   ```sh
+   git -C <story worktree> push -u origin <story branch>
+   git -C <primary> fetch origin <base>
+   git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>
+   git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>
+   git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>
+   git -C <primary> worktree remove <primary>/.worktrees/merge-<story>
+   git -C <primary> worktree remove <story worktree>
+   ```
+
+   The worktree is detached because the base may already be checked out, in the primary checkout where a person works or
+   in another worktree, and `worktree add` refuses a branch that is ("is already used by worktree"). A detached one never
+   meets that, and it leaves that checkout as it was: its local `<base>` stays behind `origin/<base>` until its owner pulls,
+   and nothing here reads the local one. If the merge conflicts, the base moved since step 1: abort it, remove this worktree
+   and go back to step 1. If `worktree add` finds the path left by a stopped run, `git -C <primary> worktree remove --force
+   <primary>/.worktrees/merge-<story>` and add it again.
+
+   The integration branch is reached only as the repo's convention says (the pre-push guard in "Unattended prerequisites"
+   enforces it): only the first and last of those lines run, and in between comes that convention, such as
+   `gh pr create --base <integration branch> --head <story branch> --title "<story title>" --body-file <body.md>`.
+
+   Then read the type's steps: the step after `build`.
    - **A next step** → `leeway issue update <story> --as <alias>/agent --step <next>`. If its kind is `manual`
      ("verify on dev"), say what it is waiting for and **stop**: the plugin never does a manual step and moves
      the story past it only when the person asks (`PROCESS.md`, "The cast").
@@ -1091,11 +1130,12 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
     Any other verb prompts: `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later
     CLI adds. A run calls none of them. A subagent is stopped from the write verbs by the plugin's
     `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
-  - **git verbs,** each as `git -C <absolute path> <verb>`: `add`, `commit`, `push`, `fetch`, `merge`, `merge-base`,
-    `worktree`, `branch -d`, `ls-remote`, `rev-parse`, `diff`, `status`, `show`.
-  - **The rest:** the lane and setup commands `.sdlc/CONFIG.md` names; `node -e` for the counting one-liner and the time
-    stamps; `gh pr create` and `gh pr view`; the two scripts, `<wait-answer>` and `<session-tokens>`; and file edits under
-    `.worktrees/`, for the implementer's work and `run`'s own files ("Where `run`'s own files go").
+  - **git verbs,** each as `git -C <absolute path> <verb>` and at least one argument: `add`, `commit`, `push`, `fetch`, `merge`, `merge-base`,
+    `worktree`, `branch -d`, `ls-remote`, `rev-parse`, `diff`, `status`, `show`, `log`, `blame`.
+  - **The rest:** the lane and setup commands `.sdlc/CONFIG.md` names; `node -e` for the counting one-liner, the time
+    stamps, and an agent's delete, rename or test mutation; `gh pr create` and `gh pr view`; the two scripts, `<wait-answer>` and `<session-tokens>`;
+    file edits under `.worktrees/`, for the implementer's work and `run`'s own files ("Where `run`'s own files go"); and reads of
+    this plugin's own files.
   **What the list cannot promise.** An improvised command, one an agent makes up that is not on the list, still prompts,
   so no list alone can promise no prompt: agents stay on these calls. Nor is it a boundary: `node -e` and the lane
   commands can run anything, including `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator.
@@ -1105,11 +1145,12 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
   pre-push guard does not cover it, and its prompt is where the person's yes is their word ("When the plan merges
   into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
-  plugin, and this skill only states the requirement. It runs on every push from any process, refuses an update to
-  the integration branch named in `.sdlc/CONFIG.md` and refuses a force push to any ref: an allow-listed `git push`
-  is one wrong argument away from the integration branch, and the plugin's git guard governs subagents, never the
-  orchestrator. **Until the guard exists, leave `git push` off the allow-list** and let each push prompt: that run is
-  attended, and should say so.
+  plugin, and this skill only states the requirement. It refuses an update to the integration branch named in
+  `.sdlc/CONFIG.md` and a force push to any ref, on a push from any process that does not skip it: `--no-verify` and
+  `-c core.hooksPath` skip it, and the allow-list's push rule approves both, so it stops the push an agent ordinarily
+  writes, not a determined one. Never pass either. An allow-listed push is one wrong argument away from the integration
+  branch, and the plugin's git guard governs subagents, never the orchestrator. **Until the guard exists, leave the
+  `push` verb off the allow-list** and let each push prompt: that run is attended, and should say so.
 - **A per-worktree setup command** in `.sdlc/CONFIG.md` that runs without a prompt and gives each worktree its own
   scratch database and ports. A setup that asks a question stops the run at the first new worktree.
 - **A session allowed to run long.** A story is hours, not minutes: no idle timeout on the session or the machine,
