@@ -22,8 +22,10 @@ whatever happened.
    is that command) and the *Nit collectors* table. Read `.sdlc/CONFIG.md`: the doc map, *Plans directory*,
    *Plan branch*, *Ticket templates*. Pass `--server <server>` on every call. No token and no credential is
    written to a file or shown.
-2. **Who writes.** `--as <alias>/planner` on every write, the alias this session's (`<word>-<two hex digits>`,
-   for example `kestrel-b1`; one per session, never one already visible on the issues). The gate's coverage
+2. **Who writes.** `--as <alias>/planner` on every write, the alias this session's: an adjective and a bird
+   (`quiet-wren`), one per session, chosen as `PROCESS.md`, "The cast", says, against the `activeAgents` of the story's
+   project (`project.id`, from `issue get` in the next item) and the story's `agents`. Planning into a project this
+   session is about to create, there is no project to read: a pair at random. The gate's coverage
    report is the one write made `--as <alias>/reviewer`. Reads carry no `--as`.
 3. **The process, and the story's type.** `<cli> --json process get <KEY>`, then `<cli> --json issue get <story>`:
    `issue.type`, `issue.step` (an object: `issue.step.id`, or null), `issue.description`, `comments`, `escalations`. From the type's steps decide, and

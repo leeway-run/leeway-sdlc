@@ -33,11 +33,35 @@ Five roles, three of them subagents:
 The human is not a role the loop plays. The human decides what only a human can, and is reached by an
 escalation.
 
-**The alias and the role.** The orchestrator chooses an alias per session of the form `<word>-<two hex digits>` (for
-example `kestrel-b1`, matching `^[a-z][a-z0-9-]{1,23}$`), never one already visible on the issue. Every write carries
-`--as <alias>/<role>`, the role being `implementer`, `reviewer`, `planner` or `agent` (the CLI's four). The
-orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the plan
-gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their role.
+**The alias and the role.** Every write carries `--as <alias>/<role>`, the role being `implementer`, `reviewer`,
+`planner` or `agent` (the CLI's four). The alias names the agent instance: the orchestrator chooses one when the
+session starts, before its first write, and keeps it for the session: an adjective and a bird, two lowercase words
+joined by a hyphen (`quiet-wren`), which Leeway displays as a two-word name (Quiet Wren). Pick each word at random, not
+the first in the list, so two sessions rarely land on the same pair:
+
+- **Adjectives:** amber, bold, brave, bright, calm, candid, clever, deft, eager, fair, frank, gentle, keen, lively,
+  merry, nimble, patient, plain, quiet, rapid, steady, tidy, wise.
+- **Birds:** crane, curlew, dunnock, egret, finch, grebe, heron, kestrel, lark, magpie, osprey, owl, petrel, plover,
+  puffin, raven, robin, rook, starling, tern, thrush, warbler, wren.
+
+Two sessions running at once, or two people's agents, must not share one. Before taking the pair, read the aliases
+active in the project the work belongs to (`leeway --json project get <KEY> <projectId>`, with the project id from
+`issue get`'s `project.id`; its `activeAgents` lists those that acted in the last 24 hours, at most 50) and the ones
+already visible on the issue (`issue get`'s `agents`). If the pair is in either, add `-2`, then `-3` and so on, until
+the alias is in neither (`quiet-wren-2`). A server that predates the field returns no `activeAgents`; then the issue's
+aliases are the only check. Given a project and no issue, `activeAgents` is the only check. Every alias this produces
+matches `^[a-z][a-z0-9-]{1,23}$`, the CLI's check: the longest pair with `-99` is 19 characters. Aliases already in a
+thread (`kestrel-b1`) keep their old form and still display as themselves. A task resumed in a later session carries
+that session's alias, a new one chosen the same way, and the thread shows the handover.
+
+**With no project in hand** there is nothing to read, and no `project get` can run without a project id. A session
+whose first write creates the project, or changes the product's process with no issue named, takes a pair at random
+and checks it against nothing, not sweeping other projects for aliases. It keeps that alias if it reaches a project
+later. A session with an issue named has a project: its `issue get` gives `project.id`.
+
+The orchestrator's own words, and a skill acting for it, write as `<alias>/agent` (planning as `<alias>/planner`, the
+plan gate's report as `<alias>/reviewer`); subagents never write, so their entries are the orchestrator's under their
+role.
 
 **A move the person asks for.** Any skill makes any move the person asks for in the session, from whatever step or
 status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says

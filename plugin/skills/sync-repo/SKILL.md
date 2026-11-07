@@ -16,9 +16,10 @@ request, and only with an answer per copy.
 - **Without it**, ask in the terminal, copy by copy.
 - **With it**, a question is a Leeway escalation, raised on the issue the user named when invoking this
   skill. None named: stop and say there is nowhere to put it. Read the CLI command from `cli:` in
-  `.sdlc/leeway.md`. Every write carries `--as <alias>/agent`: the alias is `<word>-<two hex digits>`,
-  chosen once for this session and kept (the CLI's roles are `implementer`, `reviewer`, `planner` and
-  `agent`; a skill acting for the orchestrator writes as `agent`).
+  `.sdlc/leeway.md`. Every write carries `--as <alias>/agent`: the alias is an adjective and a bird
+  (`quiet-wren`), chosen once for this session and kept, as `PROCESS.md`, "The cast", says. The project to read for
+  it is the named issue's (`issue get <issue>`: `project.id`); this mode always has one. The CLI's roles are `implementer`,
+  `reviewer`, `planner` and `agent`; a skill acting for the orchestrator writes as `agent`.
 
 Raising, all together, once steps 0 to 2 have found which copies need an answer (`PROCESS.md`, "Questions to the human are escalations"):
 the only question held for a later round is the contract block's, while `filing-work:` is open (step 1), and a later
