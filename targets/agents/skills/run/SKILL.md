@@ -83,6 +83,11 @@ override, and you never paste a credential into a prompt. Hold the line yourself
 **A question for the human is never a terminal question.** It is a Leeway escalation on the sub-issue in hand, and
 then you wait for its answer ("Wait, then carry on"). Nowhere in this skill do you ask the user.
 
+**The recommended option comes first on every escalation this skill raises**, its argument opening `Recommended:` and
+saying why (`PROCESS.md`, "Questions to the human are escalations"). The options a path below names are the choices,
+not their order. Where you truly have no pick, invent none: the first argument opens `No recommendation:` and says why.
+An implementer's `## Question` and a reviewer's `Escalates:` block already carry theirs: raise them in the block's order.
+
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
 <ref> --step <id>` and `--status <status>`. No iteration, comment, verdict or escalation moves anything; a stalled
 round leaves the status exactly where it was.
@@ -425,7 +430,7 @@ the marker on if it is required. Pass, in the prompt:
   >
   > **You never ask the user a question in the terminal.** If a decision is the human's, stop implementing the part
   > that depends on it and return `Status: BLOCKED` with a `## Question` section: the question (one sentence), 2 to
-  > 5 options each with its argument, and the meanwhile.
+  > 5 options each with its argument, the recommended one first (or `No recommendation:` and why), and the meanwhile.
 
 > **Embed critical inputs; do not reference them.** A prompt carrying its own content survives a failed tool call;
 > an agent whose first call fails silently fabricates everything downstream. Reading Leeway is how a subagent
@@ -464,6 +469,8 @@ a step that fails stops the round.
    ```sh
    leeway --as <alias>/agent escalation raise <ref> --question "Round N produced no new commit on <branch>: how should it go on?" --options '[{"label":"Re-run the implementer","argument":"The prompt was at fault; a sharper one may produce the change."},{"label":"Take it inline","argument":"The task is smaller than a round; the orchestrator does it and says the workflow degraded."},{"label":"Re-scope or cancel","argument":"The task is already satisfied or mis-specified; no more rounds buy anything."}]' --meanwhile "The sub-issue keeps its status and nothing is merged."
    ```
+
+   This order is not a pick: put first the option this round's evidence recommends, and open its argument `Recommended:`.
 
    Then report the escalation id and the issue, and wait on it ("Wait, then carry on").
 
