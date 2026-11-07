@@ -67,7 +67,7 @@ asked for: Steps 3 to 6 run for it alone, with its own question. Offer it once p
 turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request. In escalation
 mode that order holds only for a request on a type the new flow changes, whose before and after that answer changes.
 A request on any other type depends on no open answer: its question goes out in the same round, and each yes is
-written in turn, from a fresh Step 1 read. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
+written in turn, from a fresh Step 1 read. A yes the fresh read already carries is not written again; one it does not carry is. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
 that differs from the new flow only in its labels; neither is offered it. A relabel is an ordinary request.
 
 ## Step 2 - turn the request into an edit

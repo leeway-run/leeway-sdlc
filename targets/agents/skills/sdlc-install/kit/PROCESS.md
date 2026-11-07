@@ -160,7 +160,8 @@ exists.
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
    comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
-   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. No
+   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
    escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
    `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
    `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
