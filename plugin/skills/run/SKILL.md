@@ -80,7 +80,7 @@ then you wait for its answer ("Wait, then carry on"). Nowhere in this skill do y
 **The recommended option comes first on every escalation this skill raises**, its argument opening `Recommended:` and
 saying why (`PROCESS.md`, "Questions to the human are escalations"). The options a path below names are the choices,
 not their order. Where you truly have no pick, invent none: the first argument opens `No recommendation:` and says why.
-An implementer's `## Question` and a reviewer's `Escalates:` block already carry theirs: raise them in the block's order.
+An implementer's `## Question` and a reviewer's `Escalates:` block already carry theirs: raise them unedited, in the block's order.
 
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
 <ref> --step <id>` and `--status <status>`. No iteration, comment, verdict or escalation moves anything; a stalled
@@ -464,7 +464,7 @@ a step that fails stops the round.
    leeway --as <alias>/agent escalation raise <ref> --question "Round N produced no new commit on <branch>: how should it go on?" --options '[{"label":"Re-run the implementer","argument":"The prompt was at fault; a sharper one may produce the change."},{"label":"Take it inline","argument":"The task is smaller than a round; the orchestrator does it and says the workflow degraded."},{"label":"Re-scope or cancel","argument":"The task is already satisfied or mis-specified; no more rounds buy anything."}]' --meanwhile "The sub-issue keeps its status and nothing is merged."
    ```
 
-   This order is not a pick: put first the option this round's evidence recommends, and open its argument `Recommended:`.
+   This order is not a pick: put first the option this round's evidence recommends, and open its argument `Recommended:`, or `No recommendation:` and why where the evidence does not choose.
 
    Then report the escalation id and the issue, and wait on it ("Wait, then carry on").
 

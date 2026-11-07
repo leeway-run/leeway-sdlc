@@ -40,7 +40,7 @@ test('AC-1: run recommends on every escalation, whatever order a path lists the 
 });
 
 test('AC-1: the stalled round\'s literal command is not taken for a pick', () => {
-  assert.match(run, /"label":"Re-run the implementer".*This order is not a pick: put first the option this round's evidence recommends, and open its argument `Recommended:`\. Then report the escalation id/);
+  assert.match(run, /"label":"Re-run the implementer".*This order is not a pick: put first the option this round's evidence recommends, and open its argument `Recommended:`, or `No recommendation:` and why where the evidence does not choose\. Then report the escalation id/);
 });
 
 test('AC-2: an implementer\'s ## Question carries the recommendation, and its prompt and template ask for it', () => {
@@ -59,7 +59,7 @@ test('AC-2: a reviewer\'s Escalates block carries the recommendation, in the age
 
 test('AC-2: the orchestrator keeps the block\'s order when it raises it', () => {
   assert.match(process_, /An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block keeps its order/);
-  assert.match(run, /An implementer's `## Question` and a reviewer's `Escalates:` block already carry theirs: raise them in the block's order/);
+  assert.match(run, /An implementer's `## Question` and a reviewer's `Escalates:` block already carry theirs: raise them unedited, in the block's order/);
 });
 
 test('AC-3: shape-project keeps the likeliest answer first, takes the PO\'s answer as given and states no pick', () => {
@@ -74,6 +74,7 @@ test('AC-3: the process rule does not reach shape-project', () => {
 
 test('AC-4: no pick is invented, in any place that asks for one', () => {
   assert.match(process_, /Where the agent truly has no pick it invents none: the first argument opens `No recommendation:` and says why/);
+  assert.match(run, /not their order\. Where you truly have no pick, invent none: the first argument opens `No recommendation:` and says why/);
   for (const [name, text] of Object.entries({ plan, run, implementer, reviewer, brief, verdict })) {
     assert.match(text, NO_PICK, `${name} does not say what to write with no pick`);
   }
