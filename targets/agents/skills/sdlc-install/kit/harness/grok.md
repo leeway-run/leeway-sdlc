@@ -40,7 +40,8 @@ Until one does, skip steps 2 and 3 of run's "Wait, then carry on" and act at onc
 wait that blocks nothing, such as a sub-issue run's debt proposal ("Land the task", step 5), carries on. Any other
 posts what the path posts, says which escalation on which issue it stopped on, and stops the turn. The escalation and
 any `# Run status` comment stay, and re-invoking `run` once it is answered resumes where there is work left to
-resume (run, "Land the task", step 5).
+resume (run, "Land the task", step 5). `plan-project`'s developer interview does not wait either: it stops the turn
+the same way, and re-invoking `plan-project` once it is answered resumes it.
 
 ## Counting tokens
 

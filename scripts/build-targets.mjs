@@ -99,7 +99,8 @@ wait: stop
 How a run waits depends on the agent, and \`.sdlc/kit/HARNESS.md\` says so for yours. Without it, a run does not
 wait: it acts at once as run's "Wait, then carry on" step 4 says for exit 2. A wait that blocks nothing carries on;
 any other stops the turn, and re-invoking \`run\` once it is answered resumes where there is work left to resume
-(run, "Land the task", step 5).
+(run, "Land the task", step 5). \`plan-project\`'s developer interview stops the same way, and re-invoking
+\`plan-project\` resumes it.
 
 ## Counting tokens
 
