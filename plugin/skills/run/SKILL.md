@@ -180,7 +180,7 @@ converged mean the task is mis-specified, and that is a human decision.
    - Otherwise read its `params` and keep them: `redTests`, `round0Cap`, `roundCap`, `review` (`light`,
      `standard` or `adversarial`), `blockingRungs`, `unattended`. A value the process does not carry is not
      yours to invent: stop and say which one.
-   - Say what this task will do before doing it: "type `feature`: red tests first (cap 2 attempts), up to 3 code
+   - Say what this task will do before doing it: "type `feature`: red tests first (cap 2 attempts), up to 5 code
      rounds, adversarial review, blocking rungs R4 and R5".
 
 3. **Check whether it is blocked.** `issue.blockedBy` lists `{ref, title, status}`; a blocker counts only while its

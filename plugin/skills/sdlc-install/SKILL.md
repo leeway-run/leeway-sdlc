@@ -176,8 +176,8 @@ asked in step 5, once the process they compare with has been read.
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
 config format nobody tunes correctly.
 
-**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15,
-"hours": 4}` (2,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as `params.budget`
+**Written without asking, with a preset only: the per-story budget** `{"tokens": 8000000, "rounds": 15,
+"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as `params.budget`
 on each `build` step that has none (step 5). No preset sets one, so the install does, as a default the human did
 not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) the process is the human's
 and no budget is written. Step 7 says which `build` steps have one.
@@ -208,7 +208,7 @@ process step 3.4 read, make only the change their answers ask for (3), write no 
      and leave the process as it was.
 4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use`
    included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget`
-   to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
+   to `{"tokens": 8000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
    else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.
 5. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
    (labels joined with →). The files you write next describe this, so never write them from the answers.

@@ -99,8 +99,14 @@ deployment, has them, and it is the only server checked. As of 2026-11-07, `app.
   "subagent tokens".
 - **The budget moved (LWY-139).** The per-story budget now lives in the process, as `params.budget` on `build` steps,
   and `run` no longer reads `.sdlc/CONFIG.md` for it. A run on a `build` step with no budget is limited only by the
-  round caps. `sdlc-tune` changes it. `sdlc-install` writes the old default (2,000,000 tokens, 15 rounds, 4 h) on the
-  preset path, and only when the preset applied; a refused preset, or a process the person keeps, gets no budget.
+  round caps. `sdlc-tune` changes it.
+- **A new default budget, and a round cap on its way to 5 (LWY-123).** `sdlc-install` writes 8,000,000 tokens, 15
+  rounds, 4 h, up from 2,000,000 tokens (see *Known limits*), on the preset path, and only when the preset applied; a
+  refused preset, or a process the person keeps, gets no budget. An existing product keeps the budget and round caps
+  it has: an install writes a default only there, where a person replaces the process with a preset. `run`'s example
+  now says 5 code rounds, but the cap a run obeys is the process's `roundCap`, and the presets' own caps are in the
+  Leeway app. They have not moved: as of 2026-11-07, `maintained` gives 3 for `feature`, `bug` and `debt`, so a new
+  product on it has 3 until the app's preset changes or `sdlc-tune` sets another.
 - **In Leeway (LWY-129, LWY-125, LWY-132, LWY-133, LWY-134).** The steps these skills rely on come from stories in
   the Leeway app. LWY-129 adds the product process, an issue's `type` and `step`, `process get`, and `--type` and
   `--step`. LWY-125 names every stage as a step in the default presets and allows two `gate` steps per type. A new
@@ -165,12 +171,12 @@ upgrading:**
   and `spend record`, `gh pr create` and `gh pr view`, and `node <plugin-files>/scripts/wait-answer.mjs` and
   `session-tokens.mjs`.
   - **The `leeway` calls.** In `run`, `leeway` means `<cli> --server <server>`, and a call puts
-    `--as <alias>/<role>`, `--json` or both before the verb (`leeway --as <alias>/agent --json spend record …`), so
-    an entry must cover that form. `sdlc-install` writes Claude Code's entries as `Bash(<command>:*)`. Claude Code's
-    permissions docs, under "Wildcard patterns", say everything before the first `*` matches as written and `:*` is
-    an equivalent trailing wildcard. So `Bash(leeway spend record:*)` does not match
-    `leeway --server <server> --as <alias>/agent --json spend record …`. A form that does is
-    `Bash(leeway --server <server> *)`, and it allows every `leeway` verb on that server, the write verbs included.
+    `--as <alias>/<role>`, `--json` or both before the verb (`<cli> --server <server> --as <alias>/agent --json spend
+    record …`), so an entry must cover that form. `sdlc-install` writes Claude Code's entries as `Bash(<command>:*)`.
+    Claude Code's permissions docs, under "Wildcard patterns", say everything before the first `*` matches as written
+    and `:*` is an equivalent trailing wildcard. So `Bash(leeway spend record:*)` does not match
+    `<cli> --server <server> --as <alias>/agent --json spend record …`. A form that does is
+    `Bash(<cli> --server <server> *)`, and it allows every `leeway` verb on that server, the write verbs included.
     That comes from the docs: no run has confirmed the form. A command that still prompts in a real run is not
     covered.
   - **The two scripts.** Expand `<plugin-files>` to what `plugin-files:` in `HARNESS.md` gives. `wait-answer.mjs`
@@ -200,7 +206,7 @@ upgrading:**
 
 - The three CI lanes, on the release branch on this machine's Node v26.13.0, not on CI's Node 22: `node --test
   "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs" "plugin/test/*.test.mjs" "scripts/*.test.mjs"` passes
-  402 of 402; `node scripts/build-targets.mjs --check` prints "generated files are up to date"; `node
+  403 of 403; `node scripts/build-targets.mjs --check` prints "generated files are up to date"; `node
   .github/scripts/check-manifests.mjs` prints "manifests ok: leeway-sdlc and leeway-sdlc-agents 0.3.0".
 - Each story is pinned by tests over the skill text in `plugin/test/`: `filing-work`, `plan-project-description`
   (LWY-113); `friction-project` (LWY-115); `install-questions` (LWY-116); `issue-summary` (LWY-119); `skill-names`,
@@ -244,9 +250,9 @@ upgrading:**
   deploys the app (dev.leeway.run is deployed by hand with `wrangler deploy --env dev`), so a merge there says
   nothing about what another server runs. A server that allows one `gate` refuses the new-flow edit from sdlc-tune
   and sync-repo. Nothing was run against a server without the others.
-- **The default budget is reached sooner.** Its 2,000,000 tokens now also cover the orchestrator's spans, in the new
-  unit. The one real reading so far: story LWY-139 recorded 2,341,236 tokens over 8 rounds, marked incomplete and
-  mixing both units. That is a data point, not a recommendation.
+- **The default budget rests on one reading.** Its tokens now also cover the orchestrator's spans, in the new unit. It
+  moved from 2,000,000 to 8,000,000 on the one real reading so far: story LWY-139 recorded 2,341,236 tokens over 8
+  rounds, marked incomplete and mixing both units. That is a data point, not a measure of what a story needs.
 - **A token total can read low.** Orchestrator calls between spans (composing a brief, posting records after a
   verdict) are never counted, while the total can still read complete; that debt question is open on LWY-139.3. Spans
   of two concurrent tasks that overlap leave their tokens out, and the budget is checked at round boundaries, so one
