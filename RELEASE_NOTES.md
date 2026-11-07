@@ -166,12 +166,20 @@ upgrading:**
   `session-tokens.mjs`.
   - **The `leeway` calls.** In `run`, `leeway` means `<cli> --server <server>`, and a call puts
     `--as <alias>/<role>`, `--json` or both before the verb (`leeway --as <alias>/agent --json spend record …`), so
-    an entry must cover that form. `sdlc-install` writes Claude Code's entries as `Bash(<command>:*)`. Whether an
-    entry like `Bash(leeway spend record:*)` matches a call with flags before the verb is not verified: no run has
-    tried it. A command that still prompts in a real run is not covered.
+    an entry must cover that form. `sdlc-install` writes Claude Code's entries as `Bash(<command>:*)`. Claude Code's
+    permissions docs, under "Wildcard patterns", say everything before the first `*` matches as written and `:*` is
+    an equivalent trailing wildcard. So `Bash(leeway spend record:*)` does not match
+    `leeway --server <server> --as <alias>/agent --json spend record …`. A form that does is
+    `Bash(leeway --server <server> *)`, and it allows every `leeway` verb on that server, the write verbs included.
+    That comes from the docs: no run has confirmed the form. A command that still prompts in a real run is not
+    covered.
   - **The two scripts.** Expand `<plugin-files>` to what `plugin-files:` in `HARNESS.md` gives. `wait-answer.mjs`
     applies only where `HARNESS.md` says `wait: background`, and `session-tokens.mjs` only where it says `tokens:
-    transcripts`. Today that is Claude Code alone.
+    transcripts`. Today that is Claude Code alone, where `<plugin-files>` is the plugin's install path, the
+    `installPath` in `claude plugin list --json` (seen on a 0.2.0 install:
+    `~/.claude/plugins/cache/leeway/leeway-sdlc/0.2.0`). That path holds your home and the version, so an entry
+    written from it is wrong for a teammate at once and for anyone after the next plugin update. Put such an entry
+    in `.claude/settings.local.json`, not the shared `.claude/settings.json`, and redo it after each plugin update.
   - **`gh pr merge`.** Keep it off, and mind that a prefix entry such as `gh pr:*` covers it.
 - **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
   `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
