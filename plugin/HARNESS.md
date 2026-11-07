@@ -31,6 +31,7 @@ detached and wakes the session when it exits, naming its exit code and its outpu
 check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
 on the exit code as run's table says. If the session ends first, the run has stopped as at the deadline: the
 escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
+`plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it.
 docs/targets/claude.md records the probe.
 
 ## Counting tokens
