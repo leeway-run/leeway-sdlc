@@ -8,7 +8,7 @@
 - **Iteration:** it.<N> · <the pushed head sha, 40 hex> (your prompt names it; anchors are lines of the files at this sha)
 - **Review depth:** light | standard | adversarial, as your prompt names it.
 - **Lanes run:** which, and why those. Name any you did not run and why not.
-- **Red tests:** the freeze checked (`git diff <round-0 commit> -- <frozen paths>` shows removed skip markers
+- **Red tests:** the freeze checked (`git -C <worktree> diff <round-0 commit> -- <frozen paths>` shows removed skip markers
   and nothing else), or "no round 0 for this task" when your prompt says no red tests ran.
 - **Verified:** yes, read directly | partially — say which findings were not confirmed by reading
 - **Not examined:** paths not read, lanes not run, behaviour not reachable from here. **A review
@@ -171,10 +171,10 @@ only propose it, and the orchestrator files it as an issue in the friction proje
 The round is committed and pushed, so nothing should be staged and the tree should be clean. Verbatim:
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 <output>
 
-$ git rev-parse HEAD
+$ git -C <worktree> rev-parse HEAD
 <output>
 ```
 
@@ -252,17 +252,17 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
 ## Verification
 
 ```
-$ git status --short
+$ git -C <worktree> status --short
 
-$ git rev-parse HEAD
+$ git -C <worktree> rev-parse HEAD
 ce84f32a32c79f634395275e24549a2a035b7255
 ```
 ````
 
 The orchestrator posts, in order (alias `quiet-wren`; `LWY-12.3`; `it.2`):
 
-1. `leeway --as quiet-wren/reviewer comment add LWY-12.3 --anchor '{"iteration":2,"path":"scripts/lint-docs.mjs","start":58,"end":61}' --stdin body` with the `F1` block on stdin; `--json` gives `comment.number` = 6, so `F1` is `c6`.
-2. `leeway --as quiet-wren/reviewer comment add LWY-12.3 --stdin body` with the `F2` block (no `--anchor`); `c7`.
-3. `leeway --as quiet-wren/reviewer comment add LWY-12.3 --stdin body` with the `F3` block (no `--anchor`): the finding that re-raises the disputed `c3`; `c8`.
-4. `leeway --as quiet-wren/reviewer comment add LWY-12.3 --kind review --iteration 2 --settles '["c2"]' --disputes '["c3"]' --raises '["c6","c7","c8"]' --stdin body`, with the verdict as the body: the finding-body blocks removed, `F1`/`F2`/`F3` in the tables rewritten as `c6`/`c7`/`c8`, and the ledger's `Raises:` line the same. `c9`.
-5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway --as quiet-wren/reviewer escalation raise LWY-12.3 --question "Should the cache key include the linter's rules version?" --options '[{"label":"Include the version","argument":"Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically."},{"label":"Leave it out, document the manual clear","argument":"Keeps upgrades fast; a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6`. Then the orchestrator stops and reports the escalation id and the issue. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.
+1. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --anchor '{"iteration":2,"path":"scripts/lint-docs.mjs","start":58,"end":61}' --stdin body` with the `F1` block on stdin; `--json` gives `comment.number` = 6, so `F1` is `c6`.
+2. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F2` block (no `--anchor`); `c7`.
+3. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F3` block (no `--anchor`): the finding that re-raises the disputed `c3`; `c8`.
+4. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --kind review --iteration 2 --settles '["c2"]' --disputes '["c3"]' --raises '["c6","c7","c8"]' --stdin body`, with the verdict as the body: the finding-body blocks removed, `F1`/`F2`/`F3` in the tables rewritten as `c6`/`c7`/`c8`, and the ledger's `Raises:` line the same. `c9`.
+5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway escalation raise LWY-12.3 --as quiet-wren/reviewer --question "Should the cache key include the linter's rules version?" --options '[{"label":"Include the version","argument":"Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically."},{"label":"Leave it out, document the manual clear","argument":"Keeps upgrades fast; a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6`. Then the orchestrator stops and reports the escalation id and the issue. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.

@@ -60,7 +60,7 @@ test('run files accepted friction as a chore issue in the friction project, on a
   const count = (needle) => text.split(needle).length - 1;
   assert.equal(count('issue list <KEY> <friction project>'), 2, 'run does not dedupe against the project in both places');
   assert.equal(
-    count('issue create <KEY> --projectId <friction project> --type chore'),
+    count('issue create <KEY> --as <alias>/agent --projectId <friction project> --type chore'),
     2,
     'run does not file friction as an issue in both places',
   );

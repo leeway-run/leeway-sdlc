@@ -44,7 +44,7 @@ test('every round records its spend, and Leeway, not prose, holds the totals', (
   assert.equal(
     from(spend(), '**Every round records', '- **Time is measured'),
     "**Every round records what it cost on its iteration, and the run's own time goes on the story.** Leeway sums them: " +
-      "`totals` in `leeway --json issue get <ref>`, a story's over its own records and its sub-issues'. Nothing reads a " +
+      "`totals` in `leeway issue get <ref> --json`, a story's over its own records and its sub-issues'. Nothing reads a " +
       'total back from prose. ',
   );
 });
@@ -59,10 +59,10 @@ test('a token is a new token, the same unit for a subagent and the orchestrator,
   );
   assert.equal(
     from(spend(), '- **`session-tokens.mjs` counts them**', '- **What cannot be counted'),
-    "- **`session-tokens.mjs` counts them**, in `scripts/` under `HARNESS.md`'s `plugin-files:`, one call per span, as " +
+    '- **`session-tokens.mjs` counts them**, by the command `HARNESS.md`, "Running the plugin\'s scripts", names (`<session-tokens>` below), one call per span, as ' +
       '`HARNESS.md`, "Counting tokens", says. It only reads, and prints one whole number: ' +
-      '```sh node <plugin-files>/scripts/session-tokens.mjs --subagent <its transcript> ' +
-      'node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end> ``` ' +
+      '```sh <session-tokens> --subagent <its transcript> ' +
+      '<session-tokens> --session <your transcript> --from <start> --to <end> ``` ' +
       "`<start>` and `<end>` are the span's two stamps, in milliseconds. Count a subagent once it has returned, and a " +
       'span of yours in a tool call after the one that stamped its end, never in that call: the running call is not ' +
       'yet in the transcript. A call belongs to the span holding its first line, so two spans that only share a stamp ' +
@@ -92,7 +92,7 @@ test('what cannot be counted is left out, never sent as 0', () => {
   );
   assert.match(
     record,
-    /iteration record <ref> <sha> --tests "<lane line>" \[--passed\] \[--addresses '\["c1","c3"\]'\] \[--tokens <N>\] \[--minutes <N>\] \[--testMinutes <N>\] --note "<note>"/,
+    /iteration record <ref> <sha> --as <alias>\/implementer --json --tests "<lane line>" \[--passed\] \[--addresses '\["c1","c3"\]'\] \[--tokens <N>\] \[--minutes <N>\] \[--testMinutes <N>\] --note "<note>"/,
   );
   for (const doc of [skill, contract, brief]) {
     assert.doesNotMatch(doc.replace(/never `--tokens 0`/g, ''), /--tokens[ =]+0\b/, 'a command sends --tokens 0');
@@ -122,26 +122,26 @@ test('the round, its review, a round with no iteration and the run\'s own time e
   assert.equal(
     from(spend(), '- **Its review**', "- **A round's orchestration**"),
     '- **Its review**, on the same sub-issue once the verdict is posted, because a recorded iteration is never edited: ' +
-      '`leeway --as <alias>/reviewer --json spend record <ref> <minutes> [--tokens <N>] --note "review of it.N"`, the ' +
+      '`leeway spend record <ref> <minutes> --as <alias>/reviewer --json [--tokens <N>] --note "review of it.N"`, the ' +
       "minutes from delegating to the reviewer to the verdict posted, `--tokens` the reviewer's, from its transcript. ",
   );
   assert.equal(
     from(spend(), "- **A round's orchestration**", '- **A round that records no iteration**'),
-    "- **A round's orchestration**, the tokens you spent on it, on the same sub-issue after that record: `leeway --as " +
-      '<alias>/agent --json spend record <ref> 0 [--tokens <N>] --note "orchestrating it.N"`, `--tokens` from your ' +
+    "- **A round's orchestration**, the tokens you spent on it, on the same sub-issue after that record: `leeway " +
+      'spend record <ref> 0 --as <alias>/agent --json [--tokens <N>] --note "orchestrating it.N"`, `--tokens` from your ' +
       'transcript, from delegating to the implementer to the verdict posted. Its minutes are 0 because that time is ' +
       "already in the round's and the review's. ",
   );
   assert.equal(
     from(spend(), '- **A round that records no iteration**', '- **The run\'s own time**'),
     '- **A round that records no iteration** (a stalled round, a BLOCKED brief with nothing staged) still cost what it ' +
-      'cost: `leeway --as <alias>/agent --json spend record <ref> <minutes> [--tokens <N>] --note "<stalled round | ' +
+      'cost: `leeway spend record <ref> <minutes> --as <alias>/agent --json [--tokens <N>] --note "<stalled round | ' +
       'BLOCKED, nothing staged>"`, before its escalation, `--tokens` the implementer\'s, from its transcript. Its ' +
       'orchestration follows it as above, its span ending at that record. ',
   );
   assert.equal(
     from(spend(), '- **The run\'s own time**'),
-    "- **The run's own time**, on the story: `leeway --as <alias>/agent --json spend record <story> <minutes> [--tokens " +
+    "- **The run's own time**, on the story: `leeway spend record <story> <minutes> --as <alias>/agent --json [--tokens " +
       '<N>] --note "<what>"`, `--tokens` from your transcript over the span, one record per span: the baseline ("Story start", step 3), landing each task (from "Land ' +
       'the task", step 1, through the lanes run after it lands), and the story gate (from its step 1 to the story read ' +
       'back at its step 5, adding the count from the transcript of a reviewer pass at its step 3, and leaving `--tokens` ' +
@@ -166,8 +166,8 @@ test('the budget is summed from Leeway; a continuation run never re-parses the S
   const start = from(under(skill, 'Story start'), '4. **Start the budget**');
   assert.equal(
     from(start, 'It is per story, across runs'),
-    'It is per story, across runs, and every dimension is summed by Leeway: `totals` in `leeway --json issue get ' +
-      "<story>`, over the story's own records and its sub-issues' (\"Recording spend\"). **Rounds** are " +
+    'It is per story, across runs, and every dimension is summed by Leeway: `totals` in `leeway issue get ' +
+      "<story> --json`, over the story's own records and its sub-issues' (\"Recording spend\"). **Rounds** are " +
       '`totals.rounds`, round-0 attempts included; **tokens** are `totals.tokens`, and **wall-clock** is ' +
       '`totals.minutes`. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment. ' +
       'Time spent in a wait ("Wait, then carry on") does not count toward wall-clock. ',
@@ -230,8 +230,8 @@ test('a round with no iteration points at its spend record, before its escalatio
 
 test('the round records, the contract and the brief carry the spend fields', () => {
   const writes = under(skill, 'The writes of one round, in order');
-  assert.match(writes, /\| 4 \| iteration \| `--as <alias>\/implementer iteration record <ref> <sha> --tests "…" \[--passed\] \[--addresses '\[…\]'\] \[--tokens N\] \[--minutes N\] \[--testMinutes N\] --note "…"` \|/);
-  assert.match(writes, /then `--as <alias>\/reviewer spend record <ref> <minutes> \[--tokens N\] --note "review of it\.X"` and `--as <alias>\/agent spend record <ref> 0 \[--tokens N\] --note "orchestrating it\.X"` \|/);
+  assert.match(writes, /\| 4 \| iteration \| `iteration record <ref> <sha> --as <alias>\/implementer --tests "…" \[--passed\] \[--addresses '\[…\]'\] \[--tokens N\] \[--minutes N\] \[--testMinutes N\] --note "…"` \|/);
+  assert.match(writes, /then `spend record <ref> <minutes> --as <alias>\/reviewer \[--tokens N\] --note "review of it\.X"` and `spend record <ref> 0 --as <alias>\/agent \[--tokens N\] --note "orchestrating it\.X"` \|/);
   assert.equal(
     row(contract, '| round |'),
     '| round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] ' +
@@ -254,8 +254,8 @@ test('the round records, the contract and the brief carry the spend fields', () 
   );
   assert.equal(
     row(brief, '| Head sha, Lane line, Passed, Addresses, Test minutes |'),
-    '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as quiet-wren/implementer iteration record ' +
-      'LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" ' +
+    '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway iteration record ' +
+      'LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --as quiet-wren/implementer --tests "unit 31/31 green (docs-lint); typecheck n/a" ' +
       "--passed --addresses '[\"c2\",\"c3\"]' --tokens 48210 --minutes 9 --testMinutes 2 --note \"addresses c2, c3\"` " +
       '(`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer\'s new tokens, counted from its transcript, left ' +
       "out when they cannot be counted, and `--minutes` is the orchestrator's own timing: `run`, \"Recording spend\") |",

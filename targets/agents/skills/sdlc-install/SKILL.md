@@ -43,7 +43,7 @@ pre-filled answer as the first option and 2 to 5 options in all, and stop the tu
 Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
 sentence or two) at most 1,000, and the question at most 500.
 
-- **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16 and any "Right?"): two options, the pre-filled one
+- **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16, question 16's offer and any "Right?"): two options, the pre-filled one
   first.
 - **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
   note" as the fifth.
@@ -53,7 +53,7 @@ sentence or two) at most 1,000, and the question at most 500.
 - **Rounds** (`PROCESS.md`, "Questions to the human are escalations"): each round is every question not yet answered that waits on no open answer, raised
   together, not rationed. What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10
   (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4
-  on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back;
+  on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back; question 16's offer on 16;
   step 6's plan on all of them. Everything else goes in the first round. A question an answer settled is dropped, not
   asked again and not raised for confirmation: on (d), questions 3 to 5 are never raised.
 Anywhere else, ask in the terminal, one question at a time, pre-filled.
@@ -182,9 +182,42 @@ asked in step 5, once the process they compare with has been read.
     block at those rungs. Pre-filled with the doc's.
 16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
     `unattended` true and detection ("An existing allow-list") found run's entries missing from the
-    place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
+    place `HARNESS.md`, "Permissions for an unattended run", names, or ("A pre-push guard") no guard that counts. "`run` runs `<types>` unattended, and
     every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
-    Pre-filled yes.
+    Pre-filled yes. **Before the yes, tell the person what it approves and what it leaves open**, in plain words, by what detection
+    ("A pre-push guard") found:
+
+    - **A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
+      approve, that those rules let a push skip the pre-push guard, and why the rest adds little). The guard is per clone while the rule is tracked: `.git/hooks` and
+      the `core.hooksPath` setting stay in this clone, so another clone has the rule and no guard, and its pushes run with no prompt and nothing refusing them.
+    - **No guard found:** a yes brings the offer below. Without it, `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at
+      its first push until someone answers. Then what `HARNESS.md`, "Say before the yes", lists for this agent without a push rule (on Claude Code, the
+      fourteen startup warnings, what the git rules also approve, and why the rest adds little). What the person needs for a run with no push prompt: the guard the offer writes, or their own
+      pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath` (a relative one: tracked and executable on the integration branch), deciding from the refs on its stdin, refusing the integration branch and a force
+      push, and then this install run again, which offers the `push` rule.
+    - **No guard found, and a push rule already there:** say this instead of the branch above. Detection reports the rule as too wide. While it stays, a push
+      runs with no prompt and nothing refuses it, so one wrong argument reaches the integration branch, and it is the person's to remove, or the offer below closes it. Then what
+      `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, and why the rest adds little).
+
+    Then, either way, what no list closes. A rule stops the call an agent ordinarily writes, not a
+    determined one. `node -e` and the lane commands can run anything, including `leeway escalation answer`, and
+    `leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt
+    that way: the skill's rule forbids it, and the list does not stop it. An improvised command off the list still prompts, so a
+    yes does not promise a run with no prompt. No real unattended run has yet tried this list on a fresh install.
+
+    **The offer, on a yes with no guard found.** Detection ("Whether the install can write a guard") says whether it can be made:
+
+    - **Nothing in the way:** ask "Write a pre-push guard to `<the path detection printed>`? It refuses a push to `<integration branch>` and a force
+      push to any ref, and lets other pushes through, `run`'s `HEAD:<base>` to a plan branch included. `git push` then goes on the list, and pushes run with no prompt."
+      Pre-filled yes. Before the yes, say what the guard branch above says: on Claude Code the fifteen startup warnings; `--no-verify` and
+      `-c core.hooksPath` skip it and the push rule approves both, so it stops the push an agent ordinarily writes, not a determined one; and it
+      stays in this clone while the rule is tracked, so another clone has the rule and no guard until this install runs there. **A no leaves the outcome of no guard, and say it plainly:**
+      on Claude Code fourteen startup warnings, every push prompts, and the run is attended. With a push rule already there, a no leaves what that branch above says instead.
+    - **A hook or `core.hooksPath` in the way:** make no offer. Never overwrite it and never chain to it silently. Say what is there and why it does not count, that the guard is theirs to
+      combine with it, and that `scaffold/hooks/pre-push.tmpl` in this skill is the script to combine. The outcome is that of no guard.
+    - **A `'` in the integration branch's name:** make no offer. Say why: the script holds the name in single quotes, so a `'` breaks it and it then refuses every push from this clone. The guard is theirs to write from that same script, and the outcome is that of no guard.
+
+    With every other entry already there, the offer is question 16 on its own: a repo at fourteen rules is asked only that. With something in the way as well, there is nothing to ask: say it.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
@@ -252,11 +285,25 @@ shown as a diff first like every patch.
   blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
   is not edited. The doc's answer was written in step 5.
 - **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
-  place `HARNESS.md` names, in that file's format (for Claude Code, `Bash(<command>:*)` entries in
-  `permissions.allow` of `.claude/settings.json`), adding the missing entries and keeping the rest. `git
-  push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
+  place `HARNESS.md` names, in the form it gives (for Claude Code, the rules of its table in
+  `permissions.allow` of `.claude/settings.json`, with `cli:` and `server:` from `.sdlc/leeway.md`, its `Read` rule as `HARNESS.md` says when `CLAUDE_CONFIG_DIR` is set), adding the
+  missing entries and keeping the rest. `git
+  push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
   pre-push guard does not cover a merge through GitHub). A place outside the repo is not
   written: print the entries for the human.
+- **16's offer, yes**: the hook's path goes in the plan as a `create`. Before writing, run detection's first and third commands again: if anything is now at
+  that path or `core.hooksPath` is set, write nothing, and it is the branch "A hook or `core.hooksPath` in the way". Otherwise create its directory, write
+  `scaffold/hooks/pre-push.tmpl` in this skill to that path, with `{{INTEGRATION_BRANCH}}` filled from the integration branch, make it executable, and try it, which pushes nothing:
+
+  ```sh
+  mkdir -p "$(dirname <that path>)"     # before the write: git prints the path even when a clone has no hooks directory
+  chmod +x <that path>     # after the write
+  echo "HEAD 0 refs/heads/<integration branch> 0" | <that path>; echo $?     # the refusal, and 1
+  echo "HEAD 0 refs/heads/<any other branch> 0" | <that path>; echo $?     # 0
+  ```
+
+  Say where you put it, and only then add `git push` to the allow-list. If the try prints anything else, delete the file this install just wrote and the push rule is not added: say what it printed.
+  If the write or the `chmod` is refused, tell the person what to do themselves, which is to put that same filled script, printed in full, at `<that path>` and make it executable, and that the push rule stays off until this install, run again, finds it there.
 
 ### Generate all seven contract docs, always
 
@@ -407,8 +454,9 @@ which have none (a run of those is limited only by the round caps), and that `sd
 the server refused in step 5 (the refs it named, and that neither the preset nor the default budget was applied), and
 what follows from an answer the
 human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
-declined (run prompts for every command), an allow-list added without `git push` (each push prompts
-until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
+declined (run prompts for every command), an allow-list added (the startup warnings at each session, and what question
+16 said it leaves open), an allow-list entry detection found out of date (which ones, and whether it is dead or too wide), an allow-list added without `git push` (each push prompts until a guard `run` names exists; a push rule already there stays, and pushes run with no prompt: see too wide), a pre-push guard written (where it is, and that another clone gets one by running this install there),
+a hook or `core.hooksPath` that kept the guard from being written (what is there, and that the guard is theirs to combine), a `'` in the integration branch's name that did (why, and that the guard is theirs to write), a guard the write or `chmod` was refused for (what the person is to put where). Leave out changes the human made before the
 install: they are theirs, not the install's.
 
 Write each item for a reader who does not know the loop's terms, in plain words: **what it is, what it means

@@ -10,6 +10,11 @@ version: 0.3.0
 agent: grok
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
+- **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+
 ## Delegating to a named agent
 
 Delegate to the custom subagent by name ("use the sdlc-implementer subagent to …"). Agents are `.grok/agents/<name>.md`. UNVERIFIED: the delegation tool's name. Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -71,7 +76,10 @@ After writing them: Run `/hooks-trust` in Grok so it runs `.grok/hooks/leeway-sd
 
 ## Permissions for an unattended run
 
-run's allow-list goes in `~/.grok/config.toml` or the project's `.grok/` settings (permission rules).
+run's allow-list ("Unattended prerequisites") goes in `~/.grok/config.toml` or the project's `.grok/` settings (permission rules). Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how xAI Grok Build matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 

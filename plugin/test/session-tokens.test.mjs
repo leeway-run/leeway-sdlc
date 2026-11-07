@@ -6,7 +6,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { constants } from 'node:buffer'
-import { closeSync, mkdtempSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
+import { closeSync, mkdirSync, mkdtempSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -173,6 +173,29 @@ test('a directory is not a transcript: exit 2, no number', () => {
   const dir = mkdtempSync(join(tmpdir(), 'session-tokens-dir-'))
   refused(spawnSync(process.execPath, [SCRIPT, '--subagent', dir], { encoding: 'utf8' }), 2, /cannot read the transcript .*EISDIR/)
   rmSync(dir, { recursive: true, force: true })
+})
+
+test('--subagent-id and --this-session find Claude Code\'s transcripts from the environment, and a run with neither path or variable gives no count', () => {
+  const home = mkdtempSync(join(tmpdir(), 'session-tokens-home-'))
+  try {
+    const project = join(home, 'projects', '-some-project')
+    mkdirSync(join(project, 'sess-1', 'subagents'), { recursive: true })
+    mkdirSync(join(home, 'projects', '-other-project'))
+    writeFileSync(join(project, 'sess-1', 'subagents', 'agent-abc.jsonl'), JSON.stringify(call('a', 1)) + '\n')
+    writeFileSync(join(project, 'sess-1.jsonl'), JSON.stringify(call('b', 10)) + '\n')
+    const env = { ...process.env, CLAUDE_CONFIG_DIR: home, CLAUDE_CODE_SESSION_ID: 'sess-1' }
+    const go = (args, e = env) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: 'utf8', env: e })
+    assert.equal(go(['--subagent-id', 'abc']).stdout, '111\n')
+    assert.equal(go(['--this-session', '--from', t(5), '--to', t(20)]).stdout, '111\n')
+    assert.equal(go(['--this-session', '--from', t(11), '--to', t(20)]).stdout, '0\n')
+    refused(go(['--subagent-id', 'nope']), 2, /no transcript for this session/)
+    const { CLAUDE_CODE_SESSION_ID: _, ...noSession } = env
+    refused(go(['--subagent-id', 'abc'], noSession), 2, /CLAUDE_CODE_SESSION_ID is not set/)
+    refused(go(['--subagent-id', '../x']), 1, /needs an agent id/)
+    refused(go(['--this-session', '--subagent-id', 'abc']), 1, /give one of/)
+  } finally {
+    rmSync(home, { recursive: true, force: true })
+  }
 })
 
 test('a malformed line in a subagent transcript withholds the number, and never quotes the line', () => {

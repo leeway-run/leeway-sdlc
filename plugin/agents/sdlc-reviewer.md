@@ -17,12 +17,17 @@ report it. You do not commit, and you never *write* to Leeway.
 task and story, the sibling tasks, and the earlier rounds of this task:
 
 ```sh
-leeway --json issue get <ref>
-leeway --json review get <ref>
-leeway --json escalation list <KEY>
+<cli> --server <server> issue get <ref> --json
+<cli> --server <server> review get <ref> --json
+<cli> --server <server> escalation list <KEY> --json
 ```
 
-Your prompt names the real command (`leeway`, or `node <path>/leeway.js` as `.sdlc/leeway.md` says).
+Your prompt names the real `<cli>` (`leeway`, or `node <path>/leeway.js` as `.sdlc/leeway.md` says) and the `<server>`.
+Write a read as printed here, verb first and with the server, and git as `git -C <the worktree's absolute path>`: in an
+unattended run those are the forms the allow-list matches. Anything else prompts, `cd <path> && git` included. A git verb
+needs at least one argument to match: `git -C <worktree> status --short`, `git -C <worktree> diff HEAD`,
+`git -C <worktree> show HEAD`, `git -C <worktree> log -5`; with nothing after the verb it prompts. A lane runs as
+`cd <worktree> && <lane>`, which is allowed where `cd` with git is not.
 Your verdict is never written to a file, so the round record is the only lasting account of what a
 previous round already found and how it was resolved — re-raising a finding the implementer answered
 two rounds ago is a cost you can avoid. When a diff touches code carrying a ticket ref in a comment,
@@ -50,7 +55,7 @@ already include it.
 **Open your response with the verbatim output of:**
 
 ```sh
-git status --short && echo "---PROOF---" && pwd
+git -C <worktree> status --short && echo "---PROOF---" && pwd
 ```
 
 The implementer's brief is pasted into your prompt. There is no file to open: if the brief is
@@ -126,7 +131,7 @@ them are.
 ## Which diff, and which round
 
 **Your prompt names the diff, and the iteration.** The round is committed and pushed, so the diff is
-the whole task as `git diff <story-branch>...HEAD` and this round as `git show HEAD`; your prompt
+the whole task as `git -C <worktree> diff <story-branch>...HEAD` and this round as `git -C <worktree> show HEAD`; your prompt
 names the sha, and anchors are lines of the files at that sha. Review the one it names; "the diff"
 below means that.
 
@@ -149,7 +154,7 @@ apply to the stubs only.
 
 **After a round 0, check the freeze, but only when red tests ran.** Your prompt says whether this
 task ran red tests (`redTests`), lists the frozen tests and names the round-0 commit. When it says
-they ran, run `git diff <round-0 commit> -- <frozen paths>` over the working state you review. **Any
+they ran, run `git -C <worktree> diff <round-0 commit> -- <frozen paths>` over the working state you review. **Any
 change beyond removing a skip marker is a BLOCKER**, unless your prompt carries a human's approval for
 that exact change. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
 says no red tests ran, or lists no frozen tests, there is no freeze: raise no freeze finding, and
@@ -193,6 +198,16 @@ The depth table rates a missing or weak test and places the gate bullets below. 
 **For every test the diff adds or changes, break what it guards and watch it fail.** Revert the
 guard, corrupt the fixture, flip the condition — run it, record the red output, then put it back
 byte for byte and say that you did.
+
+You have no edit tools, and `sed`, `cp` and `checkout` prompt or are refused, so a mutation and its restore go through
+`node -e`, on the file's absolute path, and `status --short` confirms the restore:
+
+```sh
+node -e 'const fs=require("fs"),f="<absolute path>",s=fs.readFileSync(f,"utf8"),t=s.replace("<what it guards>","<broken>");if(t===s)throw new Error("no change: text not found");fs.copyFileSync(f,f+".keep");fs.writeFileSync(f,t)'
+cd <worktree> && <lane>
+node -e 'const fs=require("fs"),f="<absolute path>";fs.renameSync(f+".keep",f)'
+git -C <worktree> status --short
+```
 
 A green test proves the test ran. It proves nothing about whether the test covers anything, and that
 gap is the most expensive thing this review has ever missed:

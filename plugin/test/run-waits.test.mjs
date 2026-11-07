@@ -53,7 +53,7 @@ test('it posts what it posts today, then says once what it waits on and until wh
 test('it waits on wait-answer.mjs, started as HARNESS.md "Waiting for an answer" says', () => {
   const wait = under(skill, 'Wait, then carry on');
   assert.match(wait, /`HARNESS\.md`, "Waiting for an answer", says/);
-  assert.match(wait, /node <plugin-files>\/scripts\/wait-answer\.mjs --server <server> <ref> <eN> -- <cli>/);
+  assert.match(wait, /<wait-answer> --server <server> <ref> <eN> -- <cli>/);
   assert.match(wait, /Do not poll the issue yourself/);
 });
 

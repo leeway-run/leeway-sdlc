@@ -10,6 +10,11 @@ version: 0.3.0
 agent: codex
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
+- **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+
 ## Delegating to a named agent
 
 Ask for the named agent explicitly, for example "spawn the `sdlc-implementer` agent with this prompt: …". Custom agents are `.codex/agents/<name>.toml`. UNVERIFIED: that the main agent selects a custom agent by name; if it starts a generic one instead, stop and say so rather than running the loop without the agent's instructions. Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -71,7 +76,10 @@ After writing them: Open `/hooks` and trust the leeway-sdlc hook in `.codex/hook
 
 ## Permissions for an unattended run
 
-run's allow-list goes in `.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person.
+run's allow-list ("Unattended prerequisites") goes in `.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person. Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how OpenAI Codex CLI matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 

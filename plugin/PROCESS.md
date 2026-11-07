@@ -27,7 +27,7 @@ Five roles, three of them subagents:
 | Orchestrator | the main session | Leeway writes, branches and worktrees, commits, merges and pushes, delegation, the verification gate | writes feature code inline; skips the review; writes without `--as` |
 | Planner | the orchestrator, before work starts | the design doc and the task breakdown | starts coding before the breakdown exists and the plan gate (if the type has one) has passed |
 | Divergence reviewer | `sdlc-divergence-reviewer` subagent | the coverage report: each acceptance and technical criterion to the task that delivers it and the check that proves it, and a recommended verdict | edit anything, write to Leeway, approve its own gate |
-| Implementer | `sdlc-implementer` subagent | code, tests, `git add`, the handoff brief | commit, merge, push, write to Leeway |
+| Implementer | `sdlc-implementer` subagent | code, tests, `git -C <worktree> add <paths>`, the handoff brief | commit, merge, push, write to Leeway |
 | Reviewer | `sdlc-reviewer` subagent | running the lanes, the diff review at the depth the process sets, the verdict | fix code, commit, write to Leeway |
 
 The human is not a role the loop plays. The human decides what only a human can, and is reached by an
@@ -45,7 +45,7 @@ the first in the list, so two sessions rarely land on the same pair:
   puffin, raven, robin, rook, starling, tern, thrush, warbler, wren.
 
 Two sessions running at once, or two people's agents, must not share one. Before taking the pair, read the aliases
-active in the project the work belongs to (`leeway --json project get <KEY> <projectId>`, with the project id from
+active in the project the work belongs to (`leeway project get <KEY> <projectId> --json`, with the project id from
 `issue get`'s `project.id`; its `activeAgents` lists those that acted in the last 24 hours, at most 50) and the ones
 already visible on the issue (`issue get`'s `agents`). If the pair is in either, add `-2`, then `-3` and so on, until
 the alias is in neither (`quiet-wren-2`). A server that predates the field returns no `activeAgents`; then the issue's
@@ -77,7 +77,7 @@ are a person's, made by them or by a skill they asked.
   Every write is attributed (`--as <alias>/<role>`), and a second writer makes the history unreadable.
   Reading touches none of that, so subagents read freely and are expected to: a ref in a code comment,
   a sibling task, an earlier round is context the next person to touch it needs.
-- **One writer to git.** The orchestrator. Subagents may only `git add`.
+- **One writer to git.** The orchestrator. Subagents may only `git -C <worktree> add <paths>`.
 
 **Both are enforced for this plugin's own agents, by hooks.** `git-guard` blocks a governed agent's
 git writes; `leeway-guard` blocks a governed agent's `leeway` call whose verb is outside
@@ -102,6 +102,9 @@ the one failure that corrupts everything downstream.**
   call; the CLI's own default, `https://app.leeway.run`, is only what `leeway login` uses without one.
 - **No token in any repo file.** `leeway login` keeps it on the machine. A subagent is never handed a
   token, and `leeway-guard` stops its writes.
+- **Verb first.** The plugin prints a call as `<cli> --server <server> <resource> <verb> <args> --as <alias>/<role> --json`,
+  because a permission rule matches the text before its first `*` as written (`run`, "Unattended prerequisites"). The CLI
+  takes the flags on either side, so an attended skill that still prints them before the verb works: it only prompts.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
 - **Size limits.** A comment body is 1 to 20,000 characters, a title at most 200, `--tests` at most 200,
@@ -222,7 +225,7 @@ task whose type says `redTests: false` goes straight to implementing.
 1. Delegate to the implementer. **Embed critical inputs; do not reference them.** A prompt carrying its
    own content survives a failed tool call; an agent whose first call fails silently fabricates
    everything downstream.
-2. **Gate.** Independently run `git status --short` and `git diff --cached --stat` and compare against
+2. **Gate.** Independently run `git -C <worktree> status --short` and `git -C <worktree> diff --cached --stat` and compare against
    what the brief reported. That comparison is what catches a round that never happened.
 3. Commit and push the task branch, then record the round (see the records table). Not a summary: the
    full brief, because nothing else keeps it.
@@ -291,7 +294,7 @@ as a decision record on the issue. This replaces "returns `BLOCKED`" for anythin
 an implementer still writes the doubt it can live with under *Uncertainties*.
 
 ```sh
-leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{"label":"…","argument":"…"}]' --meanwhile "…"
+leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{"label":"…","argument":"…"}]' --meanwhile "…"
 ```
 
 - **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
@@ -313,7 +316,7 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
   and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
   somewhere else.
-- **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with
+- **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
 

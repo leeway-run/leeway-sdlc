@@ -210,6 +210,11 @@ version: ${version}
 agent: ${t.id}
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** \`node .sdlc/kit/scripts/wait-answer.mjs\`
+- **session-tokens:** \`node .sdlc/kit/scripts/session-tokens.mjs\`
+
 ## Delegating to a named agent
 
 ${t.delegate} Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -276,7 +281,10 @@ After writing them: ${t.after}
 
 ## Permissions for an unattended run
 
-run's allow-list goes in ${t.permissions}
+run's allow-list ("Unattended prerequisites") goes in ${t.permissions} Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how ${t.name} matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 

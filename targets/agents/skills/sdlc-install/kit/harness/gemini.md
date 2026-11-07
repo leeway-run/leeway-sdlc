@@ -10,6 +10,11 @@ version: 0.3.0
 agent: gemini
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
+- **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+
 ## Delegating to a named agent
 
 Each agent in `.gemini/agents/` is a tool of the same name: call the `sdlc-implementer` tool with the prompt. A subagent cannot start another one. Every delegation starts a **fresh** agent, and its final message is what you gate.
@@ -71,7 +76,10 @@ After writing them: Nothing to trust. If your account was moved to Antigravity C
 
 ## Permissions for an unattended run
 
-run's allow-list goes in `.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run.
+run's allow-list ("Unattended prerequisites") goes in `.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run. Write each entry in that file's format.
+
+**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how Google Gemini CLI matches a rule against a command with flags.
+No form has been tried here, so a yes may still prompt.
 
 ## Installed version, update and restart
 

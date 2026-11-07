@@ -103,7 +103,7 @@ test('sdlc-install raises the interview in rounds, each waiting only on what it 
   const rounds = text.slice(start, text.indexOf('Anywhere else,', start));
   assert.match(text, /stop the turn until the round is answered/);
   assert.match(rounds, /every question not yet answered that waits on no open answer, raised together, not rationed/);
-  assert.ok(rounds.includes('What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10 (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4 on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back; step 6\'s plan on all of them.'), 'the wait list changed');
+  assert.ok(rounds.includes('What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10 (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4 on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back; question 16\'s offer on 16; step 6\'s plan on all of them.'), 'the wait list changed');
   assert.match(rounds, /Everything else goes in the first round/);
   assert.match(rounds, /on \(d\), questions 3 to 5 are never raised/);
 });
