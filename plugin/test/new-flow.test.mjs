@@ -12,7 +12,7 @@ const tune = oneLine(read('skills/sdlc-tune/SKILL.md'));
 const sync = oneLine(read('skills/sync-repo/SKILL.md'));
 const update = oneLine(read('skills/update/SKILL.md'));
 
-const build = { id: 'build', kind: 'build', status: 'in_progress', params: { redTests: true, round0Cap: 3, roundCap: 3, review: 'adversarial', blockingRungs: ['R4', 'R5'], unattended: true } };
+const build = { id: 'build', kind: 'build', status: 'in_progress', params: { redTests: true, round0Cap: 3, roundCap: 5, review: 'adversarial', blockingRungs: ['R4', 'R5'], unattended: true } };
 const verify = { id: 'verify-on-dev', kind: 'manual', label: 'verify on dev', status: 'in_review' };
 // The `maintained` feature as LWY-125 stores it.
 const NEW = [
