@@ -49,9 +49,9 @@ sentence or two) at most 1,000, and the question at most 500.
   a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `--comment cN`
   (one open escalation per comment).
 - **Rounds** (`PROCESS.md`, "Questions to the human are escalations"): each round is every question not yet answered that waits on no open answer, raised
-  together, not rationed. What waits: questions 2 and 12 on question 1 (the product they read); questions 10 and
-  13 on which agent this is, where that is asked (they name its instructions file); question 3 on 2; questions 4
-  and 5 on 3 (the types kept); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back;
+  together, not rationed. What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10
+  (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4
+  on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back;
   step 6's plan on all of them. Everything else goes in the first round. A question an answer settled is dropped, not
   asked again and not raised for confirmation: on (d), questions 3 to 5 are never raised.
 Anywhere else, ask in the terminal, one question at a time, pre-filled.

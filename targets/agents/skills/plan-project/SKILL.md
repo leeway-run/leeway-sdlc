@@ -313,7 +313,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
    together share one comment and one escalation, naming each, and a story whose question another answer would
    change is held for the next round; the rest go out together. **Stop**, report the escalation ids,
-   and create no tasks for a story whose question is open. On resume write each answer into every task of each
+   and create no tasks for a story whose question is open or held. A held question goes out on resume, unless an answer settled it, and stops the same way. On resume write each answer into every task of each
    story it names, under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
    skips this step; say which.
 
@@ -470,18 +470,20 @@ escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment 
 the plan, not the gate decision.
 
 **Check the round before raising it.** QUESTIONs where one answer would settle or change another are merged into
-one, under the lowest number, its comment naming the numbers it stands for. They are merged and never held for a
-later round: `run` counts the escalations on these comments, so a QUESTION not yet raised is one it would not wait
-for. Every other QUESTION goes out now, together.
+one, under the lowest number, its comment naming the numbers it stands for. Where the merge would need more than 5 options, hold the dependent
+QUESTION for the next round instead, and withhold the `# QUESTIONs applied` reply until it is answered or an answer
+settled it: `run` counts only the escalations on these comments, so a QUESTION not yet raised holds the story through
+that reply alone. Every other QUESTION goes out now, together.
 
 **A report's QUESTIONs are the escalations on the comments opening
 `# QUESTION … of c<report>`**; an escalation on no comment, or on the report itself, is not one. Say in the session,
 in this order: answer every QUESTION, run plan-project to apply the answers, then move the story to `ready`. `run`
 refuses the story until they are applied.
 
-On resume, when every one is answered, change what an answer changes in a description or a task, then **reply to
+On resume, raise a held QUESTION (one the report has with no comment yet), unless an answer settled it, and stop
+again. When every one is answered, change what an answer changes in a description or a task, then **reply to
 the report** (`comment add <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line
-per escalation, its answer and what it changed, or that it changed nothing. That reply is what makes them
+per escalation, its answer and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is what makes them
 applied. Say so, and stop again: move nothing, so the story stays where it was, at the plan gate or at `ready`.
 
 **A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
@@ -522,5 +524,5 @@ to the PO as one comment and it has no tasks. Every planned story has its *Techn
 a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
 *planned by* half on its Status line. Every story and task, and the Plan record, has a summary.
 And, for a type with a plan gate, the report is posted, every QUESTION in it is a comment of its own with an
-escalation on it, and the story waits
+escalation on it, or held for the next round as "The QUESTIONs" says, and the story waits
 at the plan gate for a person to move it; for a type without one, the story is `--status ready`.

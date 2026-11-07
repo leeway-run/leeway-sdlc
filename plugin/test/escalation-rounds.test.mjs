@@ -40,13 +40,16 @@ test('plan-project merges floor questions one answer settles, and sends the rest
   const text = skill('plan-project');
   assert.match(text, /\*\*All of it is one round:\*\* stories one answer would settle together share one comment and one escalation/);
   assert.match(text, /On resume write each answer into every task of each story it names/);
+  assert.match(text, /create no tasks for a story whose question is open or held\. A held question goes out on resume, unless an answer settled it/);
   assert.match(text, /ask once by escalation, in one round with step 4's floor questions/);
 });
 
-test('plan-project merges a report\'s dependent QUESTIONs and never holds one past the check run makes', () => {
+test('plan-project merges a report\'s dependent QUESTIONs, and a held one keeps the story through the applied reply', () => {
   const text = skill('plan-project');
   assert.match(text, /QUESTIONs where one answer would settle or change another are merged into one, under the lowest number/);
-  assert.match(text, /merged and never held for a later round: `run` counts the escalations on these comments/);
+  assert.doesNotMatch(text, /merged and never held/);
+  assert.match(text, /Where the merge would need more than 5 options, hold the dependent QUESTION for the next round instead, and withhold the `# QUESTIONs applied` reply until it is answered or an answer settled it: `run` counts only the escalations on these comments, so a QUESTION not yet raised holds the story through that reply alone\./);
+  assert.match(text, /On resume, raise a held QUESTION \(one the report has with no comment yet\), unless an answer settled it, and stop again\. When every one is answered/);
   assert.match(text, /Every other QUESTION goes out now, together\./);
 });
 
@@ -58,6 +61,23 @@ test('run raises independent questions together and does not hide the friction p
   assert.match(text, /A verdict with more than one `Escalates:` block raises them all in this round/);
   assert.match(text, /\*\*Debt proposals from one verdict are one round\*\*/);
   assert.match(text, /Step 6's friction proposal depends on no answer here, so where there is a wait to do, do step 6's collecting and raise its proposal first/);
+});
+
+test('a stop or a resume in run carries every escalation of the round, not one', () => {
+  const text = skill('run');
+  assert.doesNotMatch(text, /stop's one escalation/);
+  assert.match(text, /\*\*Work held on a round carries on only when every escalation of the round is answered, with all the answers reaching it\*\*/);
+  assert.match(text, /read each escalation the brief raised \(`escalations\[\]\.answer`\)\. One still open: wait on it, and start no round\. All answered:/);
+  assert.match(text, /run the next round with all the answers pasted into the prompt/);
+  assert.match(text, /PASS or FAIL handling until every one is answered/);
+  assert.match(text, /a second block on one finding gets a comment of its own/);
+  assert.match(text, /one `# Run status` comment on the story names each of the stop's escalations/);
+  assert.match(text, /Every escalation it names must be answered, or the change it asked for recorded\. One open and that change not recorded/);
+  assert.match(text, /Each stop ends in \*\*one escalation\*\*, or in one per independent question where the sub-issue run raised a round of them/);
+  assert.match(text, /Where the sub-issue run raised it or them, add each id to the status comment/);
+  assert.match(text, /with the comment's `cN` and each escalation id\./);
+  assert.match(text, /7\. \*\*Wait on each of the stop's escalations\*\*/);
+  assert.match(text, /Two escalations are still one action/);
 });
 
 test('the brief and verdict templates can carry two independent questions, and merge dependent ones', () => {
@@ -72,8 +92,7 @@ test('sdlc-install raises the interview in rounds, each waiting only on what it 
   const rounds = text.slice(start, text.indexOf('Anywhere else,', start));
   assert.match(text, /stop the turn until the round is answered/);
   assert.match(rounds, /every question not yet answered that waits on no open answer, raised together, not rationed/);
-  assert.match(rounds, /questions 2 and 12 on question 1/);
-  assert.match(rounds, /question 3 on 2; questions 4 and 5 on 3/);
+  assert.ok(rounds.includes('What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10 (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4 on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back; step 6\'s plan on all of them.'), 'the wait list changed');
   assert.match(rounds, /Everything else goes in the first round/);
   assert.match(rounds, /on \(d\), questions 3 to 5 are never raised/);
 });
@@ -83,6 +102,8 @@ test('sdlc-tune holds a request behind the new flow only when that answer change
   assert.match(text, /that order holds only for a request on a type the new flow changes/);
   assert.match(text, /A request on any other type depends on no open answer: its question goes out in the same round/);
   assert.match(text, /each with its own noted id/);
+  assert.match(text, /each yes is written in turn, from a fresh Step 1 read\./);
+  assert.match(text, /\*\*retry the write once, rebuilt from a fresh Step 1 read\*\* \(a new `before\.json` and `after\.json`/);
 });
 
 test('sync-repo holds only the contract block behind the filing-work question', () => {
@@ -93,4 +114,12 @@ test('sync-repo holds only the contract block behind the filing-work question', 
   assert.match(text, /Only the contract block waits on this answer/);
   assert.match(text, /Every other copy and step 1's other offers depend on no answer here, so they are compared and go out in the same round/);
   assert.match(text, /the only question held for a later round is the contract block's/);
+});
+
+test('sync-repo stops the turn on any open question, filing-work included, and writes nothing until none is', () => {
+  const text = skill('sync-repo');
+  assert.match(text, /\*\*While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, stop the turn, and do not go on to step 3's writes or to step 4\.\*\*/);
+  assert.match(text, /An open `filing-work:` question stops the turn like any other open question \("On resume"\), even with every copy answered: step 4 never runs on it/);
+  assert.match(text, /An answered one is acted on in step 3, once no question remains open\./);
+  assert.match(text, /raise one follow-up escalation for that copy, before anything is written/);
 });

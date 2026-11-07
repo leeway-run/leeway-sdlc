@@ -156,7 +156,7 @@ their type, status and step. For each, offer a move the human can pick:
 This is a second question to the human, in a later round because it follows a refused write (escalation mode: a second escalation, with the refs and the moves in
 a comment first, one option per plan of moves and one for "Leave it"; note its id as above and read only that
 entry's `answer`). Make no move without the answer. After
-it, make the moves, **retry the write once**, and if it is refused again report the refs that remain and stop.
+it, make the moves, **retry the write once, rebuilt from a fresh Step 1 read** (a new `before.json` and `after.json`: a write replaces the whole definition and no version guards it, so the old file would undo a yes written since), and if it is refused again report the refs that remain and stop.
 
 ## Step 6 - read it back
 

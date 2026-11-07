@@ -1,6 +1,6 @@
 ---
 name: run
-description: Run a Leeway ref through the implement-review loop, driven by the build step of its type. A sub-issue - red tests first when the process asks, then rounds of implementer and reviewer until PASS or the round cap, each round committed, pushed and recorded as an iteration, a brief, anchored findings and a verdict, then squash-merged into its parent issue's worktree. An issue - unattended, every sub-issue in the order of its blocking relations, ending at the issue's merge gate; a human is involved only when one of ten hard stops fires, through one status comment and one escalation. A project - its issues as issue runs in that order, stopping at the first that stops. Refuses a type with no build step, the Plan record, a done or cancelled ref and another product's ref. Use when a sub-issue is ready to build, an issue's plan gate has passed, or a project's issues are. A question for the human becomes a Leeway escalation, never a terminal question. Invoking this opts the session into the delegated-work contract.
+description: Run a Leeway ref through the implement-review loop, driven by the build step of its type. A sub-issue - red tests first when the process asks, then rounds of implementer and reviewer until PASS or the round cap, each round committed, pushed and recorded as an iteration, a brief, anchored findings and a verdict, then squash-merged into its parent issue's worktree. An issue - unattended, every sub-issue in the order of its blocking relations, ending at the issue's merge gate; a human is involved only when one of ten hard stops fires, through one status comment and its escalations. A project - its issues as issue runs in that order, stopping at the first that stops. Refuses a type with no build step, the Plan record, a done or cancelled ref and another product's ref. Use when a sub-issue is ready to build, an issue's plan gate has passed, or a project's issues are. A question for the human becomes a Leeway escalation, never a terminal question. Invoking this opts the session into the delegated-work contract.
 ---
 
 # Run
@@ -133,7 +133,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    <ref>`): `escalations[].answer` is the answer a re-invoke reads, and its `label` and `note` reach the work as that
    path's own resume says (the next prompt, the decision in the thread). Carry on from the first thing not done, as
    "Resuming a task" in step 0.7 does; in an issue run, from where "On a stop" left it.
-   - **Nothing is written twice.** The stop's escalation, its context comment, its `# Run status` comment, the
+   - **Nothing is written twice.** The stop's escalations, their context comments, its `# Run status` comment, the
      round's iteration and brief are already in Leeway: no second escalation, comment or iteration for the stop you
      waited on.
    - **An answer that ends the work** (for example "Cancel it") is followed: stop there and say so.
@@ -148,7 +148,9 @@ fresh.
 
 **Check the round before raising more than one** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change
 another question, merge them into one, or hold the dependent one for the next round. Independent ones are raised
-together, not rationed behind a wait, and waited on one after another. A later round drops what an answer settled.
+together, not rationed behind a wait, and waited on one after another. **Work held on a round carries on only when every escalation of the round is
+answered, with all the answers reaching it**: one answer of two is not yet step 5's answer, except one that ends the
+work, which is followed at once. A later round drops what an answer settled.
 
 ## Why it is shaped this way
 
@@ -515,13 +517,14 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
 4. Set the sub-issue blocked: `leeway --as <alias>/agent issue update <ref> --status blocked` (the step clears).
-5. **Wait.** Report the escalation id and the issue, and wait on it ("Wait, then carry on"), on each in turn when
+5. **Wait.** Report each escalation id and the issue, and wait on it ("Wait, then carry on"), on each in turn when
    there are two. Do not delegate to the
    reviewer.
 
-On resume, whether the wait answered or `run` was invoked again, read the answer (`escalations[].answer`), set the
+On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
+open: wait on it, and start no round. All answered: set the
 step back to the stage the thread shows (`--step red-tests` or `--step implementing`), and run the next round with
-the answer pasted into the prompt.
+all the answers pasted into the prompt.
 
 ### 3. Delegate to the reviewer
 
@@ -590,8 +593,10 @@ sufficient: the verdict exists nowhere else.
    `--comment cN` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
    review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
-   them all in this round. Report the escalation id and the issue, and do not go to
-   PASS or FAIL handling until it is answered. Leave the sub-issue `in_review`, in round 0 too.
+   them all in this round; a second block on one finding gets a comment of its own, naming the finding, and its
+   escalation is tied to that, since a comment holds one open escalation. Report each escalation id and the issue, wait
+   on each in turn, and do not go to
+   PASS or FAIL handling until every one is answered. Leave the sub-issue `in_review`, in round 0 too.
 
 #### What a deferred finding becomes
 
@@ -606,7 +611,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway --as <alias>/agent comment add <collector> --stdin body <nit.md` |
 
 **Debt proposals from one verdict are one round**: raised together, with those one answer would settle merged into
-one. They come after the verdict's `Escalates:` is answered, because that answer can change which findings stay
+one. They come after every `Escalates:` block of the verdict is answered, because that answer can change which findings stay
 deferred.
 
 **If you cannot name the consequence of leaving it, it is a nit.** A nit is a comment on the collector, never an
@@ -816,9 +821,9 @@ You are the orchestrator for the whole story. **One issue run, one story.** It e
 
 - **the end**: every task has landed, the story gate has run and the story has moved to the step after `build`, or
   to done;
-- **a stop**: a hard stop condition fired, one `# Run status` comment and one escalation are on the story, and the
-  wait for its answer ended without one, or the answer ended the work ("Wait, then carry on"); nothing more happens
-  until a human acts. A stop whose answer arrives while the run waits is not an ending: the run carries on.
+- **a stop**: a hard stop condition fired, one `# Run status` comment on the story names each of the stop's escalations, and a
+  wait on one ended without an answer, or an answer ended the work ("Wait, then carry on"); nothing more happens
+  until a human acts. A stop whose every answer arrives while the run waits is not an ending: the run carries on.
 
 There is no third ending. A run that drifts off without either has left the next human to work out what happened
 from the branches.
@@ -855,8 +860,8 @@ A refusal here writes nothing: say in the session which precondition failed and 
 3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
 4. **Leeway answers.** Read the story and its children; a failed call, or an empty result where something must
    exist, is stop 10 below, not an empty story.
-5. **A previous run is answered.** If the story carries a comment opening `# Run status`, read the latest. The escalation it
-   names must be answered, or the change it asked for recorded. Not recorded → the condition still holds; say so
+5. **A previous run is answered.** If the story carries a comment opening `# Run status`, read the latest. Every escalation it
+   names must be answered, or the change it asked for recorded. One open and that change not recorded → the condition still holds; say so
    and do not start.
 6. **The unattended prerequisites are in place** (below), or a human is watching and says so. A run that will stop at
    a permission prompt is attended whether anyone planned it that way or not.
@@ -927,11 +932,12 @@ session. That is what the stop conditions are.
 
 **Only a human overrides these. The agent never does**, not with a reason, not once. A human overrides one by
 answering the escalation; the run waiting on it reads it there ("Wait, then carry on"), or a later run does
-(precondition 5). Each stop ends in **one escalation**: where
-the sub-issue run already raises one, that is the stop's, and the issue run adds none (a second would be two questions
-for one stop); otherwise the issue run raises it on the story.
+(precondition 5). Each stop ends in **one escalation**, or in one per independent question where the sub-issue run raised a round of
+them (a brief's second `## Question`, a verdict's second `Escalates:` block, a verdict's debt proposals): where
+the sub-issue run already raises it or them, those are the stop's, and the issue run adds none (one more would be a
+further question for one stop); otherwise the issue run raises it on the story.
 
-| # | Condition | Detected | The stop's one escalation |
+| # | Condition | Detected | The stop's escalation |
 |---|---|---|---|
 | 1 | **The round cap is hit** on any task: the verdict is FAIL and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
@@ -992,9 +998,9 @@ Do these, in this order, and nothing else:
    # Run status — <story ref> · stopped: <condition, by its name in "Hard stop conditions">
 
    - **Landed:** <task ref> <title>, commit <sha>; one per line, or "nothing yet".
-   - **Stopped on:** <task ref> <title>: what fired and why, in one or two sentences, and the `cN` or escalation id that shows it.
+   - **Stopped on:** <task ref> <title>: what fired and why, in one or two sentences, and the `cN` or each escalation id that shows it.
    - **Not started:** <task refs, in the order they would have run>.
-   - **Next human action:** <one action, imperative, saying where the answer goes>. Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on <story ref> again.
+   - **Next human action:** <one action, imperative, saying where each answer goes>. Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on <story ref> again.
    - **Left in place:** <story worktree path>, <task worktree path>, <branch names>.
    - **Spend:** <rounds> of <budget> rounds · <tokens> of <budget> tokens · <elapsed> of <budget> wall-clock.
    - **Friction so far:** <one line each, with task and round, harvested per "The friction harvest">; or "none".
@@ -1005,18 +1011,18 @@ Do these, in this order, and nothing else:
    dimension of the build step's `budget`, the wall-clock in hours (`4 h`); a dimension it leaves out drops its
    `of <budget>` (`7 rounds`).
 
-5. **Raise the stop's one escalation** (the last column of "Hard stop conditions"). One the issue run raises is on the story, as
+5. **Raise the stop's escalation** (the last column of "Hard stop conditions"). One the issue run raises is on the story, as
    `<alias>/agent`, tied to the status comment (`--comment cN`, its `comment.number`), with the human's real
    choices as options (2 to 5, each with its argument) and `--meanwhile` saying what stays blocked and what does not.
-   Where the sub-issue run raised it, add its id to the status comment, not a second escalation.
-6. **Tell the user the same thing** in the session, with the comment's `cN` and the escalation id.
-7. **Wait on the stop's one escalation** ("Wait, then carry on"). On its answer the run carries on from where step 1
-   left it, the condition overridden by that answer, and writes none of steps 4 and 5 again. Only when the wait ends
-   without an answer, or the answer ends the work, stop the turn. Stop 10 has no escalation to wait on: stop the
+   Where the sub-issue run raised it or them, add each id to the status comment, and raise no other.
+6. **Tell the user the same thing** in the session, with the comment's `cN` and each escalation id.
+7. **Wait on each of the stop's escalations** ("Wait, then carry on"), one after another. Once every one is answered the run carries on from where step 1
+   left it, the condition overridden by those answers, and writes none of steps 4 and 5 again. Only when a wait ends
+   without an answer, or an answer ends the work, stop the turn. Stop 10 has no escalation to wait on: stop the
    turn.
 
 **The next human action is one action, and it is exact.** "Answer the escalation e2 on DRY-2.1, then invoke
-`/leeway-sdlc:run` on DRY-2 again", not "review the findings". A stop whose next step the human has to work out costs
+`/leeway-sdlc:run` on DRY-2 again", not "review the findings". Two escalations are still one action: "Answer e2 and e3 on DRY-2.1, then invoke…". A stop whose next step the human has to work out costs
 them the investigation the run already did. The skill is named as `HARNESS.md`'s **commands** spells it
 (`/leeway-sdlc:run` in Claude Code), or as leeway-sdlc's `run` skill where it names skills in words: a bare `run`
 can reach another skill of that name. For a `debt` stop the proposals follow the template, one line each.
@@ -1148,8 +1154,8 @@ relaxes it.
    this run has already skipped because their issue run refused them. Those stay skipped for the rest of this run:
    they are the one thing the session keeps besides Leeway.
 4. **Stop at the first issue that stops**: a hard stop or a stop of the sub-issue run (each with its own `# Run
-   status` comment and one escalation, as the issue run raises them), once its wait has ended without an answer or
-   its answer ended the work. Start no further issue. An issue whose stop is answered while its run waits has not
+   status` comment and its escalations, as the issue run raises them), once a wait has ended without an answer or
+   an answer ended the work. Start no further issue. An issue whose stop is wholly answered while its run waits has not
    stopped: its run carries on, and so does the project run. A precondition it
    refuses is not a stop: step 2 skips that issue and the run goes on. An issue whose story gate ends at a `manual`
    next step has ended, not stopped: go on with the next runnable issue, and the issues it blocks wait until a
@@ -1157,7 +1163,7 @@ relaxes it.
    action*: "Then invoke <`run`, as `HARNESS.md`'s **commands** spells it> on project <project id> again", in place
    of the story ref, so the human who answers it goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
-   status` comment's `cN` and the escalation id), every issue it skipped and why (the precondition that refused it,
+   status` comment's `cN` and each escalation id), every issue it skipped and why (the precondition that refused it,
    or the blockers not done), and the issues not started, in the order they would have run. When an issue's story
    gate, or "Nothing left", ran "The plan's end", say last what it left the Plan record reading, as its ending does.
 
@@ -1165,7 +1171,7 @@ relaxes it.
 as it does to an issue run on its own. **There is no project-level budget**, and the project run writes nothing of its own to Leeway
 except what "The plan's end" writes when "Nothing left" runs it: the records, the status comments and the escalations
 of each issue are its issue run's. **Re-invoking it is the human's**: once a
-stopped issue's escalation is answered after its wait ended, `run` on the project again goes on from there. A project run has no
+stopped issue's every escalation is answered after its wait ended, `run` on the project again goes on from there. A project run has no
 unattended mode of its own: an issue whose type does not say unattended is refused by its precondition 1, and the
 project run skips it and goes on. A skipped issue costs nothing: it runs no round and spends none of any budget.
 
@@ -1195,7 +1201,7 @@ The person may close the Plan record themselves; if it already reads `done`, lea
 
 **On an issue:** either every task of the story has landed, the story gate has run and the story has moved to the step after `build`
 (or to `done`) with a `# Run status — … · finished` comment, or the run stopped and the story carries one `# Run
-status` comment naming the condition, what landed and the exact next human action, with one escalation, and every
+status` comment naming the condition, what landed and the exact next human action, with the stop's escalations, and every
 worktree and branch where the run left it.
 
 **On a project:** every issue other than the Plan record is `done`, `cancelled`, waiting at a `manual` step or on a

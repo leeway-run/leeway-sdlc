@@ -106,7 +106,7 @@ test('each stop path in run waits on its escalation', () => {
     'the debt proposal': from(under(skill, 'What a deferred finding becomes'), '| Technical debt', '| Anything else'),
     'the code-round cap': from(under(skill, 'Then'), '**The caps.**', '**Spend rounds'),
     'a merge conflict at the story gate': from(under(skill, 'The story gate'), '1. **Merge the story', '2. Run'),
-    'a hard stop': from(under(skill, 'On a stop'), '7. **Wait on the stop'),
+    'a hard stop': from(under(skill, 'On a stop'), '7. **Wait on each of the stop'),
   };
   for (const [name, text] of Object.entries(paths)) {
     assert.match(text, WAITS, `${name} does not wait`);
@@ -142,15 +142,15 @@ test('time spent in a wait does not count toward the wall-clock budget', () => {
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {
   const stop = under(skill, 'On a stop');
-  assert.match(stop, /7\. \*\*Wait on the stop's one escalation\*\* \("Wait, then carry on"\)\. On its answer the run carries on from where step 1 left it, the condition overridden by that answer, and writes none of steps 4 and 5 again/);
-  assert.match(stop, /Only when the wait ends without an answer, or the answer ends the work, stop the turn/);
+  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), one after another\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
+  assert.match(stop, /Only when a wait ends without an answer, or an answer ends the work, stop the turn/);
   assert.match(stop, /Stop 10 has no escalation to wait on/);
   assert.match(under(skill, 'Hard stop conditions'), /Its wait is step 7 of "On a stop", after the status comment, not a second one before it/);
 });
 
 test('an issue or project run ends at a stop only once the wait has ended', () => {
-  assert.match(under(skill, 'Run an issue'), /A stop whose answer arrives while the run waits is not an ending: the run carries on/);
-  assert.match(under(skill, 'Run a project'), /An issue whose stop is answered while its run waits has not stopped: its run carries on, and so does the project run/);
+  assert.match(under(skill, 'Run an issue'), /A stop whose every answer arrives while the run waits is not an ending: the run carries on/);
+  assert.match(under(skill, 'Run a project'), /An issue whose stop is wholly answered while its run waits has not stopped: its run carries on, and so does the project run/);
 });
 
 test('"stop the turn" is said only where the wait ends without an answer', () => {
@@ -170,7 +170,7 @@ test('PROCESS.md: run waits, every other skill stops, and only the answer is one
 
 test('PROCESS.md: the loop and the round cap wait on their escalation, not stop', () => {
   const loop = under(process_, 'The loop');
-  assert.match(loop, /it waits for a human only where one of its stop conditions fires, each ending in one escalation that it waits on, carrying on when the answer comes \("Questions to the human are escalations"\)/);
+  assert.match(loop, /it waits for a human only where one of its stop conditions fires, each ending in one escalation, or one per independent question where a round has more, that it waits on, carrying on when every answer has come \("Questions to the human are escalations"\)/);
   assert.doesNotMatch(loop, /stops for a human/);
   assert.match(loop, /\*\*The round cap\.\*\*.*one escalation, and the work waits on its answer \("Questions to the human are escalations"\)/);
   assert.doesNotMatch(loop, /one escalation, and the work stops/);

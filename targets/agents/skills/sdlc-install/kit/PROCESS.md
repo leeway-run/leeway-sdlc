@@ -183,7 +183,7 @@ One task at a time, each through the full loop, in a worktree of its own. Do not
 implementer run, and do not defer review to the end. `run` on a sub-issue runs one task through it; `run` on an
 issue runs every task of a story through it in turn, unattended, and only for a type whose `build` step says
 `unattended`; it waits for a human only where one of its stop conditions fires, each ending in one
-escalation that it waits on, carrying on when the answer comes ("Questions to the human are escalations"). `run`
+escalation, or one per independent question where a round has more, that it waits on, carrying on when every answer has come ("Questions to the human are escalations"). `run`
 on a project runs its issues that way, one after another, and stops at the first that stops. It skips an issue its
 issue run refuses, and goes on.
 
