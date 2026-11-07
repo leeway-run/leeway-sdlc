@@ -26,7 +26,9 @@ request, and only with an answer per copy.
   chosen once for this session and kept (the CLI's roles are `implementer`, `reviewer`, `planner` and
   `agent`; a skill acting for the orchestrator writes as `agent`).
 
-Raising, all together, once steps 0 to 2 have found which copies need an answer:
+Raising, all together, once steps 0 to 2 have found which copies need an answer (`PROCESS.md`, "Questions to the human are escalations"):
+the only question held for a later round is the contract block's, while `filing-work:` is open (step 1), and a later
+round drops what an answer settled.
 
 1. Per differing copy, `comment add <issue> --stdin body` with the diff and your guess at who changed it,
    then `escalation raise <issue> --comment cN` with a question that **begins with the copy's name**
@@ -79,10 +81,12 @@ Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill th
 - **The file lacks the line** (a repo installed before 0.3.0) → the answer to sdlc-install's question 11,
   `plan-project` (pre-filled) or `manual`. In the terminal, ask it. In escalation mode, first look on the
   named issue (`issue get <issue> --json`) for an escalation whose question begins `Sync filing-work: to
-  <this version>:`. Answered → use its answer. Open → stop the turn. None → raise it, then stop the turn.
+  <this version>:`. Answered → use its answer. Open → leave it open and go on. None → raise it, with the others.
 
-This is the one question raised before the others, because the block cannot be compared without its
-answer; the copies are compared, and their questions raised, once it is answered. The answer fills the
+Only the contract block waits on this answer, because the block cannot be compared without it: while the question is
+open, step 2 skips the block and its question is held for the next round, once the answer has filled the block (a
+block that then matches is not asked). Every other copy and step 1's other offers depend on no answer here, so they
+are compared and go out in the same round as this question. The answer fills the
 block in step 2 and is written in step 4.
 
 Then the friction line of `.sdlc/leeway.md`:

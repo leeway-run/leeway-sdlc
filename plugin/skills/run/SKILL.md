@@ -146,6 +146,10 @@ project run. Where a path below says to raise an escalation and wait, do this:
 A later escalation in the same run waits the same way, with a deadline of its own: each wait starts its 16 hours
 fresh.
 
+**Check the round before raising more than one** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change
+another question, merge them into one, or hold the dependent one for the next round. Independent ones are raised
+together, not rationed behind a wait, and waited on one after another. A later round drops what an answer settled.
+
 ## Why it is shaped this way
 
 Separate implementer and reviewer contexts, because an author reviewing their own diff rationalises it. Tests
@@ -508,8 +512,11 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    line as `none (BLOCKED, nothing committed)`.
 3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief:
    `leeway --as <alias>/implementer escalation raise <ref> --question "…" --options '[…]' --meanwhile "…" --comment cN`.
+   A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
+   as a comment of its own and tie its escalation to that.
 4. Set the sub-issue blocked: `leeway --as <alias>/agent issue update <ref> --status blocked` (the step clears).
-5. **Wait.** Report the escalation id and the issue, and wait on it ("Wait, then carry on"). Do not delegate to the
+5. **Wait.** Report the escalation id and the issue, and wait on it ("Wait, then carry on"), on each in turn when
+   there are two. Do not delegate to the
    reviewer.
 
 On resume, whether the wait answered or `run` was invoked again, read the answer (`escalations[].answer`), set the
@@ -582,7 +589,8 @@ sufficient: the verdict exists nowhere else.
 
    `--comment cN` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
-   review. A question about the round as a whole omits it. Report the escalation id and the issue, and do not go to
+   review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
+   them all in this round. Report the escalation id and the issue, and do not go to
    PASS or FAIL handling until it is answered. Leave the sub-issue `in_review`, in round 0 too.
 
 #### What a deferred finding becomes
@@ -596,6 +604,10 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway --as <alias>/agent issue create <KEY> --projectId <project.id> --title "…" --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`, in the task's project |
 | Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and in an issue run that the run waits here for the answer (its stop 4). In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal ("Wait, then carry on") before it ends ("Land the task", step 5). On a yes, `issue create` as above, quoting the answer's `label` and `note`; on a no it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway --as <alias>/agent comment add <collector> --stdin body <nit.md` |
+
+**Debt proposals from one verdict are one round**: raised together, with those one answer would settle merged into
+one. They come after the verdict's `Escalates:` is answered, because that answer can change which findings stay
+deferred.
 
 **If you cannot name the consequence of leaving it, it is a nit.** A nit is a comment on the collector, never an
 edit to its body.
@@ -638,7 +650,9 @@ On a PASS of a code round.
    `issue get <ref>` shows `done`.
 4. **Remove the task worktree** and delete the local task branch.
 5. **Wait on each debt proposal, only when `run` was invoked on the sub-issue itself** (an issue run has already
-   waited on it, as its stop 4). For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
+   waited on it, as its stop 4). Step 6's friction proposal depends on no answer here, so where there is a wait to
+   do, do step 6's collecting and raise its proposal first, in the same round, and do not raise it again at step 6.
+   For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
    of this task, wait on it ("Wait, then carry on"), one after another. On a yes, file the issue as that row says; on
    a no, the finding stays a nit. **A wait here that ends without an answer (exit 2, 3 or 4) does not end the run**:
    the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume. Leave

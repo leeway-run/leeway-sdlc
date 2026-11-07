@@ -78,6 +78,10 @@ whatever happened.
    done; an open escalation with no answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and
    this skill cannot run.
 
+   **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
+   question, merge them into one, or hold the dependent one for the next round. Independent questions go out
+   together, not rationed, and a later round drops what an answer settled.
+
 ## Does this need planning at all?
 
 **Yes** if it spans more than one task, or touches a stated rule in the intent doc, the schema, auth, or an
@@ -291,7 +295,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    written). The **repository** is the one connected to the product: `product get <KEY> --json` shows
    `repositoryCount`. With one, a `--branch` alone uses it; with more than one, or on a `repository_required` or
    `invalid_repository` refusal, take `owner/repo` from `git remote get-url origin`, and where there is none, ask
-   once by escalation. Then `issue update <story> --repository <owner/repo>`, once, on the story; its sub-issues
+   once by escalation, in one round with step 4's floor questions, since neither depends on the other. Then `issue update <story> --repository <owner/repo>`, once, on the story; its sub-issues
    inherit it.
 
 4. **Floor questions, per story, before its tasks.** Read the repo's floor (`ENGINEERING.md`) and the intent doc
@@ -300,9 +304,11 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    something a person does through a surface. For each such story post the context as a comment, quoting the
    rule's own sentence, and raise that rule's question as an escalation. Its options are the alternatives the
    rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
-   on any surface*, so leaving it out is a decision. **Stop**, report the escalation ids,
-   and create no tasks for a story whose question is open. On resume write each answer into every task of that
-   story under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
+   on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
+   together share one comment and one escalation, naming each, and a story whose question another answer would
+   change is held for the next round; the rest go out together. **Stop**, report the escalation ids,
+   and create no tasks for a story whose question is open. On resume write each answer into every task of each
+   story it names, under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
    skips this step; say which.
 
 5. **The tasks**, each under its story, with `--parent` **set explicitly on every one**, never relying on
@@ -455,7 +461,14 @@ comment** on the story, as `<alias>/planner` (`comment add <story> --stdin body`
 `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment. Then raise its escalation with
 `--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5). A comment holds one open
 escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment of its own. They are questions about
-the plan, not the gate decision. **A report's QUESTIONs are the escalations on the comments opening
+the plan, not the gate decision.
+
+**Check the round before raising it.** QUESTIONs where one answer would settle or change another are merged into
+one, under the lowest number, its comment naming the numbers it stands for. They are merged and never held for a
+later round: `run` counts the escalations on these comments, so a QUESTION not yet raised is one it would not wait
+for. Every other QUESTION goes out now, together.
+
+**A report's QUESTIONs are the escalations on the comments opening
 `# QUESTION … of c<report>`**; an escalation on no comment, or on the report itself, is not one. Say in the session,
 in this order: answer every QUESTION, run plan-project to apply the answers, then move the story to `ready`. `run`
 refuses the story until they are applied.

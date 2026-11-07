@@ -286,6 +286,15 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
 
+**Escalations go out in rounds.** A round is the escalations raised together, for one person to answer in one
+sitting. These hold for every skill, however few or many questions it has:
+
+- **Check the round before raising it.** Would one answer settle or change another question? Merge them into
+  one, or hold the dependent one for the next round.
+- **Independent questions go out together.** Do not ration them: the first round covers as much ground as it
+  can, and later rounds are follow-ups only.
+- **A later round drops what an answer settled.** It is not asked again, and it is not raised for confirmation.
+
 An implementer that returns `BLOCKED` carries a `## Question` section. The orchestrator does not
 paraphrase it: it runs the gate on the brief, posts the brief as a comment, raises the escalation from the
 block, and waits. **An escalation never moves an issue**; a status changes only by `--step` or `--status`.
