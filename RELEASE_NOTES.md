@@ -5,8 +5,11 @@
 The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
 of an approval question. A run now waits for the answer to its escalation and carries on, a plan ends at merged into
 `main`, and a run's spend and its per-story budget live in Leeway. **0.3.0 needs a Leeway server with the process
-model that allows two `gate` steps in a type, project links and spend records. dev.leeway.run has them; whether
-`app.leeway.run` has them is not verified** (see *Known limits*).
+model that allows two `gate` steps in a type, project links and spend records. dev.leeway.run, the Leeway team's own
+deployment, has them, and it is the only server checked. As of 2026-11-07, `app.leeway.run`, where the install docs'
+`leeway login` signs in on a fresh machine, has no DNS record from the machine that checked, and the app's
+`docs/ARCHITECTURE.md` says it is not deployed, so that login cannot succeed while this holds. Use `leeway login
+--server <url>`, for a server you run or were given** (see *Known limits*).
 
 - **New names (LWY-114).** `shape-work` is now `shape-project`, and `plan-work` is now `plan-project`. `run-task`
   and `run-story` are one skill, `run`, which takes any ref. On a sub-issue it runs one task; on an issue it runs
@@ -111,8 +114,10 @@ A minor release. Update the plugin with the update skill, then one person runs t
 upgrading:**
 
 - **Check the server the repo uses** (`server:` in `.sdlc/leeway.md`). Logged in, `leeway --server <url> --help`
-  lists that server's commands: 0.3.0 needs `process get`, `project link`, `spend get` and `spend record` (see
-  *Known limits*).
+  lists that server's commands: 0.3.0 needs `process get`, `project link` and `spend record`. `leeway --server <url>
+  --json issue get <ref>` must answer `totals`, and `leeway --server <url> process get <KEY> --withPresets --json`
+  must show two steps of `kind` `gate` in a type of `presets.maintained`. If any of these is missing, stay on 0.2.x
+  until the server has it (see *Known limits*).
 - **Finish or restart any story that is mid-shaping under 0.2.0.** Its rounds carry no `Description at this round:`
   quote, so a UI edit made after the 0.2.0 approval was answered is not guarded.
 - **Decide every plan gate still open under 0.2.0.** Answer its PASS / PASS WITH DECISIONS / RETURN escalation and
@@ -156,9 +161,18 @@ upgrading:**
   on the project opens and links the draft pull request, or links the one already open, and sets the Plan record
   `in_review`. The record goes `done` only once the pull request has merged into `main`.
 - **The unattended allow-list, by hand.** sync-repo does not touch it. `run` needs every command it names but
-  `gh pr merge`, and this release names `node <plugin-files>/scripts/wait-answer.mjs` and `session-tokens.mjs`,
-  `leeway spend record` and `project link`, `gh pr create` and `gh pr view`. Keep `gh pr merge` off it, and mind that
-  a prefix entry such as `gh pr:*` covers it.
+  `gh pr merge`. Beyond what 0.2.0's `run-task` and `run-story` named, that is `leeway project get`, `project link`
+  and `spend record`, `gh pr create` and `gh pr view`, and `node <plugin-files>/scripts/wait-answer.mjs` and
+  `session-tokens.mjs`.
+  - **The `leeway` calls.** In `run`, `leeway` means `<cli> --server <server>`, and a call puts
+    `--as <alias>/<role>`, `--json` or both before the verb (`leeway --as <alias>/agent --json spend record …`), so
+    an entry must cover that form. `sdlc-install` writes Claude Code's entries as `Bash(<command>:*)`. Whether an
+    entry like `Bash(leeway spend record:*)` matches a call with flags before the verb is not verified: no run has
+    tried it. A command that still prompts in a real run is not covered.
+  - **The two scripts.** Expand `<plugin-files>` to what `plugin-files:` in `HARNESS.md` gives. `wait-answer.mjs`
+    applies only where `HARNESS.md` says `wait: background`, and `session-tokens.mjs` only where it says `tokens:
+    transcripts`. Today that is Claude Code alone.
+  - **`gh pr merge`.** Keep it off, and mind that a prefix entry such as `gh pr:*` covers it.
 - **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
   `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
   `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, the new `scripts/wait-answer.mjs` and
@@ -192,8 +206,9 @@ upgrading:**
     a refused write that left the version where it was. No row was removed from a real repo's `.sdlc/CONFIG.md`.
   - **The tokens (LWY-139.3):** three real rounds recorded with `session-tokens.mjs`'s counts for the subagents and
     the orchestrator's spans, in Claude Code on Linux. Those rounds were run by following `run` by hand with
-    general-purpose agents, because the plugin was not installed in that session, so its hooks and named agents did
-    not run.
+    general-purpose agents, because the plugin was not installed in that repo, so its hooks and named agents did not
+    run. The same holds for the budget check above and for LWY-123.2's rounds. How the earlier rounds of LWY-139.1
+    and LWY-139.2 ran is not known.
   - **The description (LWY-137.1):** a 6,000-character description written and read back whole. Nothing far above
     that.
   - **The project link (LWY-138.1):** a plan branch linked with `project link` and read back through `project get`,
@@ -211,13 +226,16 @@ upgrading:**
 
 - **0.3.0 needs a server that has these, and only dev.leeway.run was checked.** The skills set and read steps, link
   branches and pull requests on a project, and record spend, so they need `process get`, two `gate` steps per type,
-  `project link`, `spend get`, `spend record` and `iteration record` with tokens. dev.leeway.run serves them; the
-  last of them reached the app's `main` in app PR #22, merged on 2026-11-03. **Whether `app.leeway.run`, the CLI's
-  default server, has them is not verified.** It did not resolve from where this was checked, and the app's
-  `docs/ARCHITECTURE.md` on `main` says it is not deployed yet. No workflow in the app repo deploys the app
-  (dev.leeway.run is deployed by hand with `wrangler deploy --env dev`), so a merge there says nothing about what
-  another server runs. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and sync-repo.
-  Nothing was run against a server without the others.
+  `project link`, `spend record`, `totals` on `issue get` and `iteration record` with tokens. dev.leeway.run, the
+  Leeway team's own deployment, serves them; the last of them reached the app's `main` in app PR #22, merged on
+  2026-11-03. **As of 2026-11-07, `app.leeway.run`, the CLI's default server, has no DNS record from the machine that
+  checked, and the app's `docs/ARCHITECTURE.md` on `main` says it is not deployed. While that holds, the `leeway
+  login` in `README.md`, `agent-setup/prompt.md` and `sdlc-install` cannot succeed on a fresh machine, where it signs
+  in there. Use `leeway login --server <url>`, for a server you run or were given.** `leeway --server
+  https://app.leeway.run --help` says to log in there, not that the host is missing. No workflow in the app repo
+  deploys the app (dev.leeway.run is deployed by hand with `wrangler deploy --env dev`), so a merge there says
+  nothing about what another server runs. A server that allows one `gate` refuses the new-flow edit from sdlc-tune
+  and sync-repo. Nothing was run against a server without the others.
 - **The default budget is reached sooner.** Its 2,000,000 tokens now also cover the orchestrator's spans, in the new
   unit. The one real reading so far: story LWY-139 recorded 2,341,236 tokens over 8 rounds, marked incomplete and
   mixing both units. That is a data point, not a recommendation.
