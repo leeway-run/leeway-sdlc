@@ -49,7 +49,11 @@ Bash tool, on one of these:
 The `*` is the project directory, named after where the session started, not where you are now. An empty variable or
 a transcript that is not there makes the script exit non-zero, so that record leaves `--tokens` out, as it does when
 a subagent's agent id is lost. Never take `subagent_tokens` from the completion notice instead: it is the agent's
-final context size. A call's lines are in the transcript before its tool runs, so a span's last call is counted.
+final context size.
+
+Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch.
+A call's lines reach the transcript after its command starts, so a count from inside that call misses it. They are
+timed before the command runs, so the stamp, to the millisecond, takes in the call that took it.
 docs/targets/claude.md records the probe.
 
 ## Required reading

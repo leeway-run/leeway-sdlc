@@ -91,6 +91,7 @@ test('every HARNESS.md says whether a run can count tokens, and one that cannot 
       assert.match(flat, /projects\/\*\/\$CLAUDE_CODE_SESSION_ID\.jsonl/)
       assert.match(flat, /that record leaves `--tokens` out/)
       assert.match(flat, /Never take `subagent_tokens` from the completion notice instead: it is the agent's final context size/)
+      assert.match(flat, /Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch/)
       assert.match(readFileSync(join(ROOT, 'docs', 'targets', 'claude.md'), 'utf8'), /^tokens: transcripts$/m)
     }
   }

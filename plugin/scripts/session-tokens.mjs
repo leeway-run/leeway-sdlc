@@ -2,10 +2,14 @@
 // Counts an agent's new tokens from its transcript, reading it line by line and never writing.
 //
 //   node session-tokens.mjs --subagent <transcript>                      a subagent's own transcript, whole
-//   node session-tokens.mjs --session <transcript> --from <s> --to <s>   the session's own entries in a window
+//   node session-tokens.mjs --session <transcript> --from <ms> --to <ms> the session's own entries in a window
 //
-//   --from, --to           whole seconds since the epoch, as `date +%s` prints them; the window is from <= t < to, so
-//                          two spans that share a second never count one call twice
+//   --from, --to           milliseconds since the epoch, as `node -e 'console.log(Date.now())'` prints them; the
+//                          window is from <= t < to
+//
+// A call belongs to the window holding its earliest line, so two windows that share a boundary never count one call
+// twice. Its later lines can be far off, so --session also holds the ids of calls begun in the SLACK_MS before the
+// window.
 //
 // A new token is input_tokens + cache_creation_input_tokens + output_tokens, summed over the agent's model calls;
 // cache_read_input_tokens is never counted. A model call is a `type: "assistant"` line with `message.usage`. It appears
@@ -19,22 +23,27 @@
 //   1  usage
 //   2  the transcript is missing or cannot be read: no number
 //   3  the count would not be complete: no number. A line that does not parse, or a model call whose fields cannot be
-//      read, may hold tokens. In --session it matters only if it can fall in the window, judged by the times on either
-//      side of it. Printing the rest would be recorded as a whole count, and Leeway would not mark the total incomplete.
+//      read, may hold tokens. In --session it matters only if it can fall in the window: a call by its own time, a
+//      line that does not parse by the latest time up to the next timed entry, give or take SLACK_MS. Printing the rest
+//      would be recorded as a whole count, and Leeway would not mark the total incomplete.
 //
-// Holds the running sum and the ids seen, never the file. No dependencies.
+// Holds the ids of the window and of the slack before it, never the file. No dependencies.
 
 import { createReadStream } from 'node:fs'
 import { createInterface } from 'node:readline'
 
 const EXIT = { counted: 0, usage: 1, unreadable: 2, incomplete: 3 }
 
+// How far a transcript's times can stray. Measured over 12,133 calls: one call's lines span at most 99 s, and a line is
+// at most 190 s older than a line above it.
+const SLACK_MS = 300_000
+
 const fail = (code, msg) => {
   process.stderr.write(`session-tokens: ${msg}\n`)
   process.exit(code)
 }
 const usage = (msg) =>
-  fail(EXIT.usage, `${msg}\nusage: node session-tokens.mjs --subagent <transcript>\n       node session-tokens.mjs --session <transcript> --from <s> --to <s>`)
+  fail(EXIT.usage, `${msg}\nusage: node session-tokens.mjs --subagent <transcript>\n       node session-tokens.mjs --session <transcript> --from <ms> --to <ms>`)
 
 const parse = (argv) => {
   const o = {}
@@ -49,8 +58,8 @@ const parse = (argv) => {
     if ('from' in o || 'to' in o) usage('--from and --to go with --session')
     return { path: o.subagent }
   }
-  for (const k of ['from', 'to']) if (!/^\d+$/.test(o[k] ?? '')) usage(`--${k} needs whole seconds since the epoch, as date +%s prints them`)
-  const window = { from: Number(o.from) * 1000, to: Number(o.to) * 1000 }
+  for (const k of ['from', 'to']) if (!/^\d{13}$/.test(o[k] ?? '')) usage(`--${k} needs milliseconds since the epoch, as node -e 'console.log(Date.now())' prints them`)
+  const window = { from: Number(o.from), to: Number(o.to) }
   if (window.from > window.to) usage('--from is after --to')
   return { path: o.session, window }
 }
@@ -64,8 +73,8 @@ const newTokens = (usage) => {
 }
 
 const count = async ({ path, window }) => {
-  const seen = new Set()
-  let sum = 0
+  const calls = new Map() // id to its new tokens
+  const begun = new Set() // ids with a line in the slack before the window: those calls are not this window's
   let lost = 0 // lines or calls that may hold tokens this count does not have
   let undecided = 0 // lines that do not parse, until the next time says whether they are before the window
   let last = -Infinity // the latest time read so far
@@ -77,40 +86,48 @@ const count = async ({ path, window }) => {
       entry = JSON.parse(line)
     } catch {
       if (!window) lost++
-      else if (last < window.to) undecided++
+      else if (last < window.to + SLACK_MS) undecided++
       continue
     }
     const at = typeof entry?.timestamp === 'string' ? Date.parse(entry.timestamp) : NaN
     if (window && !Number.isNaN(at)) {
-      if (at >= window.from) lost += undecided
-      undecided = 0
       last = Math.max(last, at)
+      if (last >= window.from - SLACK_MS) lost += undecided
+      undecided = 0
     }
     if (entry?.type !== 'assistant' || !entry.message?.usage) continue
+    const id = entry.message.id
     if (window) {
       if (entry.isSidechain === true) continue
+      if (!Number.isNaN(at)) {
+        if (at >= window.to) continue
+        if (at < window.from) {
+          if (at >= window.from - SLACK_MS) begun.add(id)
+          continue
+        }
+      }
       // Whose it is, or when it was, cannot be told, so it may be one of ours.
       if (typeof entry.isSidechain !== 'boolean' || Number.isNaN(at)) {
         lost++
         continue
       }
-      if (at < window.from || at >= window.to) continue
     }
-    const id = entry.message.id
     if (typeof id !== 'string' || !id) {
       lost++
       continue
     }
-    if (seen.has(id)) continue
+    if (calls.has(id)) continue
     const tokens = newTokens(entry.message.usage)
     if (tokens === null) {
       lost++
       continue
     }
-    seen.add(id)
-    sum += tokens
+    calls.set(id, tokens)
   }
-  return { sum, calls: seen.size, lost: lost + undecided }
+  for (const id of begun) calls.delete(id)
+  let sum = 0
+  for (const tokens of calls.values()) sum += tokens
+  return { sum, calls: calls.size, lost: lost + undecided }
 }
 
 const options = parse(process.argv.slice(2))

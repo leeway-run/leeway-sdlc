@@ -63,8 +63,10 @@ test('a token is a new token, the same unit for a subagent and the orchestrator,
       '`HARNESS.md`, "Counting tokens", says. It only reads, and prints one whole number: ' +
       '```sh node <plugin-files>/scripts/session-tokens.mjs --subagent <its transcript> ' +
       'node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end> ``` ' +
-      "`<start>` and `<end>` are the span's two `date +%s`. Count a subagent once it has returned, and a span of yours " +
-      'when it ends. ',
+      "`<start>` and `<end>` are the span's two stamps, in milliseconds. Count a subagent once it has returned, and a " +
+      'span of yours in a tool call after the one that stamped its end, never in that call: the running call is not ' +
+      'yet in the transcript. A call belongs to the span holding its first line, so two spans that share a stamp count ' +
+      'it once. ',
   );
   for (const doc of [skill, contract, brief]) {
     assert.doesNotMatch(flat(doc), /as the harness report|harness reported|harness did not report|subagent tokens|subagents' counts/);
@@ -139,8 +141,8 @@ test('the round, its review, a round with no iteration and the run\'s own time e
 test('time is measured, and a wait is never in a record', () => {
   assert.equal(
     from(spend(), '- **Time is measured', '- **A token is a new token'),
-    '- **Time is measured, never estimated.** Take `date +%s` when a span starts and again when it ends; its minutes ' +
-      'are the difference in whole minutes, rounded to the nearest (`$(( (end - start + 30) / 60 ))`). **A wait ends a ' +
+    "- **Time is measured, never estimated.** Take `node -e 'console.log(Date.now())'` when a span starts and again when it ends; " +
+      'its minutes are the difference in whole minutes, rounded to the nearest (`$(( (end - start + 30000) / 60000 ))`). **A wait ends a ' +
       'span**: record what came before it, and start a new span once the answer arrives. Time waiting on a person is ' +
       'never in a record; Leeway counts it from the escalations. A round whose start this session did not see (resumed ' +
       'from an earlier session) has no minutes: its iteration leaves `--minutes` and `--testMinutes` out, and Leeway ' +

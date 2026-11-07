@@ -272,9 +272,10 @@ reaches it is mis-specified whatever its caps say, and is escalated like any cap
 `totals` in `leeway --json issue get <ref>`, a story's over its own records and its sub-issues'. Nothing reads a total
 back from prose.
 
-- **Time is measured, never estimated.** Take `date +%s` when a span starts and again when it ends; its minutes are
-  the difference in whole minutes, rounded to the nearest (`$(( (end - start + 30) / 60 ))`). **A wait ends a span**:
-  record what came before it, and start a new span once the answer arrives. Time waiting on a person is never in a
+- **Time is measured, never estimated.** Take `node -e 'console.log(Date.now())'` when a span starts and again when
+  it ends; its minutes are the difference in whole minutes, rounded to the nearest
+  (`$(( (end - start + 30000) / 60000 ))`). **A wait ends a span**: record what came before it, and start a new span
+  once the answer arrives. Time waiting on a person is never in a
   record; Leeway counts it from the escalations. A round whose start this session did not see (resumed from an
   earlier session) has no minutes: its iteration leaves `--minutes` and `--testMinutes` out, and Leeway marks the
   total incomplete (`minutesIncomplete`).
@@ -290,8 +291,9 @@ back from prose.
   node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end>
   ```
 
-  `<start>` and `<end>` are the span's two `date +%s`. Count a subagent once it has returned, and a span of yours when
-  it ends.
+  `<start>` and `<end>` are the span's two stamps, in milliseconds. Count a subagent once it has returned, and a span
+  of yours in a tool call after the one that stamped its end, never in that call: the running call is not yet in the
+  transcript. A call belongs to the span holding its first line, so two spans that share a stamp count it once.
 - **What cannot be counted is left out: never `--tokens 0` in its place, never an estimate.** That is every record in
   a harness whose "Counting tokens" says it cannot, a span whose start or subagent this session did not see, and any
   exit of the script but 0: then it prints no number. Leeway marks the total incomplete (`tokensIncomplete`), and
