@@ -58,8 +58,9 @@ You are the orchestrator. **You are the single writer to git and to Leeway.** Th
 reviewer reads; neither commits, and neither writes to Leeway.
 
 **The alias.** Every write carries `--as <alias>/<role>`. You choose the alias when the session starts and keep it:
-`<word>-<two hex digits>` (for example `kestrel-b1`; it must match `^[a-z][a-z0-9-]{1,23}$`), never one already
-visible on the issue. Roles are `implementer`, `reviewer`, `planner` and `agent`. Your own words (a status, a stalled
+an adjective and a bird, lowercase and hyphenated (`quiet-wren`; it must match `^[a-z][a-z0-9-]{1,23}$`), picked as
+`PROCESS.md`, "The cast", says: at random from its lists, and not in the project's `activeAgents` (`leeway --json
+project get <KEY> <project.id>`) or the issue's `agents`, adding `-2`, `-3` when the pair is taken. Roles are `implementer`, `reviewer`, `planner` and `agent`. Your own words (a status, a stalled
 round, a cap, a merge) are `<alias>/agent`. Your subagents never write, so their entries are yours under their role:
 the iteration and the brief `<alias>/implementer`, the findings and the verdict `<alias>/reviewer`. A task resumed in
 a later session carries that session's alias, and the thread shows the handover. Reads carry no `--as`.

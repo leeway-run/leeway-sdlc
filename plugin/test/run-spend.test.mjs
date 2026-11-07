@@ -254,7 +254,7 @@ test('the round records, the contract and the brief carry the spend fields', () 
   );
   assert.equal(
     row(brief, '| Head sha, Lane line, Passed, Addresses, Test minutes |'),
-    '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as kestrel-b1/implementer iteration record ' +
+    '| Head sha, Lane line, Passed, Addresses, Test minutes | `leeway --as quiet-wren/implementer iteration record ' +
       'LWY-12.3 ce84f32a32c79f634395275e24549a2a035b7255 --tests "unit 31/31 green (docs-lint); typecheck n/a" ' +
       "--passed --addresses '[\"c2\",\"c3\"]' --tokens 48210 --minutes 9 --testMinutes 2 --note \"addresses c2, c3\"` " +
       '(`Passed: no` or `n/a` omits `--passed`; `--tokens` is the implementer\'s new tokens, counted from its transcript, left ' +

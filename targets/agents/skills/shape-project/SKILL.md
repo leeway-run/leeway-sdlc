@@ -23,7 +23,7 @@ is built and reviewed against.
 them, even when they look wrong to you. Say so to the PO instead, and they raise it with the
 developer.
 
-This is not delegated work: spawn no subagents. Of `PROCESS.md` in this plugin, read "Before the plan:
+This is not delegated work: spawn no subagents. Of `PROCESS.md` in this plugin, read "The cast", "Before the plan:
 shaping", "How the plugin reaches Leeway" and "Questions to the human are escalations".
 
 ## 0. Where you are, and whether this runs
@@ -32,7 +32,10 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
    `<cli>` below is that command; pass `--server <server>` on every call. Read `.sdlc/CONFIG.md` for the doc
    map and the *Ticket templates* row. No token and no credential is written to a file or shown.
 2. **Who writes.** Every write carries `--as <alias>/agent`, the alias this session's, chosen as `PROCESS.md`
-   ("The cast") describes (`<word>-<two hex digits>`, for example `kestrel-b1`). Reads carry no `--as`.
+   ("The cast") describes (an adjective and a bird, `quiet-wren`): against the `activeAgents` of the issue's project
+   (`project.id`, from `issue get` in the next item) and the issue's `agents`. With no issue yet (step 6), read the
+   project the new story goes in once the PO has named it, before `issue create`; a project this session creates has
+   nothing to read, so take a pair at random. Reads carry no `--as`.
 3. **The process.** `<cli> --json process get <KEY>`: the types and their steps. Then the issue
    (`<cli> --json issue get <ref>`): `issue.type`, `issue.step` (an object: `issue.step.id`, or null), `issue.description`, `comments`, `escalations`.
 4. **Does the type shape?** Only when the issue's type has a step of kind `shape`. A type without one (a bug,
