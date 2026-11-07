@@ -268,7 +268,8 @@ converged mean the task is mis-specified, and that is a human decision.
    <absolute path>`, and **pass the absolute task-worktree path in every subagent prompt**: a subagent starts in
    the primary checkout, so a relative path lands where every concurrent session reads and writes the same
    files. If `.sdlc/CONFIG.md` names a per-worktree setup command, run it in each new worktree, as `cd <worktree> && <setup command>`: a worktree isolates
-   files, not databases or ports. **Two concurrent stories must agree a migration number, or any other monotonic
+   files, not databases or ports. The merge and plan-cut worktrees take no setup, and a repo whose hooks need one there must say so
+   under *Per-worktree setup* in `.sdlc/CONFIG.md`. **Two concurrent stories must agree a migration number, or any other monotonic
    counter, before either generates one.**
 
 7. **Start.** Read the state first and write only what is not there yet (in an issue run most of it is).
@@ -742,6 +743,7 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    ```sh
    git -C <story worktree> push -u origin <story branch>
    git -C <primary> fetch origin <base>
+   git -C <primary> merge-base --is-ancestor origin/<base> <story branch>
    git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>
    git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>
    git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>
@@ -752,8 +754,13 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    The worktree is detached because the base may already be checked out, in the primary checkout where a person works or
    in another worktree, and `worktree add` refuses a branch that is ("is already used by worktree"). A detached one never
    meets that, and it leaves that checkout as it was: its local `<base>` stays behind `origin/<base>` until its owner pulls,
-   and nothing here reads the local one. If the merge conflicts, the base moved since step 1: abort it, remove this worktree
-   and go back to step 1. If `worktree add` finds the path left by a stopped run, `git -C <primary> worktree remove --force
+   and nothing here reads the local one.
+
+   **The base may have moved since step 1, and what step 2 gated is the story with the base as it was then.** A non-zero
+   exit from `merge-base --is-ancestor` means the base moved: go back to step 1, before any merge, even one that would be
+   clean, so nothing reaches the base ungated. If the merge conflicts all the same, the base moved after that check: abort it, remove this
+   worktree and go back to step 1. If the push is rejected, the base moved: remove this worktree and go back to step 1. A
+   push a pre-push hook refused is not that: remove this worktree, stop and say what it refused. If `worktree add` finds the path left by a stopped run, `git -C <primary> worktree remove --force
    <primary>/.worktrees/merge-<story>` and add it again.
 
    The integration branch is reached only as the repo's convention says (the pre-push guard in "Unattended prerequisites"

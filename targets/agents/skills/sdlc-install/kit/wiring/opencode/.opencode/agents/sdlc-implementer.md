@@ -28,7 +28,7 @@ prompt and nothing more** — say so under *Uncertainties* rather than guessing 
 cannot open might have said. Write a read as printed here, verb first and with the server, and git as `git -C <the
 worktree's absolute path>`: in an unattended run those are the forms the allow-list matches. Anything else prompts,
 `cd <path> && git` included, and a prompt stops the run. A git verb needs at least one argument to match:
-`git -C <worktree> status --short`, `git -C <worktree> diff HEAD`, `git -C <worktree> show HEAD`, `git -C <worktree> log -5`, `git -C <worktree> fetch origin`;
+`git -C <worktree> status --short`, `git -C <worktree> diff HEAD`, `git -C <worktree> show HEAD`, `git -C <worktree> log -5`;
 with nothing after the verb it prompts. A lane runs as `cd <worktree> && <lane>`, which is allowed where `cd` with git is not.
 
 **Deleting or renaming a file** goes through `node -e`, then stage it. `rm`, `mv` and `chmod` prompt, and git's own `rm` and `mv`

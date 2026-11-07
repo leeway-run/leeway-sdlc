@@ -5,9 +5,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TARGETS, harness } from '../../scripts/targets.mjs'
 
@@ -50,7 +50,7 @@ const subcommands = (command) => {
   return parts.map((p) => p.trim()).filter(Boolean)
 }
 // Read-only by Claude Code's built-in set, so they take no rule. Only the ones a printed call uses.
-const READ_ONLY = /^(echo|pwd|cd)( |$)/
+const READ_ONLY = /^(echo|pwd|cd|date)( |$)/
 const allowed = (rules, command) => {
   const subs = subcommands(command)
   // "cd with git prompts": a cd that changes directory, before any git in the same command.
@@ -142,7 +142,15 @@ test('the count of warnings the person is told is the count of git rules', () =>
   const text = flat(permissions)
   assert.ok(text.includes(`${words[GIT.length]} rows below the banner`), 'HARNESS.md: the warning count moved')
   assert.ok(text.includes(`(${words[GIT.length - 1]} while \`git push\` is off the list)`), 'HARNESS.md: the count without push moved')
-  assert.ok(flat(read('plugin/skills/sdlc-install/SKILL.md')).includes(`the ${words[GIT.length]} startup warnings`), 'question 16: the count moved')
+  const question = flat(read('plugin/skills/sdlc-install/SKILL.md'))
+  const branch = (from, to) => question.slice(question.indexOf(from), question.indexOf(to))
+  const guarded = branch('**A guard found:**', '**No guard found:**')
+  const unguarded = branch('**No guard found:**', 'Then, either way, what no list closes.')
+  assert.ok(guarded.includes(`the ${words[GIT.length]} startup warnings`), 'question 16, with a guard: the count moved')
+  assert.ok(unguarded.includes(`the ${words[GIT.length - 1]} startup warnings`), 'question 16, with no guard: the count moved')
+  assert.ok(guarded.includes('that those rules let a push skip the pre-push guard'), 'question 16, with a guard: the skip')
+  assert.ok(!unguarded.includes('skip the pre-push guard'), 'question 16, with no guard: there is no guard to skip')
+  assert.ok(unguarded.includes('so every push prompts'), 'question 16, with no guard: every push prompts')
 })
 
 test('the Read rule reaches the plugin files run reads first, and nothing beside them', () => {
@@ -169,10 +177,18 @@ test('the verbs a run does not call miss every rule, so they prompt', () => {
 
 // ---- Every call the plugin prints where a run reads it: run, its two templates, PROCESS.md and both agent files.
 // A sh fence is commands. A fence with no language holds "$ " lines and placeholders. A markdown fence is an example of a
-// comment, but its "$ " lines still count. A blank line ends a paragraph, so a stray backtick in prose spoils no more than that.
+// comment, so it reads as prose, and its "$ " lines still count. Any other fence is one this cannot read, so it fails.
+// A blank line ends a paragraph, so a stray backtick in prose spoils no more than that.
+// A line of prose can be a command with no backticks: an indented block, or a line of an example.
+const LINE_PROGRAM = /^(?:[A-Z_]+=\S* )?(?:git|leeway|gh|rm|mv|cp|sed|mkdir|chmod|touch|npm|npx|pnpm|yarn|curl|xargs|node|python3?|bash|sh|cat|env)\s/
+const FENCES = ['', 'sh', 'bash', 'markdown']
 const parse = (text) => {
-  const found = { shell: [], dollar: [], other: [] }
+  const found = { shell: [], dollar: [], other: [], lines: [], unread: [] }
   const prose = []
+  const asProse = (line, example) => {
+    prose.push(line)
+    if ((example || /^ {4}/.test(line)) && LINE_PROGRAM.test(line.trim())) found.lines.push(line.trim())
+  }
   let fence = null
   for (const raw of text.split('\n')) {
     const line = raw.replace(/^\s*>\s?/, '')
@@ -181,12 +197,16 @@ const parse = (text) => {
       if (mark && mark[1].length >= fence.ticks && !mark[2]) fence = null
       else if (/^\s*\$ /.test(line)) found.dollar.push(line.trim().slice(2))
       else if (fence.lang === 'sh' || fence.lang === 'bash') found.shell.push(line.trim())
+      else if (fence.lang === 'markdown') asProse(line, true)
       else if (!fence.lang) found.other.push(line.trim())
-    } else if (mark) fence = { ticks: mark[1].length, lang: mark[2] }
-    else prose.push(line)
+    } else if (mark) {
+      fence = { ticks: mark[1].length, lang: mark[2] }
+      if (!FENCES.includes(mark[2])) found.unread.push(line.trim())
+    } else if (/^\s*(~{3,}|`{3,}[^`]*$)/.test(line)) found.unread.push(line.trim())
+    else asProse(line)
   }
   const spans = prose.join('\n').split(/\n\s*\n/).flatMap((p) => spansIn(p).map((s) => flat(s).trim()))
-  return { shell: found.shell.filter(Boolean), dollar: found.dollar, other: found.other.filter(Boolean), spans }
+  return { shell: found.shell.filter(Boolean), dollar: found.dollar, other: found.other.filter(Boolean), lines: found.lines, unread: found.unread, spans }
 }
 
 // In run, the read-only paragraph lists what a subagent may not do, and the list section names what prompts.
@@ -202,6 +222,21 @@ const PARSED = Object.entries({
 }).map(([name, text]) => ({ name, ...parse(text) }))
 const parsed = (name) => PARSED.find((p) => p.name === name)
 
+// Those two sections name forms without calling them, so they are held to exactly what they name: a new span goes red.
+test('the two sections the scan leaves out name these spans and no other', () => {
+  assert.deepEqual(spansIn(run.slice(denials[0], denials[1])).map((s) => flat(s.replace(/\n\s*>/g, ''))), [
+    '--as', '<cli> --server <server> issue get <ref> --json', '... review get <ref> --json', '... escalation list <KEY> --json',
+    "git -C <the worktree's absolute path>", 'cd <path> && git', 'cd <worktree> && <lane>',
+    'issue create', 'update', 'comment add', 'iteration record', 'escalation raise', 'answer', 'dependency', 'pr link', 'project', 'process', 'login',
+    'leeway-guard', 'git -C <worktree> add', 'Head sha', 'pending',
+  ])
+  assert.deepEqual(spansIn(run.slice(list[0], list[1])), [
+    'HARNESS.md', ...LEEWAY, 'escalation answer', 'issue delete', 'product delete', 'process update', 'leeway-guard', 'PROCESS.md',
+    'git -C <absolute path> <verb>', ...GIT, ...spansIn(REST),
+    'node -e', 'leeway escalation answer', 'leeway-guard', 'gh pr merge', 'main', 'main',
+  ])
+})
+
 // Fill a printed call in, as an orchestrator would.
 const fill = (call) =>
   call
@@ -214,9 +249,33 @@ const fill = (call) =>
     .replace(/<(lane|gate command|setup command)>/g, `${LANE} x`)
     .replace(/<[^<>]+>/g, 'x')
 
+// What `subcommands` does not split runs too, so it is not a call to read as allowed: a single &, $(, backticks and >.
+// Single quotes hold all of these; double quotes hold only & and >.
+const shellTrick = (command) => {
+  let quote = null
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i]
+    if (quote === "'") {
+      if (c === "'") quote = null
+      continue
+    }
+    if (c === '`' || (c === '$' && command[i + 1] === '(')) return c === '`' ? 'backticks' : '$('
+    if (c === '"') quote = quote ? null : '"'
+    else if (c === "'" && !quote) quote = "'"
+    else if (!quote && c === '>') return '>'
+    else if (!quote && c === '&') {
+      if (command[i + 1] !== '&') return '&'
+      i++
+    }
+  }
+  return null
+}
+
 // What a call must be, beyond matching a rule: verb first and on the list, or -C with a verb on the list.
 const wrongWith = (call) => {
   const filled = fill(call)
+  const trick = shellTrick(filled)
+  if (trick) return `${trick} in a call: what follows it is not checked`
   for (const sub of subcommands(filled)) {
     if (/^git\s/.test(sub)) {
       const m = /^git -C \S+ ([a-z-]+)( -d)?/.exec(sub)
@@ -231,6 +290,16 @@ const wrongWith = (call) => {
   }
   return allowed(RULES, filled) ? null : 'no rule matches, so it prompts'
 }
+
+test('a fence this cannot read fails, and so does a command with no backticks', () => {
+  for (const { name, unread, lines } of PARSED) {
+    assert.deepEqual(unread, [], `${name}: a fence that is not sh, bash, markdown or plain`)
+    for (const line of lines) assert.equal(wrongWith(line), null, `${name}: ${line}`)
+  }
+  for (const fence of ['```shell\nrm x\n```', '```console\nrm x\n```', '~~~sh\nrm x\n~~~', '```sh title=x\nrm x\n```']) assert.ok(parse(fence).unread.length, fence)
+  assert.deepEqual(parse('text\n\n    rm -rf x\n\n```markdown\ngit tag x\n```').lines, ['rm -rf x', 'git tag x'])
+  assert.deepEqual(parse('```markdown\nsee `git tag x`\n```').spans, ['git tag x'])
+})
 
 test('every line of a sh fence is a call a rule matches, and any other program fails', () => {
   let n = 0
@@ -260,18 +329,25 @@ const NAMED = [
   /^git -C <[^>]+>$/, // the form, with no verb
   /^<cli> --server <server>$/, // what `leeway` stands for
   /^cd <path> && git$/,
-  /^leeway login\b/, // a person's, at a blocker
+  /^leeway login( --server <server>)?$/, // a person's, at a blocker
   /^gh pr merge\b/, // on the person's word
   /^node (<path>|\/path\/to)\/leeway\.js$/, // a value of cli:
   /^<cli> --server <server> <resource> <verb> <args>/, // the general form in PROCESS.md
+  /^(npm test|node scripts\/lint-docs\.mjs)$/, // an invented repo's lane, in a template's example
 ]
-const PROGRAM = /^(git|leeway|<cli>|gh|cd|rm|mv|cp|sed|mkdir|chmod|touch|npm|npx|curl|xargs|node|<wait-answer>|<session-tokens>)\s/
+// Any other span of two words or more whose first word could be a program is a call, so an unknown program fails.
+const PROGRAM = /^(?:[a-z][\w.+-]*|[A-Z_]+=\S*|<cli>|<wait-answer>|<session-tokens>)\s/
+const NOT_CALLS = new RegExp(`^(?:${[
+  'issue', 'comment', 'iteration', 'spend', 'escalation', 'review', 'project', 'process', 'dependency', 'pr', 'product', // a Leeway verb with no program: the next test
+  'merge-base', 'rev-parse', 'status', 'worktree', 'branch', // a git verb named on its own
+  'it\\.\\S+', 'round', 'the', 'of', 'at', 'end', 'none', 'input_tokens', 'step_set', 'linted', 'skips', // an anchor, a formula, an example's words
+].join('|')})\\s`)
 
 test('every code span that is a call is one a rule matches', () => {
   const seen = { git: 0, leeway: 0 }
   for (const { name, spans } of PARSED) {
     for (const s of spans) {
-      if (!PROGRAM.test(s) || NAMED.some((re) => re.test(s))) continue
+      if (!PROGRAM.test(s) || NOT_CALLS.test(s) || NAMED.some((re) => re.test(s))) continue
       if (s.startsWith('git ')) seen.git++
       if (s.startsWith('leeway ')) seen.leeway++
       assert.equal(wrongWith(s), null, `${name}: ${s}`)
@@ -298,6 +374,20 @@ test('the reads a subagent is told to make are printed with the server, verb fir
       assert.ok(parsed(agent).shell.includes(`<cli> --server <server> ${c}`), `${agent}: ${c}`)
     }
   }
+})
+
+test('the story gate prints its lines in this order, as one block', () => {
+  const block = [
+    'git -C <story worktree> push -u origin <story branch>',
+    'git -C <primary> fetch origin <base>',
+    'git -C <primary> merge-base --is-ancestor origin/<base> <story branch>',
+    'git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>',
+    'git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>',
+    'git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>',
+    'git -C <primary> worktree remove <primary>/.worktrees/merge-<story>',
+    'git -C <primary> worktree remove <story worktree>',
+  ].join('\n   ')
+  assert.ok(run.includes(`\n   ${block}\n   \`\`\`\n`), 'the gate lines moved, or something came between them')
 })
 
 test('the steps run used to leave unprinted are printed, so the checks above cover them', () => {
@@ -328,11 +418,13 @@ test('the forms an agent needs for a delete, a rename and a mutation are printed
   for (const c of [
     `node -e 'require("fs").rmSync("<absolute path>")'`,
     `node -e 'require("fs").renameSync("<absolute from>","<absolute to>")'`,
+    `node -e 'require("fs").chmodSync("<absolute path>",0o755)'`,
     'git -C <worktree> add <paths>',
   ]) assert.ok(implementer.includes(c), c)
   const reviewer = parsed('reviewer').shell
-  assert.ok(reviewer.some((l) => l.startsWith('node -e') && l.includes('copyFileSync') && l.includes('.keep')), 'the mutation')
-  assert.ok(reviewer.some((l) => l.startsWith('node -e') && l.includes('renameSync') && l.includes('.keep')), 'the restore')
+  assert.ok(reviewer.includes(`node -e 'const fs=require("fs"),f="<absolute path>",s=fs.readFileSync(f,"utf8"),t=s.replace("<what it guards>","<broken>");if(t===s)throw new Error("no change: text not found");fs.copyFileSync(f,f+".keep");fs.writeFileSync(f,t)'`), 'the mutation, which fails when the text is not found')
+  assert.ok(reviewer.includes(`node -e 'const fs=require("fs"),f="<absolute path>";fs.renameSync(f+".keep",f)'`), 'the restore')
+  for (const agent of ['implementer', 'reviewer']) assert.ok(!parsed(agent).spans.some((s) => /\bfetch\b/.test(s)), `${agent}: a subagent's only git write is add`)
   assert.ok(reviewer.includes('cd <worktree> && <lane>'), 'the lane')
   assert.ok(reviewer.includes('git -C <worktree> status --short'), 'the check of the restore')
 })
@@ -395,19 +487,26 @@ test('leeway-sdlc-wait-answer exits 0 with the answer, through the bin wrapper',
   }
 })
 
-test('a wrapper reached through a symlink still finds its script', { skip: process.platform === 'win32' }, () => {
-  const dir = mkdtempSync(join(tmpdir(), 'allow-list-'))
-  try {
-    const link = join(dir, 'link')
-    symlinkSync(join(ROOT, 'plugin', 'bin', 'leeway-sdlc-wait-answer'), link)
-    const r = spawnSync(link, ['--nonsense'], { encoding: 'utf8' })
-    assert.equal(r.status, 1, r.stderr)
-    assert.match(r.stderr, /wait-answer/)
-    assert.doesNotMatch(r.stderr, /MODULE_NOT_FOUND/)
-  } finally {
-    rmSync(dir, { recursive: true, force: true })
-  }
-})
+for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer'], ['leeway-sdlc-session-tokens', 'session-tokens']]) {
+  test(`${name} reached through a symlink, absolute or relative, still finds its script`, { skip: process.platform === 'win32' }, () => {
+    const dir = mkdtempSync(join(tmpdir(), 'allow-list-'))
+    try {
+      const bin = join(ROOT, 'plugin', 'bin', name)
+      const sub = join(dir, 'a b')
+      mkdirSync(sub)
+      for (const target of [bin, relative(sub, bin)]) {
+        const link = join(sub, target === bin ? 'absolute' : 'relative')
+        symlinkSync(target, link)
+        const r = spawnSync(link, ['--nonsense'], { encoding: 'utf8' })
+        assert.equal(r.status, 1, r.stderr)
+        assert.match(r.stderr, new RegExp(script))
+        assert.doesNotMatch(r.stderr, /MODULE_NOT_FOUND/)
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+}
 
 test('other agents run the scripts from .sdlc/kit, where the build copies them, and get no bin/', () => {
   for (const t of TARGETS) {
@@ -433,6 +532,8 @@ export const PINS = [
   ['plugin/HARNESS.md', 'shows a startup warning, "allows any option at its *": fifteen rows below the banner at every session start (fourteen while `git push` is off the list)'],
   ['plugin/HARNESS.md', '`-c core.fsmonitor=<script>` runs a program'],
   ['plugin/HARNESS.md', '`git -C <path> push origin main -m commit z` matches the `commit` rule'],
+  ['plugin/HARNESS.md', 'A plugin loaded with `--plugin-dir` is read from wherever that is, and no rule here covers it.'],
+  ['plugin/HARNESS.md', 'With no pre-push guard in the repo (sdlc-install\'s detection, "A pre-push guard"), `git push` is off the list: every push prompts, so the run is attended'],
   ['plugin/HARNESS.md', 'A git verb needs at least one argument to match.'],
   ['plugin/HARNESS.md', '**A compound lane takes one rule per part,**'],
   ['plugin/HARNESS.md', '**A lane runs in a worktree as `cd <worktree> && <lane>`,** which is allowed where `cd <path> && git` is not.'],
@@ -452,7 +553,10 @@ export const PINS = [
   ['README.md', "claude.ai and Cowork don't install a plugin that has one"],
   // The install says it before the yes.
   ['plugin/skills/sdlc-install/SKILL.md', '**Before the yes, tell the person what it approves and what it leaves open**'],
-  ['plugin/skills/sdlc-install/SKILL.md', '`HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, that those rules let a push skip the pre-push guard, and why the rest adds little)'],
+  ['plugin/skills/sdlc-install/SKILL.md', '**A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, that those rules let a push skip the pre-push guard, and why the rest adds little).'],
+  ['plugin/skills/sdlc-install/SKILL.md', '**No guard found:** `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at its first push until someone answers.'],
+  ['plugin/skills/sdlc-install/SKILL.md', 'lists for this agent without a push rule (on Claude Code, the fourteen startup warnings, what the git rules also approve, and why the rest adds little)'],
+  ['plugin/skills/sdlc-install/SKILL.md', 'What the person needs for a run with no push prompt: a pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, refusing the integration branch and a force push, and then this install run again, which offers the `push` rule.'],
   ['plugin/skills/sdlc-install/SKILL.md', 'A rule stops the call an agent ordinarily writes, not a determined one.'],
   ['plugin/skills/sdlc-install/SKILL.md', '`node -e` and the lane commands can run anything, including `leeway escalation answer`'],
   ['plugin/skills/sdlc-install/SKILL.md', '`leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt'],
@@ -467,7 +571,21 @@ export const PINS = [
   ['plugin/skills/sdlc-install/references/detection.md', '**Too wide:**'],
   ['plugin/skills/sdlc-install/references/detection.md', 'while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt'],
   ['plugin/skills/sync-repo/SKILL.md', 'whose question 16 adds the new ones'],
+  // The guard: what counts, and what follows from none.
+  ['plugin/skills/sdlc-install/references/detection.md', '**A pre-push guard.**'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'git rev-parse --git-path hooks/pre-push'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'What counts is an executable file at that path that refuses an update to the integration branch and a force push'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'it can sit in `.git/hooks` or under `core.hooksPath`'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'a `pre-push.sample`, a file that is not executable, a hook in a directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'With no guard, `push` is not a missing entry'],
   // run, and the plugin's general form.
+  ['plugin/skills/run/SKILL.md', 'A non-zero exit from `merge-base --is-ancestor` means the base moved: go back to step 1, before any merge, even one that would be clean, so nothing reaches the base ungated.'],
+  ['plugin/skills/run/SKILL.md', 'If the merge conflicts all the same, the base moved after that check: abort it, remove this worktree and go back to step 1.'],
+  ['plugin/skills/run/SKILL.md', 'If the push is rejected, the base moved: remove this worktree and go back to step 1.'],
+  ['plugin/skills/run/SKILL.md', 'A push a pre-push hook refused is not that: remove this worktree, stop and say what it refused.'],
+  ['plugin/skills/run/SKILL.md', 'only the first and last of those lines run, and in between comes that convention, such as `gh pr create --base <integration branch> --head <story branch> --title "<story title>" --body-file <body.md>`'],
+  ['plugin/skills/run/SKILL.md', 'A branch that already exists, on a resume, is added without `-b`.'],
+  ['plugin/skills/run/SKILL.md', 'The merge and plan-cut worktrees take no setup, and a repo whose hooks need one there must say so under *Per-worktree setup* in `.sdlc/CONFIG.md`.'],
   ['plugin/skills/run/SKILL.md', '**Every call is printed verb first**'],
   ['plugin/skills/run/SKILL.md', "**Where `run`'s own files go.**"],
   ['plugin/skills/run/SKILL.md', 'goes in `.worktrees/.run/` of the primary checkout, named after the ref and passed by absolute path'],
@@ -492,8 +610,8 @@ export const PINS = [
   ['plugin/agents/sdlc-reviewer.md', 'A lane runs as `cd <worktree> && <lane>`'],
   ['plugin/agents/sdlc-reviewer.md', 'a mutation and its restore go through `node -e`'],
   ['plugin/agents/sdlc-implementer.md', '**Deleting or renaming a file** goes through `node -e`'],
-  ['.claude-plugin/marketplace.json', "claude.ai and Cowork don't install a plugin with a top-level bin/"],
-  ['plugin/.claude-plugin/plugin.json', "claude.ai and Cowork don't install a plugin with a top-level bin/"],
+  ['.claude-plugin/marketplace.json', "Claude Code 2.1.91 or later only: claude.ai and Cowork don't install a plugin with a top-level bin/"],
+  ['plugin/.claude-plugin/plugin.json', "Claude Code 2.1.91 or later only: claude.ai and Cowork don't install a plugin with a top-level bin/"],
 ]
 
 test('the prose carries what the install owes', () => {

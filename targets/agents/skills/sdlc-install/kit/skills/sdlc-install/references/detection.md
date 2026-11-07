@@ -224,6 +224,19 @@ out of date:
   Say that while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt, and that it is the
   person's to remove.
 
+**A pre-push guard.** Whether the repo already has the guard `run` requires ("Unattended prerequisites"):
+
+```sh
+git rev-parse --git-path hooks/pre-push     # where git runs it from: .git/hooks, or under core.hooksPath
+```
+
+What counts is an executable file at that path that refuses an update to the integration branch and a force push: read it,
+and what it calls, to see that it does. So it can sit in `.git/hooks` or under `core.hooksPath`, which a relative value
+resolves against the checkout's root. These do not count: a `pre-push.sample`, a file that is not executable, a hook in a
+directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could
+not read to that effect. Report what you found. Question 16 tells the person the truth by it. With no guard, `push` is not
+a missing entry, so it alone does not bring question 16 back.
+
 ## Leeway
 
 ```sh

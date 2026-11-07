@@ -28,7 +28,7 @@ Your prompt names the real `<cli>` (`leeway`, or `node <path>/leeway.js` as `.sd
 Write a read as printed here, verb first and with the server, and git as `git -C <the worktree's absolute path>`: in an
 unattended run those are the forms the allow-list matches. Anything else prompts, `cd <path> && git` included. A git verb
 needs at least one argument to match: `git -C <worktree> status --short`, `git -C <worktree> diff HEAD`,
-`git -C <worktree> show HEAD`, `git -C <worktree> log -5`, `git -C <worktree> fetch origin`; with nothing after the verb it prompts. A lane runs as
+`git -C <worktree> show HEAD`, `git -C <worktree> log -5`; with nothing after the verb it prompts. A lane runs as
 `cd <worktree> && <lane>`, which is allowed where `cd` with git is not.
 Your verdict is never written to a file, so the round record is the only lasting account of what a
 previous round already found and how it was resolved — re-raising a finding the implementer answered
@@ -205,7 +205,7 @@ You have no edit tools, and `sed`, `cp` and `checkout` prompt or are refused, so
 `node -e`, on the file's absolute path, and `status --short` confirms the restore:
 
 ```sh
-node -e 'const fs=require("fs"),f="<absolute path>";fs.copyFileSync(f,f+".keep");fs.writeFileSync(f,fs.readFileSync(f,"utf8").replace("<what it guards>","<broken>"))'
+node -e 'const fs=require("fs"),f="<absolute path>",s=fs.readFileSync(f,"utf8"),t=s.replace("<what it guards>","<broken>");if(t===s)throw new Error("no change: text not found");fs.copyFileSync(f,f+".keep");fs.writeFileSync(f,t)'
 cd <worktree> && <lane>
 node -e 'const fs=require("fs"),f="<absolute path>";fs.renameSync(f+".keep",f)'
 git -C <worktree> status --short

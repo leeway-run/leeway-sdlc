@@ -127,6 +127,8 @@ held to the same rules as the session. `.claude/settings.json`'s allow rules app
   `git -C <path> -c core.hooksPath=<dir> push origin <branch>` both skip it, and `Bash(git -C * push *)` approves both, so the
   guard stops the push an agent ordinarily writes, not a determined one. No `deny` rule is written for them: git also takes
   `--no-veri` and `core.hookspath`, which such a rule would miss, so it would read as a line it does not hold.
+- With no pre-push guard in the repo (sdlc-install's detection, "A pre-push guard"), `git push` is off the list: every push
+  prompts, so the run is attended, and the point above waits until a guard exists.
 - The `Read` rule lets a session read this plugin's installed files, and nothing beside them.
 - It adds little over what the list already allows: `node -e` and the lane commands can already run any program.
 

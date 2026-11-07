@@ -178,9 +178,18 @@ asked in step 5, once the process they compare with has been read.
     `unattended` true and detection ("An existing allow-list") found run's entries missing from the
     place `HARNESS.md`, "Permissions for an unattended run", names. "`run` runs `<types>` unattended, and
     every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
-    Pre-filled yes. **Before the yes, tell the person what it approves and what it leaves open**, in plain words: what
-    `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
-    approve, that those rules let a push skip the pre-push guard, and why the rest adds little), then what no list closes. A rule stops the call an agent ordinarily writes, not a
+    Pre-filled yes. **Before the yes, tell the person what it approves and what it leaves open**, in plain words, by what detection
+    ("A pre-push guard") found:
+
+    - **A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
+      approve, that those rules let a push skip the pre-push guard, and why the rest adds little).
+    - **No guard found:** `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at
+      its first push until someone answers. Then what `HARNESS.md`, "Say before the yes", lists for this agent without a push rule (on Claude Code, the
+      fourteen startup warnings, what the git rules also approve, and why the rest adds little). What the person needs for a run with no push prompt: a
+      pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, refusing the integration branch and a force push, and then
+      this install run again, which offers the `push` rule.
+
+    Then, either way, what no list closes. A rule stops the call an agent ordinarily writes, not a
     determined one. `node -e` and the lane commands can run anything, including `leeway escalation answer`, and
     `leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt
     that way: the skill's rule forbids it, and the list does not stop it. An improvised command off the list still prompts, so a
