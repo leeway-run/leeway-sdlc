@@ -251,7 +251,7 @@ a wider one that matches it, is reported as too wide: while it stays, a push run
 wrong argument reaches the integration branch, and it is the person's to remove.
 
 **Whether the install can write a guard.** With no guard that counts, question 16 makes its offer only when the third command
-prints nothing and nothing is at the first command's path. Anything else is in the way, and is reported: a `pre-push` there that
+prints nothing, nothing is at the first command's path and the integration branch's name has no `'`, which git allows and the script's single quotes do not. Anything else is in the way, and is reported: a `pre-push` there that
 does not count, an unexecutable or a dangling one included, and any `core.hooksPath`, because with one set git runs nothing from
 `.git/hooks`. A `pre-push.sample` is not in the way. The guard goes in `.git/hooks`, never under a tracked `core.hooksPath`: all
 of a clone's worktrees share it from the moment it is written, the merge worktree too. A relative `core.hooksPath` fires only in a

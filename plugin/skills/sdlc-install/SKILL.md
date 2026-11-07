@@ -209,6 +209,7 @@ asked in step 5, once the process they compare with has been read.
       on Claude Code fourteen startup warnings, every push prompts, and the run is attended. With a push rule already there, a no leaves what that branch above says instead.
     - **A hook or `core.hooksPath` in the way:** make no offer. Never overwrite it and never chain to it silently. Say what is there and why it does not count, that the guard is theirs to
       combine with it, and that `scaffold/hooks/pre-push.tmpl` in this skill is the script to combine. The outcome is that of no guard.
+    - **A `'` in the integration branch's name:** make no offer. Say why: the script holds the name in single quotes, so a `'` breaks it and it then refuses every push from this clone. The guard is theirs to write from that same script, and the outcome is that of no guard.
 
     With every other entry already there, the offer is question 16 on its own: a repo at fourteen rules is asked only that. With something in the way as well, there is nothing to ask: say it.
 
@@ -285,16 +286,18 @@ shown as a diff first like every patch.
   pre-push guard does not cover a merge through GitHub). A place outside the repo is not
   written: print the entries for the human.
 - **16's offer, yes**: the hook's path goes in the plan as a `create`. Before writing, run detection's first and third commands again: if anything is now at
-  that path or `core.hooksPath` is set, write nothing, and it is the branch "A hook or `core.hooksPath` in the way". Otherwise write
+  that path or `core.hooksPath` is set, write nothing, and it is the branch "A hook or `core.hooksPath` in the way". Otherwise create its directory, write
   `scaffold/hooks/pre-push.tmpl` in this skill to that path, with `{{INTEGRATION_BRANCH}}` filled from the integration branch, make it executable, and try it, which pushes nothing:
 
   ```sh
-  chmod +x <that path>
+  mkdir -p "$(dirname <that path>)"     # before the write: git prints the path even when a clone has no hooks directory
+  chmod +x <that path>     # after the write
   echo "HEAD 0 refs/heads/<integration branch> 0" | <that path>; echo $?     # the refusal, and 1
   echo "HEAD 0 refs/heads/<any other branch> 0" | <that path>; echo $?     # 0
   ```
 
-  Say where you put it, and only then add `git push` to the allow-list. If either line prints anything else, the push rule is not added: say what it printed.
+  Say where you put it, and only then add `git push` to the allow-list. If the try prints anything else, delete the file this install just wrote and the push rule is not added: say what it printed.
+  If the write or the `chmod` is refused, tell the person what to do themselves, which is to put that same filled script, printed in full, at `<that path>` and make it executable, and that the push rule stays off until this install, run again, finds it there.
 
 ### Generate all seven contract docs, always
 
@@ -447,7 +450,7 @@ what follows from an answer the
 human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
 declined (run prompts for every command), an allow-list added (the startup warnings at each session, and what question
 16 said it leaves open), an allow-list entry detection found out of date (which ones, and whether it is dead or too wide), an allow-list added without `git push` (each push prompts until a guard `run` names exists; a push rule already there stays, and pushes run with no prompt: see too wide), a pre-push guard written (where it is, and that another clone gets one by running this install there),
-a hook or `core.hooksPath` that kept the guard from being written (what is there, and that the guard is theirs to combine). Leave out changes the human made before the
+a hook or `core.hooksPath` that kept the guard from being written (what is there, and that the guard is theirs to combine), a `'` in the integration branch's name that did (why, and that the guard is theirs to write), a guard the write or `chmod` was refused for (what the person is to put where). Leave out changes the human made before the
 install: they are theirs, not the install's.
 
 Write each item for a reader who does not know the loop's terms, in plain words: **what it is, what it means

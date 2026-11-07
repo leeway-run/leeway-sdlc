@@ -1,26 +1,43 @@
 #!/bin/sh
-# The pre-push guard run requires (leeway-sdlc, sdlc-install question 16). It refuses a push to the integration branch
-# and a force push to any ref, deciding from the refs git passes on stdin, so HEAD:<branch> from a detached HEAD is caught:
+# The pre-push guard run requires (leeway-sdlc, sdlc-install question 16). It refuses a push to the integration branch,
+# a force push to any ref and any update of a tag the remote has. It decides from the refs git passes on stdin, so
+# HEAD:<branch> from a detached HEAD is caught:
 #   <local ref> <local oid> <remote ref> <remote oid>
 # --no-verify and -c core.hooksPath skip it, so it stops the push an agent ordinarily writes, not a determined one.
 
 integration='refs/heads/{{INTEGRATION_BRANCH}}'
 refused=0
 
-while read -r local_ref local_oid remote_ref remote_oid; do
+refuse() {
+  echo "pre-push guard: refused $local_ref -> $remote_ref: $1" >&2
+  refused=1
+}
+
+# Fields are taken from the end of the line, because a local ref such as HEAD^{/two words} can hold a space.
+while IFS= read -r line; do
+  remote_oid=${line##* }; line=${line% *}
+  remote_ref=${line##* }; line=${line% *}
+  local_oid=${line##* }; local_ref=${line% *}
   if [ "$remote_ref" = "$integration" ]; then
-    echo "pre-push guard: refused $local_ref -> $remote_ref: the integration branch is not pushed to." >&2
-    refused=1
+    refuse "the integration branch is not pushed to."
     continue
   fi
   # A delete has an all-zero local oid, and a new ref an all-zero remote one: neither overwrites history.
   case $local_oid in *[!0]*) ;; *) continue ;; esac
   case $remote_oid in *[!0]*) ;; *) continue ;; esac
-  # Stdin doesn't carry --force. What it shows is an update that isn't a fast-forward, and git only lets one get this far
-  # when it is forced. A remote commit this clone doesn't have fails the check too, so it is refused.
-  if ! git merge-base --is-ancestor "$remote_oid" "$local_oid" 2>/dev/null; then
-    echo "pre-push guard: refused $local_ref -> $remote_ref: a force push, not a fast-forward of $remote_oid." >&2
-    refused=1
+  # Moving a tag overwrites what it named, even forward onto a descendant, so ancestry says nothing here.
+  case $remote_ref in refs/tags/*)
+    refuse "the remote already has this tag, at $remote_oid, and a tag is not moved, forced or not."
+    continue ;;
+  esac
+  git merge-base --is-ancestor "$remote_oid" "$local_oid" 2>/dev/null && continue
+  # Stdin doesn't carry --force, so what this knows depends on the remote commit. With it here, git has already rejected an
+  # unforced commit over a commit before this hook, so the update was forced. Without it, git hands this hook a forced update and an
+  # unforced one it is about to reject ("fetch first") alike, and the two can't be told apart.
+  if git cat-file -e "$remote_oid^{commit}" 2>/dev/null; then
+    refuse "a force push, not a fast-forward of $remote_oid."
+  else
+    refuse "not a fast-forward of $remote_oid, a commit this clone doesn't have: either a force push, or a push git rejects anyway (fetch first)."
   fi
 done
 

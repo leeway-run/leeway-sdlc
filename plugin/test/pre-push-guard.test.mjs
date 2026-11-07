@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -13,6 +13,10 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const TEMPLATE = 'skills/sdlc-install/scaffold/hooks/pre-push.tmpl'
 const template = readFileSync(join(ROOT, 'plugin', TEMPLATE), 'utf8')
 const skip = process.platform === 'win32'
+// The lines the install prints for writing the hook, as sdlc-install's step says them: the fixture runs these, so a line the
+// step drops is a line no test here has.
+const step = readFileSync(join(ROOT, 'plugin/skills/sdlc-install/SKILL.md'), 'utf8').split("**16's offer, yes**")[1]
+const printed = step.slice(step.indexOf('```sh') + 5, step.indexOf('```', step.indexOf('```sh') + 5)).trim().split('\n').map((l) => l.trim())
 
 // The machine's config can set core.hooksPath, init.defaultBranch or a signing rule, and a test run from a hook has GIT_DIR.
 const env = (dir) => ({
@@ -27,6 +31,8 @@ const env = (dir) => ({
   GIT_COMMITTER_EMAIL: 't@t',
 })
 
+const fill = (integration) => template.replace('{{INTEGRATION_BRANCH}}', integration)
+
 const fixture = (t) => {
   const dir = mkdtempSync(join(tmpdir(), 'pre-push-guard-'))
   t.after(() => rmSync(dir, { recursive: true, force: true }))
@@ -39,7 +45,8 @@ const fixture = (t) => {
   const remote = join(dir, 'r.git')
   const primary = join(dir, 'p')
   ok(dir, 'init', '-q', '--bare', '-b', 'main', remote)
-  ok(dir, 'init', '-q', '-b', 'main', primary)
+  // With no template, so no .git/hooks: the path detection prints has no directory until the install's lines make one.
+  ok(dir, 'init', '-q', '--template=', '-b', 'main', primary)
   ok(primary, 'remote', 'add', 'origin', remote)
   const commit = (cwd, name) => {
     writeFileSync(join(cwd, name), name)
@@ -58,11 +65,17 @@ const fixture = (t) => {
   ok(merge, 'merge', '-q', '--no-ff', '-m', 'merge story', 'story')
   const at = (ref) => git(remote, 'rev-parse', '--verify', '-q', ref).stdout.trim()
   const install = (integration = 'main') => {
-    // What the install does: the path detection prints, resolved as git does from where it runs.
-    const hook = resolve(primary, ok(primary, 'rev-parse', '--git-path', 'hooks/pre-push'))
-    mkdirSync(dirname(hook), { recursive: true })
-    writeFileSync(hook, template.replace('{{INTEGRATION_BRANCH}}', integration))
-    chmodSync(hook, 0o755)
+    // What the install does: the path detection prints, resolved as git does from where it runs, and the step's own lines.
+    const path = ok(primary, 'rev-parse', '--git-path', 'hooks/pre-push')
+    const hook = resolve(primary, path)
+    const run = (prefix) => {
+      const line = printed.find((l) => l.startsWith(prefix)).replaceAll('<that path>', path)
+      const r = spawnSync('sh', ['-c', line], { cwd: primary, env: env(dir), encoding: 'utf8' })
+      assert.equal(r.status, 0, `${line}: ${r.stderr}`)
+    }
+    run('mkdir ')
+    writeFileSync(hook, fill(integration))
+    run('chmod ')
     return hook
   }
   return { dir, git, ok, commit, remote, primary, merge, at, install }
@@ -93,7 +106,8 @@ test('the template fills to a script with no placeholder left', () => {
 })
 
 test('by detection\'s rule it counts: it reads stdin and is not keyed on the current branch', () => {
-  assert.match(template, /while read -r local_ref local_oid remote_ref remote_oid/)
+  assert.match(template, /while IFS= read -r line; do/)
+  assert.match(template, /<local ref> <local oid> <remote ref> <remote oid>/)
   assert.doesNotMatch(template, /abbrev-ref|symbolic-ref|branch --show-current/)
 })
 
@@ -175,6 +189,137 @@ test('a force push over a commit this clone does not have is refused', { skip },
   f.commit(f.primary, 'ours')
   assert.notEqual(f.git(f.primary, 'cat-file', '-e', f.at('refs/heads/story')).status, 0, 'this clone has the commit')
   refused(f, f.primary, '--force', 'origin', 'story')
+})
+
+// What the refusal may say over a commit this clone lacks: the hook can't tell forced from unforced there, so it names both.
+const NAMES_BOTH = /a commit this clone doesn't have: either a force push, or a push git rejects anyway \(fetch first\)/
+const CLAIMS_FORCE = /refused [^\n]*: a force push/
+
+test('an unforced push over a commit this clone does not have makes no claim of force: it names both, as git would reject it', { skip }, (t) => {
+  const f = fixture(t)
+  const other = join(f.dir, 'other')
+  f.ok(f.dir, 'clone', '-q', '-b', 'story', f.remote, other)
+  f.commit(other, 'theirs')
+  f.ok(other, 'push', '-q', 'origin', 'story')
+  f.commit(f.primary, 'ours')
+  const theirs = f.at('refs/heads/story')
+  assert.notEqual(f.git(f.primary, 'cat-file', '-e', theirs).status, 0, 'this clone has the commit')
+  // Git's own answer to this push, with no hook: the line's "rejects anyway" is true.
+  const own = f.git(f.primary, 'push', 'origin', 'story')
+  assert.notEqual(own.status, 0)
+  assert.match(own.stderr, /\(fetch first\)/)
+  f.install()
+  refused(f, f.primary, 'origin', 'story')
+  const unforced = f.git(f.primary, 'push', 'origin', 'story')
+  assert.match(unforced.stderr, NAMES_BOTH)
+  assert.doesNotMatch(unforced.stderr, CLAIMS_FORCE)
+  // Forced, the same line and the same refusal: stdin is the same, so nothing else could be true of it.
+  const forced = f.git(f.primary, 'push', '--force', 'origin', 'story')
+  assert.notEqual(forced.status, 0)
+  assert.match(forced.stderr, NAMES_BOTH)
+  assert.equal(f.at('refs/heads/story'), theirs)
+})
+
+test('a force push over a commit this clone has is called one: git rejects the unforced push before the hook', { skip }, (t) => {
+  const f = fixture(t)
+  f.install()
+  rewrite(f)
+  const unforced = f.git(f.primary, 'push', 'origin', 'story')
+  assert.notEqual(unforced.status, 0)
+  assert.match(unforced.stderr, /non-fast-forward/)
+  assert.doesNotMatch(unforced.stderr, /pre-push guard/)
+  const forced = f.git(f.primary, 'push', '--force', 'origin', 'story')
+  assert.notEqual(forced.status, 0)
+  assert.match(forced.stderr, CLAIMS_FORCE)
+  assert.doesNotMatch(forced.stderr, NAMES_BOTH)
+})
+
+// Two tags on the remote at the story's commit, one light and one annotated, with a commit after them to move them to.
+const tagged = (f) => {
+  f.ok(f.primary, 'tag', 'light')
+  f.ok(f.primary, 'tag', '-a', '-m', 'annotated', 'annotated')
+  f.ok(f.primary, 'push', '-q', 'origin', 'light', 'annotated')
+  f.commit(f.primary, 'after-tags')
+}
+
+test('with no hook, a tag moved forward by force goes through, so the guard is why it is refused', { skip }, (t) => {
+  const f = fixture(t)
+  tagged(f)
+  const before = f.at('refs/tags/light')
+  f.ok(f.primary, 'tag', '-f', 'light')
+  passed(f, f.primary, '--force', 'origin', 'light')
+  assert.notEqual(f.at('refs/tags/light'), before)
+})
+
+test('a tag the remote has is not moved: forward, backward or annotated, forced or not', { skip }, (t) => {
+  const f = fixture(t)
+  tagged(f)
+  f.install()
+  // Forward, onto a descendant, which the ancestry test alone would pass.
+  f.ok(f.primary, 'tag', '-f', 'light')
+  f.ok(f.primary, 'tag', '-f', '-a', '-m', 'moved', 'annotated')
+  for (const tag of ['light', 'annotated']) {
+    refused(f, f.primary, '--force', 'origin', tag)
+    refused(f, f.primary, 'origin', `+refs/tags/${tag}`)
+    const unforced = f.git(f.primary, 'push', 'origin', tag)
+    assert.match(unforced.stderr, /the remote already has this tag, at [0-9a-f]+, and a tag is not moved, forced or not\./)
+    assert.doesNotMatch(unforced.stderr, CLAIMS_FORCE)
+  }
+  // Backward.
+  f.ok(f.primary, 'tag', '-f', 'light', 'HEAD~2')
+  f.ok(f.primary, 'tag', '-f', '-a', '-m', 'moved back', 'annotated', 'HEAD~2')
+  for (const tag of ['light', 'annotated']) refused(f, f.primary, '--force', 'origin', tag)
+})
+
+test('a new tag passes, light or annotated, an unchanged one passes, and so does deleting one', { skip }, (t) => {
+  const f = fixture(t)
+  tagged(f)
+  f.install()
+  f.ok(f.primary, 'tag', 'new-light')
+  f.ok(f.primary, 'tag', '-a', '-m', 'new', 'new-annotated')
+  passed(f, f.primary, 'origin', 'new-light', 'new-annotated')
+  assert.equal(f.at('refs/tags/new-light'), f.ok(f.primary, 'rev-parse', 'HEAD'))
+  passed(f, f.primary, '--tags', 'origin')
+  passed(f, f.primary, '--force', 'origin', 'light')
+  passed(f, f.primary, 'origin', '--delete', 'refs/tags/new-light')
+  assert.equal(f.at('refs/tags/new-light'), '')
+})
+
+test('a local ref holding a space is read whole: its push passes, and to the integration branch the refusal names it', { skip }, (t) => {
+  const f = fixture(t)
+  f.install()
+  f.ok(f.primary, 'commit', '-q', '--allow-empty', '-m', 'two words')
+  const r = f.git(f.primary, 'push', 'origin', 'HEAD^{/two words}:main')
+  assert.notEqual(r.status, 0)
+  assert.match(r.stderr, /refused HEAD\^\{\/two words\} -> refs\/heads\/main: the integration branch is not pushed to\./)
+  passed(f, f.primary, 'origin', 'HEAD^{/two words}:plan')
+  assert.equal(f.at('refs/heads/plan'), f.ok(f.primary, 'rev-parse', 'HEAD'))
+})
+
+test('the install\'s lines make the hook\'s directory when the clone has none', { skip }, (t) => {
+  const f = fixture(t)
+  const path = f.ok(f.primary, 'rev-parse', '--git-path', 'hooks/pre-push')
+  assert.ok(!existsSync(dirname(resolve(f.primary, path))), 'the fixture has a hooks directory, so this covers nothing')
+  assert.ok(printed[0].startsWith('mkdir -p '), 'the directory comes first, before the write')
+  assert.ok(existsSync(f.install()))
+  refused(f, f.primary, 'origin', 'HEAD:main')
+})
+
+test('why the install makes no offer on a name holding a quote: the script breaks, and refuses every push', { skip }, (t) => {
+  const f = fixture(t)
+  const hook = f.install()
+  writeFileSync(hook, fill("it's"))
+  const r = spawnSync(hook, { input: 'HEAD 0 refs/heads/other 0\n', env: env(f.dir), encoding: 'utf8' })
+  assert.notEqual(r.status, 0)
+  // The same line passes with any name that doesn't hold one, the other characters git allows and the shell reads included.
+  for (const name of ['release/1.x', 'a.b', 'a`b', 'a&b', 'a;b', 'a"b', 'x$(touch${IFS}pwned)']) {
+    writeFileSync(hook, fill(name))
+    const ok = spawnSync(hook, { input: 'HEAD 0 refs/heads/other 0\n', cwd: f.dir, env: env(f.dir), encoding: 'utf8' })
+    assert.equal(ok.status, 0, name)
+    assert.ok(!existsSync(join(f.dir, 'pwned')), name)
+    const no = spawnSync(hook, { input: `HEAD 0 refs/heads/${name} 0\n`, cwd: f.dir, env: env(f.dir), encoding: 'utf8' })
+    assert.equal(no.status, 1, name)
+  }
 })
 
 test('story, task and plan branches pass: a new branch, a fast-forward, a delete', { skip }, (t) => {
