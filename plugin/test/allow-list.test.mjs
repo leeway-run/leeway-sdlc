@@ -502,7 +502,7 @@ test('leeway-sdlc-wait-answer exits 0 with the answer, through the bin wrapper',
   const dir = mkdtempSync(join(tmpdir(), 'allow-list-'))
   try {
     const fake = join(dir, 'fake.mjs')
-    writeFileSync(fake, 'console.log(JSON.stringify({escalations:[{number:1,answer:{label:"A",note:"",by:"p"}}]}))\n')
+    writeFileSync(fake, 'console.log(JSON.stringify({escalations:[{ref:"X",number:1,answer:{label:"A",note:"",by:"p"}}]}))\n')
     const r = spawnSync(join(ROOT, 'plugin', 'bin', 'leeway-sdlc-wait-answer'), ['--server', SERVER, 'X', 'e1', '--first', '0.01', '--', process.execPath, fake], { encoding: 'utf8' })
     assert.equal(r.status, 0, r.stderr)
     assert.deepEqual(JSON.parse(r.stdout), { label: 'A', note: '', by: 'p' })
