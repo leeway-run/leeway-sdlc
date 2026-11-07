@@ -176,15 +176,17 @@ asked in step 5, once the process they compare with has been read.
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
 config format nobody tunes correctly.
 
-**Written without asking, as framework defaults:** the per-story budget `2,000,000 subagent tokens · 15
-rounds · 4 h wall-clock`, whichever comes first (a harness fact, so it lives in `CONFIG.md`, not in Leeway).
-A human edits `CONFIG.md` to change it.
+**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15,
+"hours": 4}` (2,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as `params.budget`
+on each `build` step that has none (step 5). No preset sets one, so the install does, as a default the human did
+not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) the process is the human's
+and no budget is written. Step 7 says which `build` steps have one.
 
 ## Step 5 — set the process
 
-When question 2 was (d), skip the preset (1) and make no change for questions 3 to 5: ask 14 and 15 against
-the process step 3.4 read, make only the change their answers ask for (3), and read it back (4). Otherwise,
-and only after the human has answered 2 to 5:
+When question 2 was (d), skip the preset (1) and make no change for questions 3 to 5: ask 14 and 15 against the
+process step 3.4 read, make only the change their answers ask for (3), write no budget (skip 4), and read it back
+(5). Otherwise, and only after the human has answered 2 to 5:
 
 1. `<cli> process update <KEY> --preset mvp` (or `maintained`: the answer to question 2).
 2. **Questions 14 and 15.** Read the stored definition (`<cli> process get <KEY> --json`) and ask them,
@@ -195,7 +197,7 @@ and only after the human has answered 2 to 5:
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
      `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`. A `build`
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
-     unattended}`; a `plan` step `params {designDoc}`.
+     unattended, budget?}`; a `plan` step `params {designDoc}`.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
      reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
      `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,
@@ -204,7 +206,11 @@ and only after the human has answered 2 to 5:
    - **The body stays under 16384 bytes** (`wc -c <file>`); the server refuses more as `invalid_process`.
    - `process_in_use` (an open issue would be stranded) is not an install problem: say which refs it names,
      and leave the process as it was.
-4. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
+4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use`
+   included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget`
+   to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
+   else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.
+5. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
    (labels joined with →). The files you write next describe this, so never write them from the answers.
    Then ask question 16 against it.
 
@@ -366,7 +372,7 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **Grep them for secret shapes**: `grep -rnE "Bearer [A-Za-z0-9]|lw_[A-Za-z0-9]{8,}"`, and for any value
   held in the CLI's credentials file (compare without printing it). A hit is a possible credential: **stop and
   show the human the line**, and let them decide. Never remove it automatically; the word "token" alone is
-  legitimate text (a Secrets section, the per-story budget) and is not a hit.
+  legitimate text (a Secrets section, say) and is not a hit.
 - `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
 - Confirm the instructions file loads the floor (the `@` line, or the read-first line, names an existing file).
@@ -382,8 +388,11 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
 detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
 `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
-cast"), and what follows from an answer the human gave: an evidence directory question 8 kept although it is
-gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
+cast"), from the process read back which types' `build` steps got the default per-story budget in step 5 and
+which have none (a run of those is limited only by the round caps), and that `sdlc-tune` changes either, a preset
+the server refused in step 5 (the refs it named, and that neither the preset nor the default budget was applied), and
+what follows from an answer the
+human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
 declined (run prompts for every command), an allow-list added without `git push` (each push prompts
 until a pre-push guard refusing the integration branch exists). Leave out changes the human made before the
 install: they are theirs, not the install's.

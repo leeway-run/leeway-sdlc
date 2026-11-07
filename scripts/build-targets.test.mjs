@@ -67,6 +67,36 @@ test('every HARNESS.md says how a run waits, and waits only where a probe showed
   }
 })
 
+// The section run's "Recording spend" points at: only Claude Code counts, and every other target leaves --tokens out.
+test('every HARNESS.md says whether a run can count tokens, and one that cannot records none', () => {
+  const harnesses = [
+    ['claude', join(ROOT, 'plugin', 'HARNESS.md')],
+    ['any', join(ROOT, 'targets', 'agents', 'HARNESS.md')],
+    ['any', join(KIT, 'HARNESS.md')],
+    ...readdirSync(join(KIT, 'harness')).map((f) => [f.replace(/\.md$/, ''), join(KIT, 'harness', f)]),
+  ]
+  assert.equal(harnesses.length, 3 + TARGETS.length)
+  for (const [id, path] of harnesses) {
+    const section = /^## Counting tokens\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(readFileSync(path, 'utf8'))?.[1]
+    assert.ok(section, `${path}: no "## Counting tokens" section`)
+    const flat = section.replace(/\s+/g, ' ')
+    const tokens = /^tokens: (transcripts|none)$/m.exec(section)?.[1]
+    assert.equal(tokens, id === 'claude' ? 'transcripts' : 'none', path)
+    if (tokens === 'none') {
+      assert.match(flat, /every record leaves `--tokens` out \(run, "Recording spend"\)/, path)
+      assert.match(flat, /never `--tokens 0`, never an estimate/, path)
+      assert.match(flat, /`tokensIncomplete`, a floor, and the run carries on/, path)
+    } else {
+      assert.match(flat, /projects\/\*\/\$CLAUDE_CODE_SESSION_ID\/subagents\/agent-<agent id>\.jsonl/)
+      assert.match(flat, /projects\/\*\/\$CLAUDE_CODE_SESSION_ID\.jsonl/)
+      assert.match(flat, /that record leaves `--tokens` out/)
+      assert.match(flat, /Never take `subagent_tokens` from the completion notice instead: it is the agent's final context size/)
+      assert.match(flat, /Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch/)
+      assert.match(readFileSync(join(ROOT, 'docs', 'targets', 'claude.md'), 'utf8'), /^tokens: transcripts$/m)
+    }
+  }
+})
+
 for (const [agent, hook] of Object.entries(HOOKS)) {
   test(`${agent}: the wired hook allows the orchestrator and blocks under the marker`, () => {
     const repo = installInto(agent)
@@ -88,6 +118,11 @@ for (const [agent, hook] of Object.entries(HOOKS)) {
         readFileSync(join(repo, '.sdlc', 'kit', 'scripts', 'wait-answer.mjs')),
         readFileSync(join(ROOT, 'plugin', 'scripts', 'wait-answer.mjs')),
         'the kit carries the answer-wait script',
+      )
+      assert.deepEqual(
+        readFileSync(join(repo, '.sdlc', 'kit', 'scripts', 'session-tokens.mjs')),
+        readFileSync(join(ROOT, 'plugin', 'scripts', 'session-tokens.mjs')),
+        'the kit carries the token-counting script',
       )
     } finally {
       rmSync(repo, { recursive: true, force: true })

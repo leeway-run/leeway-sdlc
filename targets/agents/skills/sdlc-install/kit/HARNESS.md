@@ -17,3 +17,11 @@ How a run waits depends on the agent, and `.sdlc/kit/HARNESS.md` says so for you
 wait: it acts at once as run's "Wait, then carry on" step 4 says for exit 2. A wait that blocks nothing carries on;
 any other stops the turn, and re-invoking `run` once it is answered resumes where there is work left to resume
 (run, "Land the task", step 5).
+
+## Counting tokens
+
+tokens: none
+
+How a run counts tokens depends on the agent, and `.sdlc/kit/HARNESS.md` says so for yours. Without it, a run
+cannot count them: every record leaves `--tokens` out (run, "Recording spend"), never `--tokens 0`, never an
+estimate. Every total then reads `tokensIncomplete`, a floor, and the run carries on.

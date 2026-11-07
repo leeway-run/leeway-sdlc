@@ -137,7 +137,7 @@ test('in an issue run, a debt follow-up is filed by the run on a yes and stays a
 });
 
 test('time spent in a wait does not count toward the wall-clock budget', () => {
-  assert.match(under(skill, 'Story start'), /\*\*wall-clock\*\* continue from the `Spend` line of the latest `# Run status` comment\. Time spent in a wait \("Wait, then carry on"\) does not count toward wall-clock\./);
+  assert.match(under(skill, 'Story start'), /\*\*wall-clock\*\* is `totals\.minutes`\. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment\. Time spent in a wait \("Wait, then carry on"\) does not count toward wall-clock\./);
 });
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {

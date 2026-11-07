@@ -27,5 +27,29 @@ in a scratch directory (no Leeway server was called).
 
 wait: background
 
+## Counting tokens
+Checked in a live Claude Code 2.1.319 session, over every transcript on one machine (366 files, 332 of them subagents',
+22,648 usage lines), reading shapes and counts and no text.
+
+- **Finding the session:** the Bash tool's environment has `CLAUDE_CODE_SESSION_ID`, in a subagent too, where it names
+  the parent session: the session's transcript and its `subagents/` directory are named after it. Seen in a subagent's
+  shell, and in the orchestrator's own by the first real round (LWY-139.3 c9).
+- **Finding a subagent:** `agentId: <id>` in the Agent tool's result matched a transcript `agent-<id>.jsonl` in 344 of
+  344 results, and `<task-id>` in the completion notice in 696 of 696.
+- **The unit:** `session-tokens.mjs --subagent` gave the four "sum over all calls" figures of LWY-139.3 c1 exactly.
+- **The shape:** every usage line is `type: "assistant"`, with a `message.id`, a `timestamp` and a boolean
+  `isSidechain`; true in every subagent's entries and in no session's. One line in 80,476 did not parse, and none was a
+  file's last.
+- **Timing:** a command's own call is not in the transcript when the command starts. The orchestrator's session file
+  read 21 calls at the start of a command and 22 five seconds later in the same command (LWY-139.3 c9). A subagent's
+  file did the same. The call's lines are timed before the command: three stamps taken inside a call fell 123, 191 and
+  322 ms after that call's last line, in a subagent's transcript. So a span's end is stamped in one call, to the
+  millisecond, and counted in a later one. A whole-second stamp would lose a call in the end's own second: 1,758 of
+  4,307 session calls have every line inside one second.
+- **Straddling:** one call's lines span at most 99 s, over 12,133 calls, and a line is at most 190 s older than a line
+  above it. So a call belongs to the window holding its earliest line, and the script looks back 300 s to find it.
+
+tokens: transcripts
+
 ## Surprises
 None beyond the appended-command one above.
