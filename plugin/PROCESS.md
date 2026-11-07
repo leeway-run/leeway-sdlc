@@ -285,8 +285,8 @@ leeway --as <alias>/<role> escalation raise <ref> --question "…" --options '[{
   answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
   outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
   answer that needs a person to act first is put to them as an escalation and waited on too (run's
-  "Wait, then carry on"). `plan-project`'s developer interview waits the same way, and stops where its
-  wait ends without an answer; its other escalations stop the turn. **Every other skill stops the turn**, naming the escalation
+  "Wait, then carry on"). `plan-project` waits the same way while its developer interview holds it, on any open
+  escalation of the story, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
   and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
   somewhere else.
 - **On resume**, read the answer on the issue (`leeway --json issue get <ref>`). An open escalation with

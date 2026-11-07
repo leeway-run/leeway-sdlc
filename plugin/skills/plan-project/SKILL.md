@@ -166,6 +166,9 @@ story, is not yours to decide:** it is a step 1 gap.
 Then the **architecture doc** for how the pieces fit and what its known limitations already rule out, and the
 **recipes doc** if the work is one of the recurring types it covers.
 
+Then **the surfaces the story touches in the code**: a type without `shape` has not read them yet, and the interview
+asks only what they leave open.
+
 ## The developer interview
 
 **After the product check and step 2, before step 3, on every story this skill plans**, with a design doc or without
@@ -175,19 +178,31 @@ asked"), never in the terminal, so a written plan is not where they first meet t
 **A story step 1 held gets no interview until it passes.** Step 1 runs first, so a product gap and an interview
 question are never in one round: the gap's escalation is for the PO, and this round is for the developer.
 
+**A story that does not exist yet is created first, so its round has a ref.** Only a type without `shape` gets here;
+with `shape` it is a step 1 gap. Create it as step 5.3 does, with its body and type and no tasks, in its project (step
+5.1 when there is none, since `issue update` has no project field, and step 5.2's resend adds what that description
+lacks). Take it through step 0, then interview it like any other: step 5 adopts both. One found only at step 4 or 5 is
+the same: nothing is written for it until its own `# Interview closed`.
+
 ### Where it stands, from Leeway alone
 
 Every invocation starts here, after step 2, and takes nothing from an earlier session. `issue get <story>`, for each
-story, holds it all: `comments` and `escalations[]`. A question is **its own top-level comment**, its body opening `# Interview question
-<n>, round <r>`, with its escalation's `--comment` set to that comment's `cN`, because a comment holds one open
-escalation and a reply has no `cN`. A question's comment holding `Held on eN` has not been raised yet. The interview
-ends at a comment opening `# Interview closed`. The first row that fits decides:
+story, holds it all: `comments` and `escalations[]`. That list also carries its sub-issues' escalations, with numbers
+that collide: **the story's escalations, here and at step 3, are the entries whose `ref` is the story.** A sub-issue's
+open one, on a re-plan, is `run`'s and holds nothing here: name it in the session, and do not wait on it.
+
+A question is **its own top-level comment**, its body opening `# Interview question <n>, round <r>`, with its
+escalation's `--comment` set to that comment's `cN`, because a comment holds one open escalation and a reply has no
+`cN`. A comment's own escalation is `comments[].escalation`, `{number, open}` or null. A question's comment holding
+`Held on eN`, with none on it, has not been raised. A **question comment** is one of these, a `# Floor question`, or a
+`# Interview: on <ref> cN`, which stands for that comment on `<ref>` and is read there. The interview ends at a comment
+opening `# Interview closed`. The first row that fits decides:
 
 | The story has | So |
 |---|---|
+| a question comment after the latest `# Interview closed`, if any, with no escalation and no `Held on` | a session ended between the two calls: raise it now, with no second comment, unless an answer settled it, which `# Interview closed` then names. Go on down this table |
 | a `# Interview closed` with no question comment after it, and no open escalation | it is finished: carry on at step 3. The answers stand on a re-plan. Where a BLOCKER or a changed `AC-n` opens a decision nobody was asked, its question goes out as the next round, naming what opened it |
-| a `# Interview question` or `# Floor question` comment with no escalation and no `Held on` | a session ended between the two calls: raise it now, with no second comment, and go on down this table |
-| an open escalation | do not proceed and raise nothing new: wait (below). This holds for any open escalation on the story, not only the interview's |
+| an open escalation, or a `# Interview: on <ref> cN` whose comment there has one open | do not proceed and raise nothing new: wait (below). This holds for any open escalation of the story, not only the interview's |
 | every escalation answered, and a question comment | read the answers: "The next round" |
 | no question comment | it has not started: "The first round" |
 
@@ -216,15 +231,14 @@ another question, merge them, or hold the dependent one. For each, post its comm
 shows, then `escalation raise <story> --json` (`escalation.escalation` in the answer is the `eN`) with `--comment cN`,
 2 to 5 options, the recommended one first, and `--meanwhile "Nothing: no design doc, criteria or tasks until the
 interview closes."`. A decision with more than 5 options is cut to
-the real ones. A decision spanning stories is one escalation on the first, with a comment on each other story opening
-`# Interview: on <ref>`, read as part of that story's interview.
+the real ones. A decision spanning stories is one escalation on the first, its comment naming the others. Before raising it, post a
+comment on each other story opening `# Interview: on <ref> cN`, that first story and its comment.
 
 Post the held ones' comments last, each holding `Held on eN`, the escalations it waits on, so a re-invoke finds them.
 
 **Step 5's floor questions and its repository question go out with this round**, when `product get` and `git remote`
 show the second will be asked: they depend on no answer here, and leaving them to step 5 would make a second first round. They
-are not interview questions, and are raised as step 5 says, each comment opening `# Floor question`. A story that does
-not exist yet gets its floor question at step 5.
+are not interview questions, and are raised as step 5 says, each comment opening `# Floor question`.
 
 **Nothing open is the only way past the interview, and size is not one.** A one-file fix with an obvious test never gets
 here ("Does this need planning at all?"); a story that does get here has its trigger, however few its lines. With no
@@ -235,19 +249,19 @@ step 3.
 
 Say once what you wait on and until when. Then wait on the first open escalation, as `run` does (`run`, "Wait, then
 carry on"), started as `HARNESS.md`, "Waiting for an answer", says, polling nothing and doing no other work of this
-plan. `<story>` is the story it is on:
+plan. `<ref>` is the entry's own `ref`, the first story for a spanning question:
 
 ```sh
-node <plugin-files>/scripts/wait-answer.mjs --server <server> <story> <eN> -- <cli>
+node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli>
 ```
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read the story again. Another still open: wait on that one, with 16 hours of its own. None: "The next round" |
+| 0 | answered | read every story of the round again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: "The next round" |
 | 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
-| 1 | the call was wrong, or the story has no `eN` | a bug in this run: stop the turn and say so |
+| 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
 
 Where `HARNESS.md` says `wait: stop`, skip the wait and act at once as for exit 2. A person can answer at once or days
 later: the answer is read the same way, and a re-invoke with one still open waits on it again, with no second comment or
@@ -278,9 +292,10 @@ doc, on comments of its own, and it reopens nothing here.
 
 ## 3. Write the design doc, then the technical criteria
 
-**Not while the interview is open.** Read the story again now: an open escalation, a question comment after the latest
-`# Interview closed`, or no `# Interview closed` at all goes back to "The developer interview". Nothing from here on is
-written first: no design doc, no `TC-n`, no project and no task.
+**Not while the interview is open.** Read each story again now: an open escalation, a `# Interview: on <ref> cN` whose
+comment there has one open, a question comment after the latest `# Interview closed`, or no `# Interview closed` at all
+goes back to "The developer interview". Nothing from here on is written first: no design doc, no `TC-n`, no task, and no
+project beyond the one a new story needed.
 
 **The design doc, when the type's `plan` step has `params.designDoc: true`.** In the repo, versioned with the
 code, at *Plans directory* in `.sdlc/CONFIG.md`: `<dir>/<story ref lower>-<slug>.md`. Cover: data model, layer
@@ -405,8 +420,8 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
 
 3. **The stories**, in the project, one issue each. A story that exists is adopted; when its `issue.summary` is
    empty, fill one in with `issue update <story> --summary "<at most 280 characters>"`, naming only that field (an
-   update replaces the fields it names). One the work needs and nobody wrote is created here only for a type
-   without `shape`; for a type with `shape` it is a step 1 gap (`shape-project` creates it). Pass the type explicitly:
+   update replaces the fields it names). One the work needs and nobody wrote is created with this command before its interview, only for a
+   type without `shape`; for a type with `shape` it is a step 1 gap (`shape-project` creates it). Pass the type explicitly:
 
    ```sh
    <cli> --server <server> --as <alias>/planner --json issue create <KEY> --projectId <projectId> --type <type> --title "<story>" --summary "<at most 280 characters>" --status backlog --stdin description <story.md
@@ -637,8 +652,8 @@ someone could pick up from its description alone.
 
 Plus: **every hazard names an owning task**, or the doc says which one does not and why. Every task's done-when
 names at least one thing that must be proven false. Every story passed the product check — or its gaps went back
-to the PO as one comment and it has no tasks. Every planned story has a `# Interview closed`, posted before its design
-doc, and no escalation of its interview open. Every planned story has its *Technical criteria* in the body (or, on
+to the PO as one comment and it has no tasks. Every planned story, a new one too, has a `# Interview closed`, posted before its
+design doc, and no escalation of its interview open. Every planned story has its *Technical criteria* in the body (or, on
 a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
 *planned by* half on its Status line. Every story and task, and the Plan record, has a summary.
 And, for a type with a plan gate, the report is posted, every QUESTION in it is a comment of its own with an

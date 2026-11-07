@@ -180,6 +180,18 @@ test('output that is not one JSON document with an escalations array is a failur
   }
 })
 
+test("a sub-issue's escalation with the same number is not the ref's own", async () => {
+  // A parent's list is merged oldest first, so the sub-issue's answered e1 comes before the parent's open e1.
+  const sub = { ...esc(1, answered('Sub')), ref: 'LWY-1.1' }
+  const r = await run([issue(sub, esc(1)), issue(sub, esc(1)), issue(sub, esc(1, answered('Own')))], ['e1'])
+  assert.equal(r.status, 0)
+  assert.equal(JSON.parse(r.stdout).label, 'Own')
+  assert.equal(r.calls.length, 3)
+  const only = await run([issue(sub)], ['e1'])
+  assert.equal(only.status, 1)
+  assert.match(only.stderr, /no escalation e1/)
+})
+
 test('an escalation the issue does not have exits 1 instead of waiting', async () => {
   const r = await run([issue(esc(1))], ['e9'])
   assert.equal(r.status, 1)
