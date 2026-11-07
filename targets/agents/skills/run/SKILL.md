@@ -749,8 +749,8 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    ```sh
    git -C <story worktree> push -u origin <story branch>
    git -C <primary> fetch origin <base>
-   git -C <primary> merge-base --is-ancestor origin/<base> <story branch>
    git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>
+   git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor HEAD <story branch>
    git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>
    git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>
    git -C <primary> worktree remove <primary>/.worktrees/merge-<story>
@@ -763,10 +763,19 @@ its base (step 5) before the story's next step is written, so a `manual` next st
    and nothing here reads the local one.
 
    **The base may have moved since step 1, and what step 2 gated is the story with the base as it was then.** A non-zero
-   exit from `merge-base --is-ancestor` means the base moved: go back to step 1, before any merge, even one that would be
-   clean, so nothing reaches the base ungated. If the merge conflicts all the same, the base moved after that check: abort it, remove this
-   worktree and go back to step 1. If the push is rejected, the base moved: remove this worktree and go back to step 1. A
-   push a pre-push hook refused is not that: remove this worktree, stop and say what it refused. If `worktree add` finds the path left by a stopped run, `git -C <primary> worktree remove --force
+   exit from `merge-base --is-ancestor` means the base moved: remove this worktree and go back to step 1, before any merge,
+   even one that would be clean, so nothing reaches the base ungated. The check reads the merge worktree's detached `HEAD`,
+   which only this worktree changes, because worktrees share `origin/<base>` and a parallel session's fetch moves it. With
+   that exit 0 the story already holds `HEAD`, so the merge cannot conflict.
+
+   **If the merge push of `HEAD:<base>` fails,** whatever git printed, run `git -C <primary> fetch origin <base>` and
+   `git -C <primary> merge-base --is-ancestor origin/<base> <story branch>`. Non-zero: the base moved, so remove this
+   worktree and go back to step 1. Exit 0: it did not, so remove this worktree, stop and say what git printed.
+
+   **If the push of the story branch fails,** stop and say what git printed: nothing has merged, and step 1 merges only the
+   base, so going back to it would not help.
+
+   If `worktree add` finds the path left by a stopped run, `git -C <primary> worktree remove --force
    <primary>/.worktrees/merge-<story>` and add it again.
 
    The integration branch is reached only as the repo's convention says (the pre-push guard in "Unattended prerequisites"
@@ -1159,7 +1168,9 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
   into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
   plugin, and this skill only states the requirement. It refuses an update to the integration branch named in
-  `.sdlc/CONFIG.md` and a force push to any ref, on a push from any process that does not skip it: `--no-verify` and
+  `.sdlc/CONFIG.md` and a force push to any ref, deciding from the refs git passes on its stdin, so it refuses
+  `HEAD:<integration branch>` from a detached HEAD, which is how the story gate pushes. It does so on a push from any
+  process that does not skip it: `--no-verify` and
   `-c core.hooksPath` skip it, and the allow-list's push rule approves both, so it stops the push an agent ordinarily
   writes, not a determined one. Never pass either. An allow-listed push is one wrong argument away from the integration
   branch, and the plugin's git guard governs subagents, never the orchestrator. **Until the guard exists, leave the

@@ -232,7 +232,7 @@ test('gh pr merge stays off the unattended allow-list, so the merge prompts for 
     'gh pr merge can be allow-listed, or the pre-push guard is said to cover it',
   );
   const install = flat(read('skills/sdlc-install/SKILL.md'));
-  assert.match(install, /`git push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
+  assert.match(install, /`git push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
 });
 
 test('nothing outside that section merges the plan\'s pull request', () => {

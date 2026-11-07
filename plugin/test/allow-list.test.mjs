@@ -143,14 +143,21 @@ test('the count of warnings the person is told is the count of git rules', () =>
   assert.ok(text.includes(`${words[GIT.length]} rows below the banner`), 'HARNESS.md: the warning count moved')
   assert.ok(text.includes(`(${words[GIT.length - 1]} while \`git push\` is off the list)`), 'HARNESS.md: the count without push moved')
   const question = flat(read('plugin/skills/sdlc-install/SKILL.md'))
-  const branch = (from, to) => question.slice(question.indexOf(from), question.indexOf(to))
+  const branch = (from, to) => {
+    const [start, end] = [question.indexOf(from), question.indexOf(to)]
+    assert.ok(start !== -1 && end !== -1, `question 16: no ${start === -1 ? from : to}`)
+    return question.slice(start, end)
+  }
   const guarded = branch('**A guard found:**', '**No guard found:**')
-  const unguarded = branch('**No guard found:**', 'Then, either way, what no list closes.')
+  const unguarded = branch('**No guard found:**', '**No guard found, and a push rule already there:**')
+  const wide = branch('**No guard found, and a push rule already there:**', 'Then, either way, what no list closes.')
   assert.ok(guarded.includes(`the ${words[GIT.length]} startup warnings`), 'question 16, with a guard: the count moved')
   assert.ok(unguarded.includes(`the ${words[GIT.length - 1]} startup warnings`), 'question 16, with no guard: the count moved')
   assert.ok(guarded.includes('that those rules let a push skip the pre-push guard'), 'question 16, with a guard: the skip')
   assert.ok(!unguarded.includes('skip the pre-push guard'), 'question 16, with no guard: there is no guard to skip')
   assert.ok(unguarded.includes('so every push prompts'), 'question 16, with no guard: every push prompts')
+  assert.ok(wide.includes(`the ${words[GIT.length]} startup warnings`), 'question 16, with a push rule and no guard: the rule counts')
+  assert.ok(!/stays off|every push prompts|attended/.test(wide), 'question 16, with a push rule and no guard: pushes do not prompt')
 })
 
 test('the Read rule reaches the plugin files run reads first, and nothing beside them', () => {
@@ -249,8 +256,8 @@ const fill = (call) =>
     .replace(/<(lane|gate command|setup command)>/g, `${LANE} x`)
     .replace(/<[^<>]+>/g, 'x')
 
-// What `subcommands` does not split runs too, so it is not a call to read as allowed: a single &, $(, backticks and >.
-// Single quotes hold all of these; double quotes hold only & and >.
+// What `subcommands` does not split runs too, so it is not a call to read as allowed: a single &, $(, <(, backticks and >.
+// Single quotes hold all of these; double quotes hold only &, <( and >.
 const shellTrick = (command) => {
   let quote = null
   for (let i = 0; i < command.length; i++) {
@@ -263,6 +270,7 @@ const shellTrick = (command) => {
     if (c === '"') quote = quote ? null : '"'
     else if (c === "'" && !quote) quote = "'"
     else if (!quote && c === '>') return '>'
+    else if (!quote && c === '<' && command[i + 1] === '(') return '<('
     else if (!quote && c === '&') {
       if (command[i + 1] !== '&') return '&'
       i++
@@ -336,11 +344,12 @@ const NAMED = [
   /^(npm test|node scripts\/lint-docs\.mjs)$/, // an invented repo's lane, in a template's example
 ]
 // Any other span of two words or more whose first word could be a program is a call, so an unknown program fails.
-const PROGRAM = /^(?:[a-z][\w.+-]*|[A-Z_]+=\S*|<cli>|<wait-answer>|<session-tokens>)\s/
+const PROGRAM = /^(?:[a-z][\w.+-]*|[.\/$(]\S*|[A-Za-z_]+=\S*|<cli>|<wait-answer>|<session-tokens>)\s/
 const NOT_CALLS = new RegExp(`^(?:${[
   'issue', 'comment', 'iteration', 'spend', 'escalation', 'review', 'project', 'process', 'dependency', 'pr', 'product', // a Leeway verb with no program: the next test
   'merge-base', 'rev-parse', 'status', 'worktree', 'branch', // a git verb named on its own
   'it\\.\\S+', 'round', 'the', 'of', 'at', 'end', 'none', 'input_tokens', 'step_set', 'linted', 'skips', // an anchor, a formula, an example's words
+  '\\$\\(\\(', '\\(round', '\\.worktrees/<\\S+', // arithmetic, an aside, a path with a placeholder of two words
 ].join('|')})\\s`)
 
 test('every code span that is a call is one a rule matches', () => {
@@ -350,11 +359,21 @@ test('every code span that is a call is one a rule matches', () => {
       if (!PROGRAM.test(s) || NOT_CALLS.test(s) || NAMED.some((re) => re.test(s))) continue
       if (s.startsWith('git ')) seen.git++
       if (s.startsWith('leeway ')) seen.leeway++
-      assert.equal(wrongWith(s), null, `${name}: ${s}`)
+      const wrong = wrongWith(s)
+      assert.equal(wrong, null, `${name}: ${s}: ${wrong}. A call a rule misses, or prose: if prose, add its first word to NOT_CALLS`)
     }
   }
   assert.ok(seen.leeway > 20, `only ${seen.leeway} leeway calls`)
   assert.ok(seen.git > 10, `only ${seen.git} git calls`)
+})
+
+test('a span starting with a path, a variable, a subshell or an assignment is read as a call, and fails', () => {
+  for (const s of ['./scripts/x.sh --force', '/bin/rm -rf x', '$LEEWAY issue delete X', '(cd x && rm y)', 'foo=1 git tag x']) {
+    assert.ok(PROGRAM.test(s), s)
+    assert.notEqual(wrongWith(s), null, s)
+  }
+  assert.equal(shellTrick('git -C x diff <(rm y)'), '<(')
+  assert.equal(shellTrick("git -C x diff '<(rm y)'"), null)
 })
 
 test('a call printed with no leeway word in front is verb first and on the list too', () => {
@@ -380,8 +399,8 @@ test('the story gate prints its lines in this order, as one block', () => {
   const block = [
     'git -C <story worktree> push -u origin <story branch>',
     'git -C <primary> fetch origin <base>',
-    'git -C <primary> merge-base --is-ancestor origin/<base> <story branch>',
     'git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>',
+    'git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor HEAD <story branch>',
     'git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>',
     'git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>',
     'git -C <primary> worktree remove <primary>/.worktrees/merge-<story>',
@@ -404,8 +423,10 @@ test('the steps run used to leave unprinted are printed, so the checks above cov
     'cd <story worktree> && <gate command>',
     'git -C <story worktree> push -u origin <story branch>',
     'git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>',
+    'git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor HEAD <story branch>',
     'git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>',
     'git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>',
+    'git -C <primary> merge-base --is-ancestor origin/<base> <story branch>',
     'git -C <primary> worktree remove <primary>/.worktrees/merge-<story>',
     'git -C <primary> worktree remove <story worktree>',
     'git -C <primary> worktree remove <task worktree>',
@@ -541,7 +562,9 @@ export const PINS = [
   ['plugin/HARNESS.md', '`Read(//<that directory, with no leading slash>/plugins/cache/*/leeway-sdlc/**)`'],
   ['plugin/HARNESS.md', 'all prompt without the `Read` rule, on an enabled plugin too'],
   ['plugin/HARNESS.md', 'An agent does these through `node -e`'],
-  ['plugin/HARNESS.md', '`Bash(git -C * push *)` approves both, so the guard stops the push an agent ordinarily writes, not a determined one'],
+  ['plugin/HARNESS.md', '`Bash(git -C * push *)` approves both, so a guard stops the push an agent ordinarily writes, not a determined one, and only a guard that decides from the refs on its stdin (sdlc-install\'s detection, "A pre-push guard") does that: `run` pushes `HEAD:<base>`, from a detached HEAD at the story gate, which a hook keyed on the current branch lets through.'],
+  ['plugin/HARNESS.md', 'The guard is per clone while this rule is tracked, so another clone has the rule and no guard.'],
+  ['plugin/HARNESS.md', 'A push rule already there stays, and is reported as too wide: while it does, a push runs with no prompt and nothing refuses it (fifteen rows, not fourteen).'],
   ['plugin/HARNESS.md', '`git -C <path> push --no-verify origin <branch>` and `git -C <path> -c core.hooksPath=<dir> push origin <branch>` both skip it'],
   ['plugin/HARNESS.md', 'No `deny` rule is written for them'],
   ['plugin/HARNESS.md', 'Claude Code 2.1.91 and later'],
@@ -553,10 +576,11 @@ export const PINS = [
   ['README.md', "claude.ai and Cowork don't install a plugin that has one"],
   // The install says it before the yes.
   ['plugin/skills/sdlc-install/SKILL.md', '**Before the yes, tell the person what it approves and what it leaves open**'],
-  ['plugin/skills/sdlc-install/SKILL.md', '**A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, that those rules let a push skip the pre-push guard, and why the rest adds little).'],
+  ['plugin/skills/sdlc-install/SKILL.md', '**A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, that those rules let a push skip the pre-push guard, and why the rest adds little). The guard is per clone while the rule is tracked: `.git/hooks` and the `core.hooksPath` setting stay in this clone, so another clone has the rule and no guard, and its pushes run with no prompt and nothing refusing them.'],
   ['plugin/skills/sdlc-install/SKILL.md', '**No guard found:** `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at its first push until someone answers.'],
   ['plugin/skills/sdlc-install/SKILL.md', 'lists for this agent without a push rule (on Claude Code, the fourteen startup warnings, what the git rules also approve, and why the rest adds little)'],
-  ['plugin/skills/sdlc-install/SKILL.md', 'What the person needs for a run with no push prompt: a pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, refusing the integration branch and a force push, and then this install run again, which offers the `push` rule.'],
+  ['plugin/skills/sdlc-install/SKILL.md', 'What the person needs for a run with no push prompt: a pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, deciding from the refs on its stdin, refusing the integration branch and a force push, and then this install run again, which offers the `push` rule.'],
+  ['plugin/skills/sdlc-install/SKILL.md', '**No guard found, and a push rule already there:** say this instead of the branch above. Detection reports the rule as too wide. While it stays, a push runs with no prompt and nothing refuses it, so one wrong argument reaches the integration branch, and it is the person\'s to remove.'],
   ['plugin/skills/sdlc-install/SKILL.md', 'A rule stops the call an agent ordinarily writes, not a determined one.'],
   ['plugin/skills/sdlc-install/SKILL.md', '`node -e` and the lane commands can run anything, including `leeway escalation answer`'],
   ['plugin/skills/sdlc-install/SKILL.md', '`leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt'],
@@ -574,15 +598,24 @@ export const PINS = [
   // The guard: what counts, and what follows from none.
   ['plugin/skills/sdlc-install/references/detection.md', '**A pre-push guard.**'],
   ['plugin/skills/sdlc-install/references/detection.md', 'git rev-parse --git-path hooks/pre-push'],
-  ['plugin/skills/sdlc-install/references/detection.md', 'What counts is an executable file at that path that refuses an update to the integration branch and a force push'],
-  ['plugin/skills/sdlc-install/references/detection.md', 'it can sit in `.git/hooks` or under `core.hooksPath`'],
-  ['plugin/skills/sdlc-install/references/detection.md', 'a `pre-push.sample`, a file that is not executable, a hook in a directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints'],
-  ['plugin/skills/sdlc-install/references/detection.md', 'With no guard, `push` is not a missing entry'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'judged on the push `run` makes: `push origin HEAD:<base>` from a linked worktree, and at the story gate from a detached one.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'git ls-tree origin/<integration branch> -- <that path>'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'What counts is an executable file at that path that refuses an update to the integration branch and a force push, deciding from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'A hook keyed on the current branch, such as one reading `git rev-parse --abbrev-ref HEAD`, does not count: it refuses `git push origin main` on `main` and lets `HEAD:main` through from any other checkout.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'it can sit in `.git/hooks` or under `core.hooksPath`, which a relative value resolves against the checkout\'s root.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'A relative `core.hooksPath` is therefore per checkout: it counts only when the hook file is tracked and executable on the integration branch'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'One that is ignored or generated, such as Husky\'s `.husky/_`, does not count, because the merge worktree takes no setup.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'a `pre-push.sample`, a file that is not executable, a hook in a directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could not read to that effect.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'With no guard, `push` is not a missing entry, so it alone does not bring question 16 back.'],
+  ['plugin/skills/sdlc-install/references/detection.md', 'An existing push rule with no guard, `Bash(git -C * push *)` or a wider one that matches it, is reported as too wide: while it stays, a push runs with no prompt and nothing refuses it, so one wrong argument reaches the integration branch, and it is the person\'s to remove.'],
   // run, and the plugin's general form.
-  ['plugin/skills/run/SKILL.md', 'A non-zero exit from `merge-base --is-ancestor` means the base moved: go back to step 1, before any merge, even one that would be clean, so nothing reaches the base ungated.'],
-  ['plugin/skills/run/SKILL.md', 'If the merge conflicts all the same, the base moved after that check: abort it, remove this worktree and go back to step 1.'],
-  ['plugin/skills/run/SKILL.md', 'If the push is rejected, the base moved: remove this worktree and go back to step 1.'],
-  ['plugin/skills/run/SKILL.md', 'A push a pre-push hook refused is not that: remove this worktree, stop and say what it refused.'],
+  ['plugin/skills/run/SKILL.md', '**The base may have moved since step 1, and what step 2 gated is the story with the base as it was then.**'],
+  ['plugin/skills/run/SKILL.md', 'A non-zero exit from `merge-base --is-ancestor` means the base moved: remove this worktree and go back to step 1, before any merge, even one that would be clean, so nothing reaches the base ungated.'],
+  ['plugin/skills/run/SKILL.md', 'The check reads the merge worktree\'s detached `HEAD`, which only this worktree changes, because worktrees share `origin/<base>` and a parallel session\'s fetch moves it.'],
+  ['plugin/skills/run/SKILL.md', 'With that exit 0 the story already holds `HEAD`, so the merge cannot conflict.'],
+  ['plugin/skills/run/SKILL.md', '**If the merge push of `HEAD:<base>` fails,** whatever git printed, run `git -C <primary> fetch origin <base>` and `git -C <primary> merge-base --is-ancestor origin/<base> <story branch>`. Non-zero: the base moved, so remove this worktree and go back to step 1. Exit 0: it did not, so remove this worktree, stop and say what git printed.'],
+  ['plugin/skills/run/SKILL.md', '**If the push of the story branch fails,** stop and say what git printed: nothing has merged, and step 1 merges only the base, so going back to it would not help.'],
+  ['plugin/skills/run/SKILL.md', 'deciding from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD, which is how the story gate pushes.'],
   ['plugin/skills/run/SKILL.md', 'only the first and last of those lines run, and in between comes that convention, such as `gh pr create --base <integration branch> --head <story branch> --title "<story title>" --body-file <body.md>`'],
   ['plugin/skills/run/SKILL.md', 'A branch that already exists, on a resume, is added without `-b`.'],
   ['plugin/skills/run/SKILL.md', 'The merge and plan-cut worktrees take no setup, and a repo whose hooks need one there must say so under *Per-worktree setup* in `.sdlc/CONFIG.md`.'],

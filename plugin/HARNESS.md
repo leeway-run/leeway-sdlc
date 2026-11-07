@@ -124,11 +124,14 @@ held to the same rules as the session. `.claude/settings.json`'s allow rules app
   `-c core.fsmonitor=<script>` runs a program. The verb is weak too: `git -C <path> push origin main -m commit z` matches
   the `commit` rule, because the word only has to appear later in the command.
 - The pre-push guard does not close that. `git -C <path> push --no-verify origin <branch>` and
-  `git -C <path> -c core.hooksPath=<dir> push origin <branch>` both skip it, and `Bash(git -C * push *)` approves both, so the
-  guard stops the push an agent ordinarily writes, not a determined one. No `deny` rule is written for them: git also takes
+  `git -C <path> -c core.hooksPath=<dir> push origin <branch>` both skip it, and `Bash(git -C * push *)` approves both, so a
+  guard stops the push an agent ordinarily writes, not a determined one, and only a guard that decides from the refs on its stdin (sdlc-install's detection, "A pre-push
+  guard") does that: `run` pushes `HEAD:<base>`, from a detached HEAD at the story gate, which a hook keyed on the current branch lets through. The guard is per clone
+  while this rule is tracked, so another clone has the rule and no guard. No `deny` rule is written for them: git also takes
   `--no-veri` and `core.hookspath`, which such a rule would miss, so it would read as a line it does not hold.
 - With no pre-push guard in the repo (sdlc-install's detection, "A pre-push guard"), `git push` is off the list: every push
-  prompts, so the run is attended, and the point above waits until a guard exists.
+  prompts, so the run is attended, and the point above waits until a guard exists. A push rule already there stays, and is reported as too wide: while it does, a push
+  runs with no prompt and nothing refuses it (fifteen rows, not fourteen).
 - The `Read` rule lets a session read this plugin's installed files, and nothing beside them.
 - It adds little over what the list already allows: `node -e` and the lane commands can already run any program.
 

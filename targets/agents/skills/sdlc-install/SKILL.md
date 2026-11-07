@@ -188,12 +188,16 @@ asked in step 5, once the process they compare with has been read.
     ("A pre-push guard") found:
 
     - **A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
-      approve, that those rules let a push skip the pre-push guard, and why the rest adds little).
+      approve, that those rules let a push skip the pre-push guard, and why the rest adds little). The guard is per clone while the rule is tracked: `.git/hooks` and
+      the `core.hooksPath` setting stay in this clone, so another clone has the rule and no guard, and its pushes run with no prompt and nothing refusing them.
     - **No guard found:** `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at
       its first push until someone answers. Then what `HARNESS.md`, "Say before the yes", lists for this agent without a push rule (on Claude Code, the
       fourteen startup warnings, what the git rules also approve, and why the rest adds little). What the person needs for a run with no push prompt: a
-      pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, refusing the integration branch and a force push, and then
-      this install run again, which offers the `push` rule.
+      pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath`, deciding from the refs on its stdin, refusing the integration branch and a force
+      push, and then this install run again, which offers the `push` rule.
+    - **No guard found, and a push rule already there:** say this instead of the branch above. Detection reports the rule as too wide. While it stays, a push
+      runs with no prompt and nothing refuses it, so one wrong argument reaches the integration branch, and it is the person's to remove. Then what
+      `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, and why the rest adds little).
 
     Then, either way, what no list closes. A rule stops the call an agent ordinarily writes, not a
     determined one. `node -e` and the lane commands can run anything, including `leeway escalation answer`, and
@@ -270,7 +274,7 @@ shown as a diff first like every patch.
   place `HARNESS.md` names, in the form it gives (for Claude Code, the rules of its table in
   `permissions.allow` of `.claude/settings.json`, with `cli:` and `server:` from `.sdlc/leeway.md`, its `Read` rule as `HARNESS.md` says when `CLAUDE_CONFIG_DIR` is set), adding the
   missing entries and keeping the rest. `git
-  push` stays off it until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
+  push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
   pre-push guard does not cover a merge through GitHub). A place outside the repo is not
   written: print the entries for the human.
 
