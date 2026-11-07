@@ -104,9 +104,34 @@ test('one call with lines either side of a boundary counts once, in the window h
   }
   straddles([call('a', 19.2), call('a', 20.1)])
   straddles([call('a', 20.1), call('a', 19.2)]) // the file need not be in time order
-  // Lines 99 s apart, the longest spread measured, and the later window still leaves the call to the earlier.
-  counted(session([call('a', 100), call('a', 199), call('b', 205)], 90, 150), 111)
-  counted(session([call('a', 100), call('a', 199), call('b', 205)], 150, 250), 111)
+})
+
+// SLACK_MS is 300 s. Each call is cut just below its last line, so the later window has to look back the whole spread.
+const cutBelowLast = (first, final) => {
+  const lines = [call('a', first), call('a', final), call('b', final + 5)]
+  const earlier = session(lines, first - 10, final - 1)
+  const later = session(lines, final - 1, final + 50)
+  return { earlier, later }
+}
+
+test('a call whose lines are 99 s apart, the longest spread measured, counts once', () => {
+  const { earlier, later } = cutBelowLast(100, 199)
+  counted(earlier, 111)
+  counted(later, 111)
+})
+
+test('a call whose lines are 295 s apart, inside the lookback, counts once', () => {
+  const { earlier, later } = cutBelowLast(100, 395)
+  counted(earlier, 111)
+  counted(later, 111)
+})
+
+// The stated residual: past the lookback a call is on both sides of the cut. The lookback is bounded because the script
+// holds only the ids near the window, not the file's, and this is what that bound costs. None was measured this wide.
+test('a call whose lines are 305 s apart, past the lookback, is counted on both sides of the cut', () => {
+  const { earlier, later } = cutBelowLast(100, 405)
+  counted(earlier, 111)
+  counted(later, 222)
 })
 
 test('the end of a span is stamped to the millisecond, so a call in its own second counts', () => {
@@ -178,6 +203,17 @@ test('a malformed line clear of the window leaves the count whole', () => {
   counted(session([call('a', 1), `{"${SECRET}`, call('b', 2), call('c', 1000)], 1000, 1010), 111) // well before it
   counted(session([call('c', 15), call('b', 1000), `{"${SECRET}`, call('d', 1001)], 10, 20), 111) // well after it
   counted(session([call('c', 15), call('b', 1000), `{"${SECRET}`], 10, 20), 111) // a half-written last line, well after it
+})
+
+// The margin is SLACK_MS, 300 s, each side of the window, read off the time of the entries around the line.
+test('a malformed line withholds the number just inside the margin, and not just outside it', () => {
+  const bad = `{"${SECRET}`
+  // Before the window, whose from is 1000: the next time says where the line is.
+  refused(session([call('a', 695), bad, call('b', 705), call('c', 1005)], 1000, 1010), 3, /could not be read/)
+  counted(session([call('a', 690), bad, call('b', 695), call('c', 1005)], 1000, 1010), 111)
+  // After the window, whose to is 20: the last time says where the line is.
+  refused(session([call('c', 15), call('b', 315), bad, call('d', 316)], 10, 20), 3, /could not be read/)
+  counted(session([call('c', 15), call('b', 325), bad, call('d', 326)], 10, 20), 111)
 })
 
 test('a call whose fields cannot be read withholds the number', () => {

@@ -287,13 +287,18 @@ back from prose.
 
   `<start>` and `<end>` are the span's two stamps, in milliseconds. Count a subagent once it has returned, and a span
   of yours in a tool call after the one that stamped its end, never in that call: the running call is not yet in the
-  transcript. A call belongs to the span holding its first line, so two spans that share a stamp count it once.
+  transcript. A call belongs to the span holding its first line, so two spans that only share a stamp count it once.
 - **What cannot be counted is left out: never `--tokens 0` in its place, never an estimate.** That is every record in
   a harness whose "Counting tokens" says it cannot, a span whose start or subagent this session did not see, and any
   exit of the script but 0: then it prints no number. Leeway marks the total incomplete (`tokensIncomplete`), and
   every readout of it says so: the token total is a floor, and the run carries on (stop 9). A 0 the script prints
   means it found no model call, and it says so on stderr. Pass it only if that is true, as for a subagent that ended
   before its first call; a span in which you made calls has the wrong window or file, so leave `--tokens` out.
+- **Spans of yours that overlap leave `--tokens` out, on both.** When two concurrent tasks make a span of yours (a
+  round's orchestration, landing a task) overlap another that is counted from your transcript, every call in the
+  overlap would be on both, so neither carries a count: never split, never estimated, and `tokensIncomplete` is then
+  true, because those calls were not attributed. A subagent's count is unaffected, because its transcript is counted
+  whole and belongs to one agent, and an issue run never hits this, because it never runs tasks concurrently.
 - **The round**, on its iteration ("Gate, commit, push, record", step 4): `--minutes` from delegating to the
   implementer to the iteration record; `--tokens` the implementer's, from its transcript; `--testMinutes` the brief's *Test minutes*, left
   out when it says `unknown` and never more than `--minutes` (pass the smaller); `--note` what the round did, in a

@@ -65,8 +65,8 @@ test('a token is a new token, the same unit for a subagent and the orchestrator,
       'node <plugin-files>/scripts/session-tokens.mjs --session <your transcript> --from <start> --to <end> ``` ' +
       "`<start>` and `<end>` are the span's two stamps, in milliseconds. Count a subagent once it has returned, and a " +
       'span of yours in a tool call after the one that stamped its end, never in that call: the running call is not ' +
-      'yet in the transcript. A call belongs to the span holding its first line, so two spans that share a stamp count ' +
-      'it once. ',
+      'yet in the transcript. A call belongs to the span holding its first line, so two spans that only share a stamp ' +
+      'count it once. ',
   );
   for (const doc of [skill, contract, brief]) {
     assert.doesNotMatch(flat(doc), /as the harness report|harness reported|harness did not report|subagent tokens|subagents' counts/);
@@ -75,7 +75,7 @@ test('a token is a new token, the same unit for a subagent and the orchestrator,
 
 test('what cannot be counted is left out, never sent as 0', () => {
   assert.equal(
-    from(spend(), '- **What cannot be counted', '- **The round**'),
+    from(spend(), '- **What cannot be counted', '- **Spans of yours that overlap'),
     '- **What cannot be counted is left out: never `--tokens 0` in its place, never an estimate.** That is every record ' +
       'in a harness whose "Counting tokens" says it cannot, a span whose start or subagent this session did not see, ' +
       'and any exit of the script but 0: then it prints no number. Leeway marks the total incomplete ' +
@@ -97,6 +97,18 @@ test('what cannot be counted is left out, never sent as 0', () => {
   for (const doc of [skill, contract, brief]) {
     assert.doesNotMatch(doc.replace(/never `--tokens 0`/g, ''), /--tokens[ =]+0\b/, 'a command sends --tokens 0');
   }
+});
+
+test('spans of the run\'s own that overlap leave --tokens out on both, and a subagent\'s count stands', () => {
+  assert.equal(
+    from(spend(), '- **Spans of yours that overlap', '- **The round**'),
+    '- **Spans of yours that overlap leave `--tokens` out, on both.** When two concurrent tasks make a span of yours (a ' +
+      "round's orchestration, landing a task) overlap another that is counted from your transcript, every call in the " +
+      'overlap would be on both, so neither carries a count: never split, never estimated, and `tokensIncomplete` is ' +
+      "then true, because those calls were not attributed. A subagent's count is unaffected, because its transcript is " +
+      'counted whole and belongs to one agent, and an issue run never hits this, because it never runs tasks ' +
+      'concurrently. ',
+  );
 });
 
 test('the round, its review, a round with no iteration and the run\'s own time each say where they are recorded', () => {
