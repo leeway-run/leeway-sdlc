@@ -223,10 +223,12 @@ test('the plan merges into main only on the person\'s word, and closes only once
   assert.match(section, /if it already reads `done`, leave it/);
 });
 
-// LWY-189.2 owns this text in sdlc-install, which LWY-189.1 does not change.
-test('sdlc-install says git push waits for the pre-push guard and gh pr merge stays off the list, because the guard does not cover a merge through GitHub', () => {
+// Replaces the check that sdlc-install says `git push` is "not added until the pre-push guard run names exists" and `gh pr merge`
+// "stays off it always" (LWY-189.2): the install writes no list, so it says neither.
+test('sdlc-install no longer says what stays off or goes on a list: it writes no rule for git push or gh pr merge', () => {
   const install = flat(read('skills/sdlc-install/SKILL.md'));
-  assert.match(install, /`git push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
+  assert.doesNotMatch(install, /`git push` is not added|`gh pr merge` stays off|stays off it always/);
+  assert.doesNotMatch(install, /`gh pr merge`/);
 });
 
 // The paragraph on `gh pr merge` in "Unattended prerequisites": from its last mention before the pre-push guard bullet.

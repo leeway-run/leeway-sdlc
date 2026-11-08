@@ -31,13 +31,18 @@ test('the conditional questions are asked only on a divergence, and raised as ye
   assert.ok(yesNo, 'no yes/no list in "Where the human is asked"');
   const conditional = questions.filter((q) => q.n >= 13);
   assert.deepEqual(
-    conditional.map((q) => q.title),
-    ['What the block repeats.', 'Branch prefixes.', 'Blocking rungs.', 'The unattended allow-list.'],
+    conditional.slice(0, 3).map((q) => q.title),
+    ['What the block repeats.', 'Branch prefixes.', 'Blocking rungs.'],
   );
+  assert.equal(conditional.length, 4);
   for (const q of conditional) {
     assert.match(q.body, /\bonly when\b/, `question ${q.n} (${q.title}) has no condition`);
     assert.match(yesNo[1], new RegExp(`\\b${q.n}\\b`), `question ${q.n} is not in the yes/no list`);
   }
+});
+
+test('question 16 is the pre-push guard, the last conditional question', () => {
+  assert.equal(questions.find((q) => q.n === 16).title, 'The pre-push guard.');
 });
 
 test('the floor is imported once: the fill follows the file, and sync-repo fills it the same way', () => {
