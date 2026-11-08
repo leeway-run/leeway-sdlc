@@ -60,6 +60,12 @@ test('c2: every raise is the raise script with a fields file, and no field goes 
   assert.match(process_, /The CLI's own raise, with the fields as flags, is off run's allow-list, so it prompts\./);
 });
 
+test('TC-1: the CLI\'s own raise, with the fields as flags, is not said to sit off a list', { skip: 'red-test-TC-1: PROCESS still says it "is off run\'s allow-list, so it prompts"' }, () => {
+  const raise = process_.match(/The CLI's own raise, with the fields as flags[^.]*\./);
+  assert.ok(raise, 'no sentence on the CLI\'s own raise');
+  assert.ok(!/allow[- ]?list|allow[- ]rules?|permission rules?/i.test(raise[0]) || /\b(no|not|never|without)\b|n't/i.test(raise[0]), raise[0]);
+});
+
 const TYPES = ['blocker', 'clarification', 'debt', 'nit'];
 
 test('TC-4: every fields file has a type, a question, a context, a trade-off, options and meanwhile; advice but in shape-project', () => {

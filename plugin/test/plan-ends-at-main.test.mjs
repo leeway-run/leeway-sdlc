@@ -243,6 +243,32 @@ test('nothing outside that section merges the plan\'s pull request', () => {
   assert.doesNotMatch(rest, MERGES);
 });
 
+// The paragraph on `gh pr merge` in "Unattended prerequisites": from its last mention before the pre-push guard bullet.
+const mergeParagraph = () => {
+  const prereqs = under(run, 'Unattended prerequisites');
+  const guardAt = prereqs.indexOf('- **A pre-push guard');
+  const at = prereqs.lastIndexOf('`gh pr merge`', guardAt);
+  return at < 0 ? '' : prereqs.slice(at, guardAt);
+};
+const NEGATES = /\b(no|not|never|none|nor|neither|without|instead|rather than|gone)\b|n't/i;
+
+test('gh pr merge is held by the person\'s word, and no permission prompt or allow-list is said to hold it', { skip: 'red-test-TC-4: run says the merge stays off the allow-list and its prompt is where the yes is given' }, () => {
+  assert.match(merges(), /the plan merges into `main` on the person's word/i);
+  const para = mergeParagraph();
+  const claims = para.split(/(?<=[.!?,;])\s+/).filter((s) => !NEGATES.test(s));
+  for (const s of claims) {
+    assert.doesNotMatch(s, /allow[- ]?list|allow[- ]rules?/i, 'a list is said to hold the merge');
+    assert.doesNotMatch(s, /prompt[^.]*\b(yes|word|holds?|held|stops?|gates?|asks?)\b|\b(yes|word|holds?|held|stops?|gates?)\b[^.]*prompt/i, 'a prompt is said to hold the merge');
+  }
+});
+
+test('nothing outside that paragraph and "When the plan merges into `main`" merges the plan\'s pull request', () => {
+  const rest = flat(run)
+    .replace(merges(), '')
+    .replace(mergeParagraph(), '');
+  assert.doesNotMatch(rest, MERGES);
+});
+
 test('the Plan record is set done only where the plan has merged into main', () => {
   const allowed = [merges(), from(noPlanBranch(), '**Every story reads merged:**', '**Any story does not:**')];
   const closes = run
