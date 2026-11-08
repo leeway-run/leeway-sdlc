@@ -629,7 +629,6 @@ export const PINS = [
   ['plugin/skills/sdlc-install/references/detection.md', "a kit script's per-version path"],
   ['plugin/skills/sdlc-install/references/detection.md', '**Too wide:**'],
   ['plugin/skills/sdlc-install/references/detection.md', 'while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt'],
-  ['plugin/skills/sync-repo/SKILL.md', 'whose question 16 adds the new ones'],
   // The guard: what counts, and what follows from none.
   ['plugin/skills/sdlc-install/references/detection.md', '**A pre-push guard.**'],
   ['plugin/skills/sdlc-install/references/detection.md', 'git rev-parse --git-path hooks/pre-push'],
