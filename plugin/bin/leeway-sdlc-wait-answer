@@ -1,0 +1,11 @@
+#!/bin/sh
+# On the Bash tool's PATH while the plugin is enabled, so an allow rule can name this script with no per-version path.
+self=$0
+while [ -L "$self" ]; do
+  link=$(readlink "$self")
+  case $link in
+    /*) self=$link ;;
+    *) self=$(dirname "$self")/$link ;;
+  esac
+done
+exec node "$(dirname "$self")/../scripts/wait-answer.mjs" "$@"

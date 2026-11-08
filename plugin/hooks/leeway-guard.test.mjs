@@ -46,6 +46,7 @@ test('the other writes are blocked', () => {
     'leeway issue create --title x',
     'leeway escalation raise LWY-1 q',
     'leeway escalation answer 3 a',
+    'leeway --server https://app.leeway.run clarification answer LWY-1 e1 q1 --as a/agent --answer x',
     'leeway pr link LWY-1.1 http://x',
     'leeway dependency add LWY-1 LWY-2',
     'leeway process update --stdin',
@@ -53,6 +54,38 @@ test('the other writes are blocked', () => {
     'leeway logout',
     'leeway --as nick comment add LWY-1 x',
   ]) expectExit(command, 2)
+})
+
+test('a governed agent cannot raise through the plugin\'s raise script, and the orchestrator can', () => {
+  for (const command of [
+    'leeway-sdlc-raise --server https://app.leeway.run --as a/implementer LWY-1 /r/.worktrees/.run/f.json -- leeway',
+    'node .sdlc/kit/scripts/raise.mjs --server https://app.leeway.run --as a/implementer LWY-1 f.json -- leeway',
+    'node /home/x/.claude/plugins/cache/m/leeway-sdlc/0.3.0/scripts/raise.mjs --server s --as a/b LWY-1 f.json -- leeway',
+    'cd /w && sh -c "leeway-sdlc-raise --server s --as a/b LWY-1 f.json -- leeway"',
+  ]) {
+    const result = expectExit(command, 2)
+    assert.match(result.stderr, /raise script raises an escalation, and the orchestrator is the only writer/)
+  }
+  expectExit('leeway-sdlc-raise --server https://app.leeway.run --as a/agent LWY-1 /r/.worktrees/.run/f.json -- leeway', 0, null)
+  expectExit('node scripts/build-targets.mjs --check', 0)
+  expectExit('leeway-sdlc-wait-answer --server https://app.leeway.run LWY-1 e1 -- leeway', 0)
+})
+
+test('a verb-first write is refused as run prints it: the server first, the flags after the verb', () => {
+  for (const command of [
+    'leeway --server https://app.leeway.run spend record LWY-1 3 --as a/agent --json',
+    'leeway --server https://app.leeway.run comment add LWY-1 --as a/implementer --json --stdin body </r/.worktrees/.run/b.md',
+    'leeway --server https://app.leeway.run issue update LWY-1 --as a/agent --status done',
+    'leeway --server https://app.leeway.run escalation answer LWY-1 e1 --option A --as a/agent',
+    'node /opt/leeway.js --server https://app.leeway.run iteration record LWY-1.1 abc --as a/implementer',
+  ]) expectExit(command, 2)
+  expectExit('leeway --server https://app.leeway.run issue update LWY-1 --as a/agent', 2, REVIEWER)
+  for (const command of [
+    'leeway --server https://app.leeway.run issue get LWY-1 --json',
+    'leeway --server https://app.leeway.run review get LWY-1 --json',
+    'leeway --server https://app.leeway.run escalation list LWY --json',
+  ]) expectExit(command, 0)
+  expectExit('leeway --server https://app.leeway.run spend record LWY-1 3 --as a/agent --json', 0, null)
 })
 
 test('wrappers do not hide a write', () => {
@@ -78,6 +111,7 @@ test('a governed agent may read', () => {
     'leeway issue update --help',
     'leeway issue list',
     'leeway escalation list LWY',
+    'leeway --server https://app.leeway.run clarification list LWY-1 e1 --json',
     'leeway help',
     'leeway version',
     'leeway --version',

@@ -11,8 +11,10 @@ runtime"), so a change in Leeway is a change everywhere, and nothing in the repo
 
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call.
 `<cli>` is `cli:` in `.sdlc/leeway.md`, `<KEY>` its `product:`, `<server>` its `server:`. Pass `--server
-<server>` on every call. Writes carry `--as <alias>/agent` (the alias is this session's, `<word>-<two hex
-digits>`, chosen as `PROCESS.md`, "The cast", describes). **No token, credential or server secret is shown or
+<server>` on every call. Writes carry `--as <alias>/agent` (the alias is this session's, an adjective and
+a bird, `quiet-wren`, chosen as `PROCESS.md`, "The cast", describes: against the project of the issue named for the
+escalations, `issue get <ref>`'s `project.id`, or, in the terminal with no issue named, a pair at random, as there is
+no project to read). **No token, credential or server secret is shown or
 written anywhere.** Without `.sdlc/leeway.md` the repo was never installed: ask for the command and the
 product key, or point to `sdlc-install`; write neither down.
 
@@ -23,14 +25,26 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
 - **With it** (the Leeway repo, and any repo set up by `sdlc-install`), questions go to the human as Leeway
   escalations, not the terminal. Each confirmation below is: the before and after posted first as a comment
   (`comment add <ref> --stdin body`) on the issue the human named when invoking this skill (no ref given:
-  stop and say an issue is needed), then one escalation on it with `--comment cN`, 2 to 5 options
-  `{label, argument}` (label at most 60 characters, argument at most 1,000, question at most 500), the
-  pre-filled option first. Raise it with `--json` and **note the id it returns** (`escalation.escalation`:
-  `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **stop the turn**. On
-  resume read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number` is the noted
-  id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it is the
-  yes option. No answer there, or an answer only on another escalation, is "not yet": write nothing and stop
-  again.
+  stop and say an issue is needed), then one escalation on it with `"comment"` that comment's `cN`, 2 to 5 options
+  `{label, argument}` (label at most 60 characters, argument at most 1,000 and saying what is written if it is
+  picked, question at most 1,000), the pre-filled option first, marked `"suggested": true`. It carries the fields of
+  `PROCESS.md`, "Questions to the human are escalations", written as JSON to a file outside the repo, by absolute
+  path, never on a command line: `"type": "clarification"`; the context with the before and after in plain lines, as
+  many as fit, never only the comment's `cN`; `"tradeoff"`; and `"advice"` saying why the pre-filled option. Raise it
+  with `<raise> --server <server> --as <alias>/agent <ref> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`,
+  "Running the plugin's scripts", names it) and **note the id it returns** (`escalation.escalation`:
+  `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **wait on it**, as `run`
+  does (`run`, "Wait, then carry on", with this skill in place of `run`), answering a question asked of you and
+  waiting again (exit 5); wait even with the person at the terminal, since only the escalation's answer is one. On
+  its answer, or on resume, read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number`
+  is the noted id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it
+  is the yes option, and go on from the step that asked. No answer there, or an answer only on another escalation,
+  is "not yet": write nothing. On any exit but 0 and 5, or where `HARNESS.md` says `wait: stop`, stop the turn as
+  run's table says, naming the issue and the escalation.
+
+  **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
+  question, merge them into one, or hold the dependent one for the next round. Independent questions go out
+  together, not rationed, each with its own noted id, and a later round drops what an answer settled.
 - **Without it**, ask in the terminal, one question at a time.
 
 ## Step 1 - read what is there
@@ -39,14 +53,26 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
 <cli> process get <KEY> --json > <file outside the repo>/before.json
 ```
 
-The answer is `{process, version, updatedAt}`. `version` is the revision (`0` and `updatedAt: null`: the
-product never set a process, and `process` is the `mvp` preset, not a stored one). `process.version` is the
-schema version, `1`.
+The answer is `{process, version, updatedAt}`. `version` is the revision counter. `0`, with `updatedAt: null`, is
+a product created before products stored their process: it has no stored row and reads the `mvp` preset. `1` or
+more is a stored process, and that includes the `maintained` process `product create` stores at version 1, so it
+does not mean that a person set it. `process.version` is the schema version, `1`.
 
 **State each type in one line**, in the words `sdlc-install` uses for its questions 3 and 4: "A `<type>` goes
 `<step labels joined with →>`." ("An" before a vowel.) Add what its question 5 shows: whether the type's
 `build` step is `unattended`. A type with no `build` step is one the plugin does not run; say so in its line.
 Then ask what the human wants to change, unless the invocation already said.
+
+**The old flow.** A type is on the old flow when it has a `shape` step and no shaped step, "the type's first `gate`
+step after `shape` with no `plan` step between them" (`PROCESS.md`, "Before the plan: shaping"): no `gate` after
+`shape` before its `plan` step, or after `shape` at all when it has no `plan`. Its shaping ends at no step a person
+moves on. When any type is, offer the new flow (Step 2) as a change of its own, alongside anything the invocation
+asked for: Steps 3 to 6 run for it alone, with its own question. Offer it once per run. On a yes, a request is
+turned into an edit afterwards, from a fresh Step 1 read; on a no, leave it and go on to the request. In escalation
+mode that order holds only for a request on a type the new flow changes, whose before and after that answer changes.
+A request on any other type depends on no open answer: its question goes out in the same round, and each yes is
+written in turn, from a fresh Step 1 read. A yes the fresh read already carries is not written again; one it does not carry is. A type with no `shape` step (the `mvp` preset's, for one) is not on the old flow, and neither is one
+that differs from the new flow only in its labels; neither is offered it. A relabel is an ordinary request.
 
 ## Step 2 - turn the request into an edit
 
@@ -63,10 +89,18 @@ Take the request in the human's words. It is one or more of these, and nothing e
 - **A type the request names that is not in the definition** ("spikes skip plan" with no spike): say so and
   ask; do not guess a neighbour.
 - **Unattended** ("run chores without me") sets `unattended` on that type's `build` step.
-- **A build parameter** (red tests, review depth, caps, blocking rungs) on that type's `build` step. The
-  `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an integer 1 to 10;
-  `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1` to `R5`;
-  `unattended` boolean. The `plan` step's `params.designDoc` is a boolean.
+- **The new flow**, on each type on the old flow (Step 1): the step `{"id": "shaped", "kind": "gate", "label":
+  "shaped"}` inserted directly after `shape`, at the `shape` step's status, and the labels of the type's
+  `shape`, `plan`, plan gate (its first `gate` after `plan`, if it has one) and `build` steps set to "shaping",
+  "planning", "planned" and "building". Nothing else on the type changes. A type whose result would break a rule
+  below (a step id `shaped` already in it, a third `gate`, more than 12 steps) is shown, naming the rule it
+  breaks, and not offered.
+- **A build parameter** (red tests, review depth, caps, blocking rungs, the per-story budget) on that type's
+  `build` step. The `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an
+  integer 1 to 10; `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1`
+  to `R5`; `unattended` boolean; `budget`, optional, `{tokens, rounds, hours}`, each optional, `tokens` an integer
+  1 to 1,000,000,000, `rounds` 1 to 500, `hours` 1 to 720, and a dimension left out is not limited. The `plan`
+  step's `params.designDoc` is a boolean.
 
 Edit only the named types in the `process` value of `before.json`, into `after.json` (a short `node` script
 is enough). Every other type, and every field not asked about, stays **byte-identical**. The edit keeps the
@@ -74,7 +108,7 @@ rules the server enforces:
 
 - ids `^[a-z][a-z0-9-]{0,23}$`, labels 1 to 40 characters, `branchPrefix` `^[a-z][a-z0-9-]{0,15}$`;
 - type ids unique and `defaultType` one of them; step ids unique per type; each non-`manual` kind at most
-  once per type;
+  once per type, except `gate`, at most twice (in the presets, the shaped step and the plan gate);
 - step kinds `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`,
   non-decreasing along a type's steps; a `build` step has status `in_progress`.
 
@@ -129,10 +163,10 @@ their type, status and step. For each, offer a move the human can pick:
   and refused as `invalid_step`.
 - or **leave the process as it was** and finish the issue first.
 
-This is a second question to the human (escalation mode: a second escalation, with the refs and the moves in
+This is a second question to the human, in a later round because it follows a refused write (escalation mode: a second escalation, with the refs and the moves in
 a comment first, one option per plan of moves and one for "Leave it"; note its id as above and read only that
 entry's `answer`). Make no move without the answer. After
-it, make the moves, **retry the write once**, and if it is refused again report the refs that remain and stop.
+it, make the moves, **retry the write once, rebuilt from a fresh Step 1 read** (a new `before.json` and `after.json`: a write replaces the whole definition and no version guards it, so the old file would undo a yes written since), and if it is refused again report the refs that remain and stop.
 
 ## Step 6 - read it back
 

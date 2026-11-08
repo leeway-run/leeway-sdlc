@@ -15,7 +15,8 @@
 // belongs in the other.
 //
 // What this is not: a sandbox. It closes the direct forms (`leeway`, `leeway.js`, `.cmd`, `.ps1`,
-// `npx @leeway-run/cli`) and the common wrappers (`sh -c`, `eval`, `env -S`, `pwsh -c`, `cmd /c`, a shell
+// `npx @leeway-run/cli`, and this plugin's raise script, `leeway-sdlc-raise` or `scripts/raise.mjs`) and the common
+// wrappers (`sh -c`, `eval`, `env -S`, `pwsh -c`, `cmd /c`, a shell
 // reading its script from a pipe or here-string, `xargs leeway`). Out of reach: a script file the
 // agent wrote and then runs, an interpreter (`node -e`, `python -c`) calling the CLI, a variable or
 // alias standing for the program (`$L`, `alias`, `eval $CMD`), an ANSI-C escape spelling the name
@@ -185,6 +186,10 @@ const isLeeway = (word) => {
   return name === 'leeway' || name === 'leeway.js' || /^@leeway(-run)?\/cli(@[^/\s]*)?$/i.test(word)
 }
 
+// This plugin's raise script runs `escalation raise` itself, so any call to it writes: `leeway-sdlc-raise` on the
+// PATH, or `scripts/raise.mjs` by path (`node .sdlc/kit/scripts/raise.mjs`).
+const isRaise = (word) => commandName(word) === 'leeway-sdlc-raise' || /(^|[\\/])scripts[\\/]raise\.mjs$/i.test(word)
+
 // A POSIX shell with no `-c` and no script operand (or only a `<<<` / `<` redirection) reads its script from stdin.
 const readsStdin = (words, i) => {
   if (!POSIX_SHELLS.has(commandName(words[i]))) return false
@@ -211,6 +216,7 @@ const leewayInvocations = (command, depth = 0, budget = { left: MAX_SCRIPTS }) =
       if (script) found.push(...leewayInvocations(script, depth + 1, budget))
       if (readsStdin(words, i)) stdinShell = true
       if (isLeeway(words[i])) found.push({ args: words.slice(i + 1), fromXargs: xargsAt !== -1 && xargsAt < i })
+      if (isRaise(words[i])) found.push({ raise: true })
     }
   }
   if (stdinShell) {
@@ -224,7 +230,8 @@ const leewayInvocations = (command, depth = 0, budget = { left: MAX_SCRIPTS }) =
 
 // The command's own words once global flags are dropped, then why it is a write, or null.
 // With `fromXargs` the missing words arrive on stdin, so a call that does not name a read is unknown.
-const writeReason = ({ args, fromXargs }) => {
+const writeReason = ({ args, fromXargs, raise }) => {
+  if (raise) return 'the plugin\'s raise script raises an escalation'
   if (args.some((a) => HELP_FLAGS.has(a))) return null
   const positionals = []
   for (let k = 0; k < args.length; k++) {

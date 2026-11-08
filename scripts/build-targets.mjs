@@ -12,6 +12,9 @@
 //     skills/sdlc-install/kit/                  what sdlc-install copies to .sdlc/kit/ in the repo:
 //       PROCESS.md, HARNESS.md, craft/, agents/, skills/ (the skills' files but not SKILL.md, for "in this plugin" paths)
 //       hooks/git-guard.mjs, hooks/leeway-guard.mjs, hooks/adapters/{guard,governed}.mjs
+//       scripts/wait-answer.mjs                 what run waits on for an escalation's answer (plugin/bin/ is Claude Code's only)
+//       scripts/session-tokens.mjs              what run counts tokens with, where HARNESS.md says it can
+//       scripts/raise.mjs                       what every skill raises an escalation with, its fields from a file
 //       harness/<agent>.md                      one HARNESS.md per agent (scripts/targets.mjs)
 //       wiring/<agent>/...                      that agent's subagents and guard hook, at their repo paths
 //
@@ -65,7 +68,7 @@ const parseAgent = (path) => {
 }
 
 const SKILL_HEADER = `> **leeway-sdlc for agents other than Claude Code.** This plugin's files (\`PROCESS.md\`, \`HARNESS.md\`, \`craft/\`,
-> \`agents/\`, \`hooks/\` and the skills' own files) are in **\`.sdlc/kit/\`** at the repo root once \`sdlc-install\` has
+> \`agents/\`, \`hooks/\`, \`scripts/\` and the skills' own files) are in **\`.sdlc/kit/\`** at the repo root once \`sdlc-install\` has
 > run: "in this plugin" below means there, except that \`skills/<name>/SKILL.md\` is the \`<name>\` skill itself
 > (load it as a skill; its other files are in \`.sdlc/kit/skills/<name>/\`). Read \`.sdlc/kit/HARNESS.md\` for how this agent delegates, marks a
 > subagent's run and updates. With no \`.sdlc/kit/\` yet, run \`sdlc-install\` first; it reads them from its own \`kit/\`.
@@ -87,8 +90,33 @@ version: ${version}
 agent: any
 plugin-files: .sdlc/kit/
 
+## Running the plugin's scripts
+
+- **wait-answer:** \`node .sdlc/kit/scripts/wait-answer.mjs\`
+- **session-tokens:** \`node .sdlc/kit/scripts/session-tokens.mjs\`
+- **raise:** \`node .sdlc/kit/scripts/raise.mjs\`
+
 This is the package's own harness file. The repo's is \`.sdlc/kit/HARNESS.md\`, which \`sdlc-install\` writes from
 \`kit/harness/<agent>.md\` for the agent you use. Until then, run \`sdlc-install\`.
+
+## Waiting for an answer
+
+wait: stop
+
+How a run waits depends on the agent, and \`.sdlc/kit/HARNESS.md\` says so for yours. Without it, a run does not
+wait: it acts at once as run's "Wait, then carry on" step 4 says for exit 2. A wait that blocks nothing carries on;
+any other stops the turn, and re-invoking \`run\` once it is answered resumes where there is work left to resume
+(run, "Land the task", step 5). \`plan-project\`'s developer interview stops the same way, and re-invoking
+\`plan-project\` resumes it. Every other skill that raises an escalation stops the same way. Nobody is listening once a
+skill stops, so a question a person asks of the agent on its escalation is handed back to them after 30 minutes.
+
+## Counting tokens
+
+tokens: none
+
+How a run counts tokens depends on the agent, and \`.sdlc/kit/HARNESS.md\` says so for yours. Without it, a run
+cannot count them: every record leaves \`--tokens\` out (run, "Recording spend"), never \`--tokens 0\`, never an
+estimate. Every total then reads \`tokensIncomplete\`, a floor, and the run carries on.
 `
 
 const readme = `# leeway-sdlc for agents other than Claude Code
@@ -122,6 +150,7 @@ const build = (out) => {
   for (const f of ['git-guard.mjs', 'leeway-guard.mjs', 'adapters/guard.mjs', 'adapters/governed.mjs']) {
     write(join(kit, 'hooks', f), readFileSync(join(PLUGIN, 'hooks', f)))
   }
+  for (const f of ['wait-answer.mjs', 'session-tokens.mjs', 'raise.mjs']) write(join(kit, 'scripts', f), readFileSync(join(PLUGIN, 'scripts', f)))
   for (const t of TARGETS) {
     write(join(kit, 'harness', `${t.id}.md`), harness(t, version, NOTICE))
     for (const [path, content] of Object.entries(t.wiring(agents))) write(join(kit, 'wiring', t.id, path), content)

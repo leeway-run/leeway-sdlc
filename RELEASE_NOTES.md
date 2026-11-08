@@ -1,5 +1,155 @@
 # Release notes
 
+## 0.3.0
+
+The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
+of an approval question. **0.3.0 needs a Leeway server with the process model that allows two `gate` steps in a
+type, and no deployed server has it yet** (see *Known limits*). **It also needs one with LWY-159's escalation fields**
+(type, context, trade-off and advice): on an older server every escalation the plugin raises is refused, and the
+skill stops and says so.
+
+- **New names (LWY-114).** `shape-work` is now `shape-project`, and `plan-work` is now `plan-project`. `run-task`
+  and `run-story` are one skill, `run`, which takes any ref. On a sub-issue it runs one task; on an issue it runs
+  every sub-issue unattended, as `run-story` did; on a project it runs the issues one after another. Invoke it as
+  `HARNESS.md`'s **commands** spells it (`/leeway-sdlc:run` in Claude Code), because a bare `run` can reach another
+  skill of that name. Where a person reads them, the skills and templates say project, issue and sub-issue.
+- **A project run (LWY-114).** `run` on a project runs each issue as an issue run, in the order the blocking
+  relations allow, and stops at the first issue that stops. It skips an issue that its issue run refuses (not
+  unattended, not planned, an unanswered `# Run status`, and the like) and goes on. When nothing runnable is
+  left, it reports what it ran, what it skipped and why, and the blockers. It has no budget of its own: each issue
+  keeps the per-story budget.
+- **Shaping ends at the shaped step (LWY-126).** Once every question is answered, `shape-project` writes the body,
+  posts one comment listing what it inferred, moves the story to the shaped step and stops. It no longer asks
+  *Write this body?*. Two kinds of story still get that question: one already planned, and one whose type has no
+  shaped step.
+- **Planning ends at the plan gate (LWY-126).** Moving a story from shaped to planning is the approval of its body.
+  `plan-project` starts only there; on a story still at shaped, it says the story waits and stops. Planning ends at
+  the plan gate ("planned"), with the coverage report. There is no PASS / PASS WITH DECISIONS / RETURN escalation
+  any more. You pass the gate by moving the story to `ready`, and return it by moving it back to planning.
+- **QUESTIONs (LWY-126).** Each QUESTION in a coverage report is now a comment of its own, with its own escalation.
+  The order is: answer the QUESTIONs, run `plan-project` to apply the answers (it replies `# QUESTIONs applied` to
+  the report), then move the story. `run` refuses a story with no coverage report, one still at the plan gate, and
+  one with a QUESTION that is open, or answered but not yet applied.
+- **Moves on request (LWY-126).** Any skill makes any move the person asks for in the session, as
+  `<alias>/agent`. It then says which move it made and what it leaves unmet. No skill moves a story out of the
+  shaped step or the plan gate on its own.
+- **Install, tune and sync use the new flow (LWY-126).** `sdlc-install` describes the `maintained` preset as the
+  new flow. It does not treat the `maintained` process Leeway stores for a new product as one a person chose.
+  `sdlc-tune` offers the new flow to a type still on the old one (a `shape` step and no shaped step): a `shaped`
+  gate step after `shape`, and the labels shaping, planning, planned and building. `sync-repo` offers the same
+  change once per release.
+- **Filing work is planning (LWY-113).** `sdlc-install` asks whether filing work in Leeway pushes for
+  `plan-project` (the default) or leaves it a manual opt-in. The answer goes into `.sdlc/leeway.md` as
+  `filing-work:`. With `plan-project`, the managed block says to invoke `plan-project` before filing an issue with
+  sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary,
+  even while pairing. `plan-project`'s description now opens with those triggers.
+- **Friction is a project (LWY-115).** Friction the human accepts is filed as one `chore` issue per item in the
+  product's friction project, not as comments on one issue. `.sdlc/leeway.md` names the project as
+  `friction-project:`. `sdlc-install` proposes an existing developer-experience project, or creates
+  "Developer experience".
+- **The install asks instead of reporting (LWY-116).** A divergence the install can see is now a question during
+  the install: branch prefixes, blocking rungs in an existing evidence doc, sections and a floor import that the
+  managed block repeats, and a missing allow-list for unattended runs. There are at most sixteen questions, and
+  questions 13 to 16 are asked only when detection finds their divergence. The install looks for an existing
+  import of the floor on every run, a re-run included, so the floor is never imported twice. The closing report
+  keeps only facts, in plain words.
+- **A summary on every issue (LWY-119).** Every `issue create` the plugin runs passes `--summary`. A skill that
+  adopts an issue with an empty summary fills one in. `PROCESS.md`, under "Records", says so.
+- **In Leeway (LWY-129, LWY-125).** The steps these skills rely on come from two stories in the Leeway app. LWY-129
+  adds the product process, an issue's `type` and `step`, `process get`, and `--type` and `--step`. LWY-125 names
+  every stage as a step in the default presets and allows two `gate` steps per type. A new product gets
+  `maintained`, stored at version 1, and a product with no stored process reads `mvp` at version 0.
+- **Every skill waits for its answer (LWY-160).** `shape-project`, `plan-project`, `sync-repo`, `sdlc-install` and
+  `sdlc-tune` now wait on the escalations they raise, as `run` does, instead of ending the turn, and carry on when
+  you answer. They still stop when nobody answers within about 16 hours, when Leeway does not answer, or when it
+  asks for `leeway login`.
+- **Ask the agent before you decide (LWY-160).** A question you ask the agent on an open escalation gets an answer
+  in the same session, and the agent then goes back to waiting. A question is not a decision: the agent does
+  nothing that depends on the escalation until it is answered.
+- **Escalations you can decide from (LWY-160).** Every escalation the plugin raises carries a type (blocker,
+  clarification, debt or nit), the context behind the question in plain lines rather than a pointer to a comment,
+  the trade-off, and the agent's advice. Its pick is the first option, marked as suggested, instead of an argument
+  opening "Recommended:". Where the agent has no pick it says so in the advice and marks nothing. `shape-project`
+  still suggests nothing. Each is raised from a file of its fields by a new script, `leeway-sdlc-raise`, so a
+  backtick, a `$` or an apostrophe quoted from the code reaches Leeway as written. **These need a Leeway server with
+  LWY-159**: on an older one the CLI refuses the new flags, and the skill stops and says so.
+
+### Upgrading a repo
+
+A minor release. Update the plugin with the update skill, then one person runs the sync-repo skill. **Before
+upgrading:**
+
+- **Finish or restart any story that is mid-shaping under 0.2.0.** Its rounds carry no `Description at this round:`
+  quote, so a UI edit made after the 0.2.0 approval was answered is not guarded.
+- **Decide every plan gate still open under 0.2.0.** Answer its PASS / PASS WITH DECISIONS / RETURN escalation and
+  let `plan-work` act on the answer before you upgrade, the QUESTIONs a PASS WITH DECISIONS raises included. 0.3.0
+  does not read that escalation, and the QUESTIONs inside a 0.2.0 report were never raised on their own. After the
+  upgrade, answering it moves nothing, and a story you move to `ready` yourself starts with those QUESTIONs not
+  checked.
+- **Make sure every QUESTION on a story gated under 0.2.0 is answered and applied.** 0.3.0's `run` does not see
+  QUESTIONs raised the 0.2.0 way. It counts only escalations on `# QUESTION … of c<report>` comments, and a report
+  with no such comment needs no reply. So a story gated under 0.2.0 passes without its QUESTIONs being checked.
+
+**Then:**
+
+- **The old skill names are gone.** `/leeway-sdlc:shape-work`, `/leeway-sdlc:plan-work`, `/leeway-sdlc:run-task`
+  and `/leeway-sdlc:run-story` no longer exist. Use `shape-project`, `plan-project` and `run`. Until sync-repo runs,
+  a 0.2.0 managed block still says to invoke `plan-work`, `run-task` or `run-story`.
+- **The contract block** has changed (`{{RUN_SKILL}}`, sub-issue wording, the filing-work paragraph), so sync-repo
+  shows it as changed once. `STORY.md` and `TASK.md` have changed too. A `Kept` row on any of them no longer matches
+  its hash, so sync-repo asks about it once more.
+- **New binding lines.** When `.sdlc/leeway.md` has no `filing-work:` line, sync-repo asks for it once, before the
+  copies, because the block depends on it. A binding with `friction-collector: <ref>` is offered a move to a
+  friction project; until then, `run` keeps filing friction as comments on that issue. `friction-collector: n/a`
+  becomes `friction-project: n/a` without a question. Each answer is one line in `.sdlc/leeway.md`, and nothing
+  else in that file changes.
+- **The product's process.** When a type is still on the old flow, sync-repo offers the new flow as one question.
+  It is a write to Leeway, not to the repo, and a no is asked again at the next release. `sdlc-tune` offers it as
+  well.
+- **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
+  `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
+  `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, and a 0.2.0 kit `Kept` row is asked about again.
+- **The subagent files in the agent's own directory**, for an agent other than Claude Code: `sdlc-implementer`,
+  `sdlc-reviewer` and `sdlc-divergence-reviewer` under `.codex/agents/`, `.github/agents/`, `.cursor/agents/`,
+  `.gemini/agents/`, `.grok/agents/` or `.opencode/agents/`. The release changed all three: the implementer and the
+  reviewer name the friction project, and the divergence reviewer names `plan-project`. sync-repo asks about each
+  one on its own, and a `Kept` row on one is asked about again.
+- **Re-run `sdlc-install` for unattended runs (LWY-160).** An allow-list written before this release has no
+  `clarification answer`, `clarification list` or `leeway-sdlc-raise`, so an unattended run prompts, and stops, the
+  first time it raises an escalation or someone asks the agent a question. Re-running `sdlc-install` adds them. The
+  `escalation raise` rule an older list has now matches nothing a run prints: it is harmless, and the install reports
+  it as dead.
+- **By hand, if you want the new words.** sync-repo never compares the installed `.sdlc/CONFIG.md` (outside
+  `## Repo copies`) or the contract docs. A 0.2.x `.sdlc/CONFIG.md` still names `run-task` and `run-story` and says
+  "before a story merges", and `EVIDENCE-STANDARD.md` still says "task". Edit them to `run`, "an issue" and
+  "sub-issue" if you want them to match.
+
+### How it was checked
+
+- The three CI lanes, on the release branch: `node --test "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs"
+  "plugin/test/*.test.mjs" "scripts/*.test.mjs"` passes 300 of 300; `node scripts/build-targets.mjs --check` prints
+  "generated files are up to date"; `node .github/scripts/check-manifests.mjs` prints "manifests ok: leeway-sdlc
+  and leeway-sdlc-agents 0.3.0".
+- Each story is pinned by tests over the skill text in `plugin/test/`: `filing-work`, `plan-project-description`
+  (LWY-113); `friction-project` (LWY-115); `install-questions` (LWY-116); `issue-summary` (LWY-119);
+  `skill-names`, `skill-descriptions`, `run-skill-fill`, `run-refusals`, `run-project-skips` (LWY-114);
+  `shape-ends-at-shaped`, `plan-ends-at-planned`, `moves-when-asked`, `new-flow` (LWY-126).
+- Not checked: a live run of `shape-project`, `plan-project`, `run`, `sdlc-install`, `sdlc-tune` or `sync-repo`
+  against a Leeway server, because no deployed server has LWY-125. Not checked either: a live install in a fresh
+  repo, a new agent session choosing `plan-project` on its own, and any agent other than Claude Code.
+
+### Known limits
+
+- **No deployed Leeway server supports 0.3.0 yet.** The Leeway app's `main` has no process model. LWY-129 and
+  LWY-125 are on the app's v4 plan branch only, so dev.leeway.run, deployed from `main`, serves no `process get`,
+  `--type` or `--step`. 0.3.0's skills set and read steps, so they need a server with the process model and
+  LWY-125's two `gate` steps per type. A server that allows one `gate` refuses the new-flow edit from sdlc-tune and
+  sync-repo.
+- **Old skills outside Claude Code.** It is not verified whether re-running `npx skills add` or `gemini skills
+  install` leaves `shape-work`, `plan-work`, `run-task` and `run-story` installed beside the new skills. If they
+  are still listed, remove them by hand from where that agent installed them.
+- **0.2.0's limits for other agents still hold**: what is unmeasured, the marker, and the trust steps.
+
 ## 0.2.0
 
 leeway-sdlc now runs in agents other than Claude Code: OpenAI Codex CLI, GitHub Copilot (CLI and VS Code agent

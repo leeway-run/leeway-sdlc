@@ -29,11 +29,36 @@ one when a repo sits inside another.
 ### Branch pattern
 
 Branch names come from the process (each type's branch prefix), so the installer does not choose a
-pattern. It reports what the remote already uses, so a mismatch with the process's prefixes is visible:
+pattern. It reports what the repo already uses, so a mismatch with the process's prefixes is visible.
+**Read a bounded slice:** the 200 most recently committed branch refs, local and remote, and the branches
+named by the last 200 merge commits (pull-request and branch merges; a remote-tracking merge such as
+`Merge remote-tracking branch 'origin/main'` names no branch of its own). Each branch name is counted once,
+however many of the three places carry it:
 
 ```sh
-git branch -r --format='%(refname:lstrip=3)' | grep / | sed 's#/.*##' | sort | uniq -c | sort -rn
+{ git for-each-ref --sort=-committerdate --count=200 --format='%(refname)' refs/heads refs/remotes \
+    | sed -E 's|^refs/heads/||; s|^refs/remotes/[^/]+/||'
+  git log --merges -200 --format=%s | grep -v 'remote-tracking' \
+    | grep -oE "^Merge pull request #[0-9]+ from [^/ ]+/[^ ]+|^Merge branch '[^']+'" \
+    | sed -E "s|^Merge pull request #[0-9]+ from [^/]+/||; s|^Merge branch '||; s|'\$||"
+} | grep / | sort -u | sed 's|/.*||' | sort | uniq -c | sort -rn
 ```
+
+Then the floor (an existing `ENGINEERING.md`, or the file mapped as the floor): the branch names its
+branches section prescribes, for example `feature/<story>-NN-<task>`.
+
+**Map each prefix to a type** of the process: a prefix equal to a type's `branchPrefix`, `id` or `label`
+(ignoring case), or a common synonym of one: `feature` or `feat`; `fix`, `bug` or `bugfix`; `hotfix`;
+`chore`; `spike` or `exp` for an experiment; `refactor` for debt. A prefix that maps to no type (`docs`,
+`release`, a person's name, `dependabot`, `renovate`) is reported in the findings table and asked about
+nowhere.
+
+**A branch-prefix divergence** is a type whose most used mapped prefix, counted on at least three branches
+or prescribed by the floor, is not its `branchPrefix`. It is what sdlc-install's question 14 asks about, one
+line per diverging type. Only the prefix is the process's to change: the rest of a branch name is always
+`<ref lower>-<slug>`. No branches, no merges and no prescribing floor: no divergence. **Settled already**,
+so not a divergence: a floor that carries the line question 14's process answer writes ("branches named
+`<pattern>` before leeway-sdlc keep their names").
 
 **Trunk on `main` with no long-lived second branch is a valid topology, not a gap.** Do not propose
 git-flow to a repo that has never had a `develop` branch.
@@ -140,6 +165,20 @@ near-synonyms, which are where the real matches usually are:
 
 **An exact-name match is never a question.** Map it and move on.
 
+**Blocking rungs in an existing evidence doc.** An evidence doc that exists (not one the install will
+generate) may say which rungs block, for example "evidence blocks at R3 and above":
+
+```sh
+grep -niE 'block(s|ing)?( only)? (at|on|from)|R[1-5] and above' <evidence doc>
+```
+
+Read the line it finds and write the rungs it names as a set (`R3 and above` is `[R3, R4, R5]`). **A
+blocking-rung divergence** is a type whose `build` step's `blockingRungs` differs from that set; it is what
+sdlc-install's question 15 asks about, naming each such type and its set. No such line, a line that names no
+rung, a line that defers to the process (the plugin's own template says "the rungs the `build` step ...
+lists as `blockingRungs`"), no existing evidence doc, or an evidence row in `.sdlc/CONFIG.md` whose *Notes*
+already says the line is superseded by the process: no divergence.
+
 ## Collisions
 
 An existing contract file (the instructions file `HARNESS.md` names: `CLAUDE.md`, `AGENTS.md` or
@@ -148,10 +187,78 @@ existing `ENGINEERING.md`. Existing agent definitions named `sdlc-implementer`, 
 `sdlc-divergence-reviewer` (in `.claude/agents`, `.codex/agents`, `.github/agents`, `.gemini/agents`,
 `.cursor/agents`, `.opencode/agents` or `.grok/agents`), existing hook files the wiring would merge into, or
 skills (`.claude/skills`, `.agents/skills`, `.github/skills`, `.gemini/skills`, `.opencode/skills`, `.grok/skills`) named
-`shape-work`, `plan-work`, `run-task`, `run-story`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
+`shape-project`, `plan-project`, `run`, `update`, `sync-repo` or `sdlc-tune`: a repo-local
 definition and a plugin-provided one with the same name is a confusion worth naming before it happens.
 An existing `.sdlc/` directory: read `.sdlc/leeway.md` and `.sdlc/CONFIG.md` first, because this is a
 re-run, and a re-run changes only what the human asks to change.
+
+**What the managed block would repeat.** Read the instructions file, outside the markers, for:
+
+- **an import of the floor**: an `@` line, or a "read it first" line, naming the floor's path. Look for it
+  on every run, a re-run included: it decides `{{IMPORT_FLOOR}}` every time (sdlc-install, "Placeholders to
+  fill with care"), after question 13's write;
+- **sections the block repeats**: a heading that reads as one of the block's ("Two ways of working, one
+  floor", "Where a new fact goes") or a near-synonym of one ("The floor", "Engineering rules", "Where facts
+  go", "Where to write things down").
+
+```sh
+awk '/leeway-sdlc:begin/,/leeway-sdlc:end/ { next } /^@|^#+ / { print NR ":" $0 }' <instructions-file>
+```
+
+It prints the file's own line numbers and leaves out the managed block, marker lines included, so an `@` line
+it prints is outside the markers. Record each by line number, and for each section the lines it carries that
+the block does not (a repo rule, a path, a name): those are what question 13 must show before it offers
+removal. With no block yet, either found is what sdlc-install's question 13 asks about; neither found, nothing
+is asked. When the file already has a `leeway-sdlc:begin` block, an earlier install settled question 13, so
+skip only its part: the repeated sections, what the block lacks, and the removal.
+
+**An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
+run's allow-list entries ("Unattended prerequisites") are already there, in the form that place's harness gives. Question
+16 offers only the missing ones. An entry an earlier install or the person wrote is never removed, but report it when it is
+out of date:
+
+- **Dead, matches nothing `run` prints:** a flag-less entry an install before 0.3.0 wrote, such as `Bash(leeway spend record:*)`
+  or `Bash(git commit:*)`, a kit script's per-version path, such as `Bash(node <...>/cache/<marketplace>/leeway-sdlc/<version>/scripts/wait-answer.mjs:*)`,
+  and the `escalation raise` rule, which `run` no longer calls: it raises through `<raise>`.
+  These are harmless and can be deleted by hand; the new rules do their work.
+- **Too wide:** an entry that covers the verbs `run` leaves off, such as `Bash(<cli> --server <server> *)` or `Bash(leeway *)`.
+  Say that while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt, and that it is the
+  person's to remove.
+
+**A pre-push guard.** Whether the repo already has the guard `run` requires ("Unattended prerequisites"), judged on the
+push `run` makes: `push origin HEAD:<base>` from a linked worktree, and at the story gate from a detached one.
+
+```sh
+git rev-parse --git-path hooks/pre-push     # where git runs it from: .git/hooks, or under core.hooksPath
+git ls-tree origin/<integration branch> -- <that path>     # for a relative core.hooksPath: tracked there, mode 100755?
+git config --get core.hooksPath     # set here or globally? Exit 1 when it is not
+```
+
+What counts is an executable file at that path that refuses an update to the integration branch and a force push, deciding
+from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD: read it, and what it
+calls, to see that it does. A hook keyed on the current branch, such as one reading `git rev-parse --abbrev-ref HEAD`, does
+not count: it refuses `git push origin main` on `main` and lets `HEAD:main` through from any other checkout.
+
+It can sit in `.git/hooks` or under `core.hooksPath`, which a relative value resolves against the checkout's root. A
+relative `core.hooksPath` is therefore per checkout: it counts only when the hook file is tracked and executable on the
+integration branch, as the second command prints. If that ref is missing the command is fatal, and a relative path can't count: say so as the reason. It reads the ref as of the last fetch. One that is ignored or generated, such as Husky's `.husky/_`, does not
+count, because the merge worktree takes no setup. Nor do these: a `pre-push.sample`, a file that is not executable, a hook in a
+directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could
+not read to that effect.
+
+Report what you found, and why a hook you found does not count. Question 16 tells the person the truth by it. With no guard, `push` is not
+a missing entry, but the guard is: with every other entry there, question 16 still comes back, so a repo already at fourteen rules gets the offer. An existing push rule with no guard, `Bash(git -C * push *)` or
+a wider one that matches it, is reported as too wide: while it stays, a push runs with no prompt and nothing refuses it, so one
+wrong argument reaches the integration branch, and it is the person's to remove.
+
+**Whether the install can write a guard.** With no guard that counts, question 16 makes its offer only when the third command
+prints nothing, nothing is at the first command's path and the integration branch's name has no `'`, which git allows and the script's single quotes do not. Anything else is in the way, and is reported: a `pre-push` there that
+does not count, an unexecutable or a dangling one included, and any `core.hooksPath`, because with one set git runs nothing from
+`.git/hooks`. A `pre-push.sample` is not in the way. The guard goes in `.git/hooks`, never under a tracked `core.hooksPath`: all
+of a clone's worktrees share it from the moment it is written, the merge worktree too. A relative `core.hooksPath` fires only in a
+checkout that holds the hook, so it does nothing until the hook has reached the integration branch, which the guard itself
+refuses a push to; its setting is per clone anyway, and it would silently stop every hook already in `.git/hooks`. What that costs is
+that the guard isn't versioned: each clone gets it by running the install. The guard the install writes counts by the rule above.
 
 ## Leeway
 
@@ -179,7 +286,7 @@ ls -d docs/plans docs/design docs/designs docs/rfcs plans 2>/dev/null
 ```
 
 An existing directory of design docs is the *Plans directory*; map it. None → propose `docs/plans/`.
-`plan-work` writes each design doc as `<dir>/<ref lower>-<slug>.md`.
+`plan-project` writes each design doc as `<dir>/<ref lower>-<slug>.md`.
 
 ## Local instructions file
 

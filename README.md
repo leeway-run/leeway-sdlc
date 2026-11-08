@@ -22,6 +22,9 @@ Then, in the repo, run `/leeway-sdlc:sdlc-install` and answer its questions. It 
 command in `.sdlc/leeway.md` (`server:` and `cli:`). For a server other than `app.leeway.run`, log in with
 `leeway login --server <url>`.
 
+The plugin ships commands in a top-level `bin/`, so it installs in Claude Code only, version 2.1.91 or later (the changelog
+entry that added `bin/`; it has been tried on 2.1.319 and on nothing older): claude.ai and Cowork don't install a plugin that has one.
+
 ## Other agents
 
 Codex, GitHub Copilot (CLI and VS Code), Gemini CLI, Cursor, OpenCode and Grok Build install
@@ -53,7 +56,7 @@ The manifests, `plugin/PROCESS.md`, the craft doc, the hooks, the agents, the te
 
 ## Versioning
 
-The rule: a **minor** when the loop would judge the same task differently, or a repo must refresh a
+The rule: a **minor** when the loop would judge the same sub-issue differently, or a repo must refresh a
 file it copied from the plugin; a **patch** otherwise. `main` is always a released state. What changed,
 what a repo must do to upgrade and how it was checked are in [RELEASE_NOTES.md](RELEASE_NOTES.md).
 

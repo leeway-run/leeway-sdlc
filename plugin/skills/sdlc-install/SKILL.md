@@ -23,7 +23,9 @@ absolutely.
 **Everything goes through the `leeway` CLI**, never an MCP server and never a hand-made HTTP call. Below,
 `<cli>` is the command the repo is configured with (step 3 settles it), and `<server>` the server URL. Pass
 `--server <server>` on every call. Writes carry `--as <alias>/agent`, the alias being this session's, chosen as
-`PROCESS.md` ("The cast") describes (`<word>-<two hex digits>`, for example `kestrel-b1`); the CLI's roles are
+`PROCESS.md` ("The cast") describes (an adjective and a bird, `quiet-wren`). The install's issue, when one is named,
+gives the project to read for it (`issue get`: `project.id`); with none named there is no project to read, so take a
+pair at random. The CLI's roles are
 `implementer`, `reviewer`, `planner` and `agent`, and a skill acting for the orchestrator is `agent`. **No token, no credential, no
 server secret is written to any file, and none is shown in the transcript.**
 
@@ -31,16 +33,43 @@ server secret is written to any file, and none is shown in the transcript.**
 `.sdlc/PROCESS.md` or contract says that questions go to the human as Leeway escalations (the Leeway repo
 does), do not prompt in the terminal: raise each interview question as an escalation on the install's issue
 (the ref the human gave when invoking this skill; with none, stop and say that an issue is needed), with the
-pre-filled answer as the first option and 2 to 5 options in all, and stop the turn until it is answered.
-Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
-sentence or two) at most 1,000, and the question at most 500.
+pre-filled answer as the first option and 2 to 5 options in all, and wait until the round is answered. Each is
+raised with `<raise>` (`escalation.escalation` in what it prints is the `eN`); wait on each open one in turn, as `run` does (`run`, "Wait, then
+carry on", for the wait and its exits; `PROCESS.md`, "Questions to the human are escalations"), answering a
+question asked of you and waiting again (exit 5). Wait even when the person is at the terminal: they answer on the
+escalation, and a reply typed in the terminal is not an answer. **On every answer, carry on as the interview's order
+says**: raise the next round, the questions that waited on the answers now in ("Rounds", below), and once the
+answers a step needs are all in, take that step (step 5 writes the process once 2 to 5 are answered, question 16 is
+asked against its read-back, step 6's plan once every one is). On any exit but 0 and 5, or where `HARNESS.md` says
+`wait: stop`, stop the turn, naming the issue, the escalations and why (exit 2: no answer by the deadline; 3: Leeway
+did not answer; 4: run `leeway login --server <server>`; 1 or any other: a bug in this run), and say what a re-invoke
+does. **A re-invoke does not resume yet**: this skill has no resume path. Re-invoked while an escalation of its
+interview on that issue is open (`<cli> issue get <ref> --json`, `escalations[]`), it asks nothing again, in the terminal or by escalation, and writes nothing: it names
+the open escalations, says they need answering on the issue, and stops. Once none is open, a re-invoke starts the
+interview over from step 1, and the answers already on the issue are not read back.
+Every option is `{label, argument}`: the label at most 60 characters, the argument (what is set up if it is picked,
+in a sentence or two) at most 1,000, and the question at most 1,000. Each escalation carries the fields of
+`PROCESS.md`, "Questions to the human are escalations", written as JSON to a file outside the repo, by absolute path,
+and raised with `<raise> --server <server> --as <alias>/agent <ref> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`,
+"Running the plugin's scripts", names it), never on a command line: `"type": "clarification"`; the context saying in
+plain lines what you found that the pre-filled answer comes from (the file, the remote, the product it matched), never
+only a ref; `"tradeoff"` where the options cost something different; and `"advice"` saying why the pre-filled answer,
+which is your pick, marked `"suggested": true`. With no pre-filled
+answer, no option is marked, and Advice says there is no pick and why.
 
-- **Yes/no questions** (6, 7, 8, 10 and any "Right?"): two options, the pre-filled one first.
+- **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16, question 16's offer and any "Right?"): two options, the pre-filled one
+  first.
 - **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
   note" as the fifth.
 - **Question 9** is a batch of yes/no lines: raise one escalation per ambiguous mapping, or post the batch as
-  a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `--comment cN`
+  a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `"comment"` its `cN`
   (one open escalation per comment).
+- **Rounds** (`PROCESS.md`, "Questions to the human are escalations"): each round is every question not yet answered that waits on no open answer, raised
+  together, not rationed. What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10
+  (a block handed over to paste is not there to replace what question 13 removes); question 3 on 2; question 4
+  on 3 (the types kept); question 5 on 4 (a `build` step removed or added changes its list); questions 14 and 15 on 2 to 5, or on 2 alone at (d); question 16 on the process read back; question 16's offer on 16;
+  step 6's plan on all of them. Everything else goes in the first round. A question an answer settled is dropped, not
+  asked again and not raised for confirmation: on (d), questions 3 to 5 are never raised.
 Anywhere else, ask in the terminal, one question at a time, pre-filled.
 
 ## Step 1 — decide which mode this is
@@ -86,91 +115,209 @@ decided", not "not detected".
    <one of #e0994f #6fbf95 #9184d9 #6f9bbf #d98a8a #c9b45e #8f8f9e>`. A product is created only on the
    human's yes.
 4. **The process already there.** `<cli> process get <KEY> --json` answers `{process, version, updatedAt}`.
-   `version` is the revision counter: `0` and `updatedAt: null` mean the product never set a process (the
-   answer is the `mvp` preset, not a stored one); `1` or more means a person or an earlier install set it.
-   Hold that fact for question 2.
+   `version` is the revision counter. `0`, with `updatedAt: null`, is a product created before products stored
+   their process: it has no stored row and reads the `mvp` preset. `1` or more is a stored process, and that
+   includes the `maintained` process `product create` stores at version 1, so it does not mean that a person set
+   it. Hold the version, and whether this install created the product in step 3.3, for question 2.
 
 ## Step 4 — the interview
 
-**At most eleven questions, in this order, each pre-filled from detection or from what the product
+**At most sixteen questions, in this order, each pre-filled from detection or from what the product
 already holds.** Confirm-or-correct, never open-ended. A question whose answer detection settled is shown as
-a finding and not asked.
+a finding and not asked. Questions 13 to 16 are asked **only when detection found the divergence each one
+names**; a repo without it never sees them. Questions 14 to 16 compare with the process itself, so they are
+asked in step 5, once the process they compare with has been read.
 
 1. **Product.** "This repo is bound to `<KEY>` (`<name>`) on `<server>`. Right, or pick another or create
    one?" Pre-fill with the only product, or the one whose key or name matches the repo.
 2. **What are we building here?**
    - (a) a quick MVP or prototype: speed first, light review, no red tests (`--preset mvp`);
-   - (b) a maintained system people depend on: shaping, a plan gate, red tests, adversarial review
-     (`--preset maintained`);
+   - (b) a maintained system people depend on: a feature goes shaping → shaped → planning → planned →
+     building → verify on dev, and waits at shaped and at planned for a person to move it on; red tests,
+     adversarial review (`--preset maintained`);
    - (c) start from (b) and relax it per type (`maintained`, then the adjustments below).
 
-   **When step 3.4 found a process (`version` of 1 or more), the pre-filled answer is (d) keep what is
-   there**, and the question says so: "`<KEY>` already has a process (version N): `<one line per type>`. Keep
-   it, or replace it with (a), (b) or (c)?" On (d) make **no** `process update` call and skip questions 3 to 5.
+   **When the product existed before this install and step 3.4 found a stored process (`version` of 1 or
+   more), the pre-filled answer is (d) keep what is there**, and the question says so: "`<KEY>` already has a process (version N): `<one line per type>`. Keep
+   it, or replace it with (a), (b) or (c)?" On (d) skip questions 3 to 5 and make **no** `process update` call
+   but the one an answer to question 14 or 15 asks for.
    **A process is never overwritten without this answer**; on a re-run, never replace it by default.
-   Without a stored process, pre-fill (a) for a new project and a repo with no CI and no tests, and (b) when
-   detection found CI that runs tests.
+   **A product this install created in step 3.3 is never pre-filled with (d)**: the `maintained` process
+   `product create` stored is not one a person set. For it, and for a product at `version` 0, pre-fill (a) for
+   a new project and a repo with no CI and no tests, and (b) when detection found CI that runs tests.
 3. **Types.** "The types are `<labels>`. Keep them all, drop any, or add one by naming it and the type it
    behaves like?" A type added by analogy copies that type's steps under a new id, label and branch prefix.
    Skipped on (d).
 4. **Steps, per type kept.** "A `<type>` goes `<step labels joined with →>`. Keep, or change?" ("An" before a vowel:
    "An experiment".) State it in words, not JSON, one type per line. A change is a step removed (bugs skip the plan), added, or reordered.
    Skipped on (d).
-5. **Unattended.** "`run-story` may run these types without a person between tasks: `<types whose build step
-   is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
-6. **The gate.** "The command that must pass before a story merges: `<command>`. Right?" Propose the
+5. **Unattended.** "`run` on an issue may run these types without a person between sub-issues: `<types whose
+   build step is unattended>`. Right?" Only types with a `build` step can be unattended. Skipped on (d).
+6. **The gate.** "The command that must pass before an issue merges: `<command>`. Right?" Propose the
    commands CI runs; if its steps live in a template you could not read, say so.
 7. **Lanes CI lacks.** "These lanes need something CI does not have, so the gate does not run them: `<lanes>`.
    Right?" Show each lane's measured duration. Skip when there is no such lane.
 8. **Evidence directory.** Only when non-obvious, or when the directory is gitignored: "Proof that outlives a
-   task is committed under `<dir>`. Right?"
+   sub-issue is committed under `<dir>`. Right?"
 9. **Ambiguous doc mappings.** Batched, one line each: "`<file>` plays the role of `<doc>`. Yes?" **Never
    ask about an exact-name match, and never ask when nothing plausible exists**: generate the stub and say
    so.
 10. **The contract file.** "Patch `<instructions-file>` with the managed block, or hand the block over to
     paste?" The file is `HARNESS.md`'s **instructions-file** (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`).
     Default to patch when it exists without the block, and to create it when there is none.
-11. **Friction collector.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
-    filed as comments on one `chore` issue. Use `<ref>`, or create one?" Propose an open `chore` issue of
-    the product whose title says developer experience or friction (`<cli> project list <KEY>` for the project
-    ids, then `<cli> issue list <KEY> <projectId>`); otherwise offer to create a project "Developer experience" and a `chore` issue "Friction". None
+11. **Filing work.** "Filing work in Leeway (an issue with sub-issues, several issues, anything touching the
+    schema, auth, a product rule or an ownership boundary) counts as planning: the agent invokes plan-project for it,
+    even while pairing. Or plan-project stays a manual opt-in?" Pre-filled `plan-project`, or with the
+    `filing-work:` line of an existing `.sdlc/leeway.md`. The answer is `plan-project` or `manual`.
+12. **Friction project.** "Friction (a tooling, test-data, local-setup or process gap that cost time) is
+    filed as one `chore` issue per item in a project of the product. Use `<project>`, or create one?" Propose
+    an existing project whose name says developer experience or friction (`<cli> project list <KEY>`);
+    otherwise offer to create the project "Developer experience". No "Friction" issue is created. None
     wanted: `n/a` and why.
+13. **What the block repeats.** Asked only when detection ("Collisions", "What the managed block would
+    repeat") found, outside the markers and with no managed block yet, an import of the floor or a section the
+    block repeats. "Your `<instructions-file>` already has `<each, by heading or line>`, which the managed block
+    repeats. Remove yours (the block replaces them), or keep both?" For each section, say what in it the block
+    does **not** carry, quoting at most three lines. Pre-filled remove only when the block carries all of it,
+    keep both otherwise. **Never a second import of the floor**, whichever the answer: `{{IMPORT_FLOOR}}`
+    follows the file, not the answer (step 6).
+14. **Branch prefixes.** Asked in step 5, only when detection ("Branch pattern") found a branch-prefix
+    divergence: a type whose work the repo names with another prefix. "The repo names `<type>` branches
+    `<pattern>` (`<count>` of the last 200 branches, and `<floor>`), the process `<branchPrefix>/<ref
+    lower>-<slug>`. Use the repo's `<prefix>` (change the process's prefix now), or the process's
+    `<branchPrefix>/…` (and say so in the floor)?" One line per diverging type, naming the mapping it
+    proposes (`feature` → the `feature` type); only the prefix can change, so say so when the repo's pattern
+    differs after it too. Pre-filled with the repo's.
+15. **Blocking rungs.** Asked in step 5, only when detection ("Existing contract docs", "Blocking rungs in an
+    existing evidence doc") found a blocking-rung divergence. "`<evidence doc>` says evidence blocks at
+    `<doc's rungs>`; the process blocks at `<blockingRungs, per type when they differ>`, and the process is what
+    the loop follows. Block at `<doc's>` (set the process for `<types whose set differs>`), or at `<process's>`
+    (the doc's line is noted as superseded)?" When question 2 was (a), add that the doc's answer makes the mvp
+    block at those rungs. Pre-filled with the doc's.
+16. **The unattended allow-list.** Asked in step 5, only when the process read back has a `build` step with
+    `unattended` true and detection ("An existing allow-list") found run's entries missing from the
+    place `HARNESS.md`, "Permissions for an unattended run", names, or ("A pre-push guard") no guard that counts. "`run` runs `<types>` unattended, and
+    every command it runs prompts until it is allowed. Add run's allow-list to `<that place>` now?"
+    Pre-filled yes. **Before the yes, tell the person what it approves and what it leaves open**, in plain words, by what detection
+    ("A pre-push guard") found:
+
+    - **A guard found:** what `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also
+      approve, that those rules let a push skip the pre-push guard, and why the rest adds little). The guard is per clone while the rule is tracked: `.git/hooks` and
+      the `core.hooksPath` setting stay in this clone, so another clone has the rule and no guard, and its pushes run with no prompt and nothing refusing them.
+    - **No guard found:** a yes brings the offer below. Without it, `git push` stays off the list, so every push prompts. A round always pushes, so **the run is attended**: it stops at
+      its first push until someone answers. Then what `HARNESS.md`, "Say before the yes", lists for this agent without a push rule (on Claude Code, the
+      fourteen startup warnings, what the git rules also approve, and why the rest adds little). What the person needs for a run with no push prompt: the guard the offer writes, or their own
+      pre-push guard in this repo, in `.git/hooks` or under `core.hooksPath` (a relative one: tracked and executable on the integration branch), deciding from the refs on its stdin, refusing the integration branch and a force
+      push, and then this install run again, which offers the `push` rule.
+    - **No guard found, and a push rule already there:** say this instead of the branch above. Detection reports the rule as too wide. While it stays, a push
+      runs with no prompt and nothing refuses it, so one wrong argument reaches the integration branch, and it is the person's to remove, or the offer below closes it. Then what
+      `HARNESS.md`, "Say before the yes", lists for this agent (on Claude Code, the fifteen startup warnings, what the git rules also approve, and why the rest adds little).
+
+    Then, either way, what no list closes. A rule stops the call an agent ordinarily writes, not a
+    determined one. `node -e` and the lane commands can run anything, including `leeway escalation answer`, and
+    `leeway-guard` does not govern the orchestrator, so an orchestrator could answer its own escalation without a prompt
+    that way: the skill's rule forbids it, and the list does not stop it. An improvised command off the list still prompts, so a
+    yes does not promise a run with no prompt. No real unattended run has yet tried this list on a fresh install.
+
+    **The offer, on a yes with no guard found.** Detection ("Whether the install can write a guard") says whether it can be made:
+
+    - **Nothing in the way:** ask "Write a pre-push guard to `<the path detection printed>`? It refuses a push to `<integration branch>` and a force
+      push to any ref, and lets other pushes through, `run`'s `HEAD:<base>` to a plan branch included. `git push` then goes on the list, and pushes run with no prompt."
+      Pre-filled yes. Before the yes, say what the guard branch above says: on Claude Code the fifteen startup warnings; `--no-verify` and
+      `-c core.hooksPath` skip it and the push rule approves both, so it stops the push an agent ordinarily writes, not a determined one; and it
+      stays in this clone while the rule is tracked, so another clone has the rule and no guard until this install runs there. **A no leaves the outcome of no guard, and say it plainly:**
+      on Claude Code fourteen startup warnings, every push prompts, and the run is attended. With a push rule already there, a no leaves what that branch above says instead.
+    - **A hook or `core.hooksPath` in the way:** make no offer. Never overwrite it and never chain to it silently. Say what is there and why it does not count, that the guard is theirs to
+      combine with it, and that `scaffold/hooks/pre-push.tmpl` in this skill is the script to combine. The outcome is that of no guard.
+    - **A `'` in the integration branch's name:** make no offer. Say why: the script holds the name in single quotes, so a `'` breaks it and it then refuses every push from this clone. The guard is theirs to write from that same script, and the outcome is that of no guard.
+
+    With every other entry already there, the offer is question 16 on its own: a repo at fourteen rules is asked only that. With something in the way as well, there is nothing to ask: say it.
 
 **Never asked, in either mode:** the ladder's structure, the filing bar, the roles, the templates (story and
 task shapes included). Those are the framework. Making them configurable is how a framework becomes a
 config format nobody tunes correctly.
 
-**Written without asking, as framework defaults:** the per-story budget `2,000,000 subagent tokens · 15
-rounds · 4 h wall-clock`, whichever comes first (a harness fact, so it lives in `CONFIG.md`, not in Leeway).
-A human edits `CONFIG.md` to change it.
+**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15,
+"hours": 4}` (2,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as `params.budget`
+on each `build` step that has none (step 5). No preset sets one, so the install does, as a default the human did
+not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) the process is the human's
+and no budget is written. Step 7 says which `build` steps have one.
 
 ## Step 5 — set the process
 
-Skipped when question 2 was (d). Otherwise, and only after the human has answered 2 to 5:
+When question 2 was (d), skip the preset (1) and make no change for questions 3 to 5: ask 14 and 15 against the
+process step 3.4 read, make only the change their answers ask for (3), write no budget (skip 4), and read it back
+(5). Otherwise, and only after the human has answered 2 to 5:
 
 1. `<cli> process update <KEY> --preset mvp` (or `maintained`: the answer to question 2).
-2. **Adjustments**, when questions 3 to 5 changed anything. Read the stored definition
+2. **Questions 14 and 15.** Read the stored definition (`<cli> process get <KEY> --json`) and ask them,
+   each only on the divergence it names, against what it holds.
+3. **Adjustments**, when questions 3 to 5, 14 or 15 changed anything. Read the stored definition
    (`<cli> process get <KEY> --json`), edit only its `process` value, and send the whole definition back:
    `<cli> process update <KEY> --stdin process < <file outside the repo>`.
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
      `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`. A `build`
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
-     unattended}`; a `plan` step `params {designDoc}`.
+     unattended, budget?}`; a `plan` step `params {designDoc}`.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
-     reorders steps. Question 5 sets `unattended` on `build` steps. Change nothing else.
+     reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
+     `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,
+     and keep the process's). Question 15, answered with the doc's, sets `blockingRungs` on the `build` step
+     of each type whose set differs from the doc's, and on no other. Change nothing else.
    - **The body stays under 16384 bytes** (`wc -c <file>`); the server refuses more as `invalid_process`.
    - `process_in_use` (an open issue would be stranded) is not an install problem: say which refs it names,
      and leave the process as it was.
-3. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
+4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use`
+   included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set `params.budget`
+   to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no `budget`, change nothing
+   else, and send the whole definition back as in 3. Every `build` step already carrying one → skip the write.
+5. **Read it back**: `<cli> process get <KEY> --json`, and show the human the version and one line per type
    (labels joined with →). The files you write next describe this, so never write them from the answers.
+   Then ask question 16 against it.
 
 ## Step 6 — show the plan, then write
 
 Print every path with `create`, `map` or `patch` and **ask once**. `patch` is only ever the instructions file,
-`.gitignore`, and an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
-`opencode.json`), always as a marked block, appended lines or added entries, always shown as a diff first.
+`.gitignore`, an agent settings file the wiring merges into (`.gemini/settings.json`, `.cursor/hooks.json`,
+`opencode.json`), the allow-list's file on a yes to question 16, and an existing floor on question 14's
+process answer, always as a marked block, appended lines or added entries, always shown as a diff first. The
+one removal is question 13's: the sections and the import it named, from the instructions file, on remove,
+shown as a diff first like every patch.
 
 **Never rewrite a doc that already exists.** A mapping is a row in `CONFIG.md`, not an edit.
+
+**What the conditional questions write**, each only on its answer:
+
+- **13, remove**: delete the named sections and the floor import outside the markers. **Keep both**: leave
+  them. Either way `{{IMPORT_FLOOR}}` is then filled from the file as it stands (below), so the floor is
+  imported exactly once.
+- **14, the process's**: say so in the floor's *Branches and commits* section, one line: "Branches are named
+  `<branchPrefix>/<ref lower>-<slug>`, from the process; branches named `<pattern>` before leeway-sdlc keep
+  their names." In a generated floor that line is `{{BRANCH_NOTES}}`; in an existing one it is appended,
+  only when the floor does not already carry it. The repo's answer was written in step 5.
+- **15, the process's**: the evidence row of `CONFIG.md`'s doc map says, in its *Notes*, that the doc's
+  blocking line (quote it) is superseded by the process's `blockingRungs`, unless it says so already. The doc
+  is not edited. The doc's answer was written in step 5.
+- **16, yes**: merge run's allow-list ("Unattended prerequisites", "A permission allow-list") into the
+  place `HARNESS.md` names, in the form it gives (for Claude Code, the rules of its table in
+  `permissions.allow` of `.claude/settings.json`, with `cli:` and `server:` from `.sdlc/leeway.md`, its `Read` rule as `HARNESS.md` says when `CLAUDE_CONFIG_DIR` is set), adding the
+  missing entries and keeping the rest. `git
+  push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always (the
+  pre-push guard does not cover a merge through GitHub). A place outside the repo is not
+  written: print the entries for the human.
+- **16's offer, yes**: the hook's path goes in the plan as a `create`. Before writing, run detection's first and third commands again: if anything is now at
+  that path or `core.hooksPath` is set, write nothing, and it is the branch "A hook or `core.hooksPath` in the way". Otherwise create its directory, write
+  `scaffold/hooks/pre-push.tmpl` in this skill to that path, with `{{INTEGRATION_BRANCH}}` filled from the integration branch, make it executable, and try it, which pushes nothing:
+
+  ```sh
+  mkdir -p "$(dirname <that path>)"     # before the write: git prints the path even when a clone has no hooks directory
+  chmod +x <that path>     # after the write
+  echo "HEAD 0 refs/heads/<integration branch> 0" | <that path>; echo $?     # the refusal, and 1
+  echo "HEAD 0 refs/heads/<any other branch> 0" | <that path>; echo $?     # 0
+  ```
+
+  Say where you put it, and only then add `git push` to the allow-list. If the try prints anything else, delete the file this install just wrote and the push rule is not added: say what it printed.
+  If the write or the `chmod` is refused, tell the person what to do themselves, which is to put that same filled script, printed in full, at `<that path>` and make it executable, and that the push rule stays off until this install, run again, finds it there.
 
 ### Generate all seven contract docs, always
 
@@ -207,12 +354,12 @@ Those three ship as stubs. The others are filled from detection:
 
 - `.sdlc/CONFIG.md` from `scaffold/CONFIG.md.tmpl`, trimmed to repo facts. No `{{...}}` survives; a row that
   does not apply says `n/a` and why.
-- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-collector:` and an
-  empty nit-collector table that `plan-work` appends to. **Never a token, a password or a credential
+- `.sdlc/leeway.md` from `scaffold/leeway.md.tmpl`: `server:`, `product:`, `cli:`, `friction-project:`
+  (question 12), `filing-work:` (question 11) and an empty nit-collector table that `plan-project` appends to. **Never a token, a password or a credential
   file path.**
 - `ENGINEERING.md` from `scaffold/ENGINEERING.md.tmpl` (the floor), unless one exists: then map it.
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
-  and `leeway-sdlc:end`. If the block is already there, show the diff and replace only the text between the
+  and `leeway-sdlc:end`, `{{FILING_WORK_RULE}}` filled from the `filing-work:` just written. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
 - `.gitignore` lines `.worktrees/`, the local-notes file and `.sdlc/.governed/`, each only if absent.
 - **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
@@ -225,7 +372,7 @@ Those three ship as stubs. The others are filled from detection:
   `HARNESS.md`, "Wiring", lists anything the agent needs the human to do after (trusting hooks, a restart).
 - `.sdlc/templates/STORY.md` and `.sdlc/templates/TASK.md`, a byte copy of each checked-out file in
   `scaffold/templates/` (drop the `.tmpl`). The block above the rule, "Notes for the writer", is copied as
-  is and is never written to Leeway: `plan-work` strips it. The checked-out files may be CRLF where git stores
+  is and is never written to Leeway: `plan-project` strips it. The checked-out files may be CRLF where git stores
   LF; copy them as they are, since `sync-repo` normalises line endings in its compare. **If the
   directory exists, leave it alone** and show its diff against the plugin's copy: a team that edited its
   templates made a decision.
@@ -249,15 +396,43 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   the placeholder line, leave the table with no rows, and say so.
 - **`{{PLANS_DIR}}`** — an existing design-docs directory, else `docs/plans/`.
 - **`{{PLAN_BRANCH}}`** — `none: stories branch from <integration branch>`, unless detection found a plan-branch
-  convention in the history; `plan-work` reads this row.
-- **`{{FRICTION_COLLECTOR}}`** — a ref you have read back from Leeway. **Never invent one.** Creation is two
-  writes, only on the human's yes: `<cli> project create <KEY> --name "Developer experience" --as <alias>/agent`, then
-  `<cli> issue create <KEY> --projectId <id> --type chore --title "Friction" --as <alias>/agent`.
+  convention in the history; `plan-project` reads this row.
+- **`{{FRICTION_PROJECT}}`** — a project id you have read back from Leeway (`<cli> project list <KEY>
+  --json`). **Never invent one.** Creation is one write, only on the human's yes: `<cli> project create <KEY> --name
+  "Developer experience" --as <alias>/agent`, then read its id back. No issue is created in it.
+- **`{{FILING_WORK}}`** — `plan-project` or `manual`, the answer to question 11. **Legacy value:** an existing
+  `filing-work: plan-work` line, written before the skill was renamed, is the same answer as `plan-project`.
+- **`{{FILING_WORK_RULE}}`** — from `filing-work:` in `.sdlc/leeway.md`. For `plan-project`, the placeholder
+  is replaced by this paragraph, exactly as written here, without the indent:
+
+  ```markdown
+  **Filing work in Leeway is planning, even while pairing.** Before creating an issue with sub-issues, more
+  than one issue, or anything touching the schema, auth, a product rule or an ownership boundary, invoke
+  `plan-project`. That includes adding to an existing project, and requests worded "file issues", "write this
+  up", "break it down", "park it for later" or "turn this feedback into tickets". Only a single sub-issue for
+  a one-file fix goes in directly. Running the loop (`run`, the reviewers, the merge gates) stays opt-in.
+  ```
+
+  For `manual`, delete the placeholder's line and the blank line after it, so the opt-in paragraph is
+  followed by one blank line and the next paragraph. `sync-repo` fills it the same way when it compares the
+  block.
 - **`{{CLI_COMMAND}}`** — exactly the command step 3 proved.
+- **`{{RUN_SKILL}}`** — `run` as `HARNESS.md`'s **commands** spells it. The placeholder is replaced by the text
+  inside the double backticks for that **commands** form, exactly: the backticks inside it stay, and nothing is
+  added round it. A space just inside the double backticks is Markdown padding, not part of the fill.
+  - `/leeway-sdlc:<skill>` (Claude Code): `` `/leeway-sdlc:run` ``
+  - `$<skill>` (Codex): `` `$run` ``
+  - `/<skill>` (Copilot, Grok): `` `/run` ``
+  - skills invoked by name (Cursor, Gemini, OpenCode): ``leeway-sdlc's `run` skill``
+
+  It reads the harness, not an answer, so `sync-repo` fills it the same way.
 - **`{{IMPORT_FLOOR}}`** — where `HARNESS.md` says `floor-import: @`, the line `@<ENGINEERING path>`; otherwise
   the line ``Read `<ENGINEERING path>` before you change anything: it is the floor, and it binds every change.``
-  (these agents do not expand `@` imports). Where it also names a settings entry (OpenCode's `instructions`
-  in `opencode.json`), add the path there too.
+  (these agents do not expand `@` imports). **But when the instructions file already imports the floor
+  outside the markers** (after question 13's write), the read-first line in every agent: a second import is
+  never written. The rule reads the file, not an answer, so `sync-repo` fills it the same way. Where
+  `HARNESS.md` also names a settings entry (OpenCode's `instructions` in `opencode.json`), add the path there
+  too.
 - **`{{LOCAL_NOTES_FILE}}`** — `HARNESS.md`'s **local-notes-file**. Run `git check-ignore -q <it> && echo
   ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Never claim it is ignored
   when it is not.
@@ -272,20 +447,38 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - **Grep them for secret shapes**: `grep -rnE "Bearer [A-Za-z0-9]|lw_[A-Za-z0-9]{8,}"`, and for any value
   held in the CLI's credentials file (compare without printing it). A hit is a possible credential: **stop and
   show the human the line**, and let them decide. Never remove it automatically; the word "token" alone is
-  legitimate text (a Secrets section, the per-story budget) and is not a hit.
+  legitimate text (a Secrets section, say) and is not a hit.
 - `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
 - Confirm the instructions file loads the floor (the `@` line, or the read-first line, names an existing file).
 - Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
   `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
   and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
-- If the evidence directory is gitignored, say that evidence has nowhere durable to live and let the human
-  decide.
-- Print what to do next: `shape-work` for a product owner to shape a story (when the type has `shape`),
-  `plan-work` for work spanning more than one task, `run-task` for a single task, `run-story` to run every
-  task of a planned story unattended, `sdlc-tune` to change the process later.
+- Print what to do next: `shape-project` for a product owner to shape an issue (when the type has `shape`),
+  `plan-project` for work spanning more than one sub-issue, `run` for a single sub-issue, a planned issue
+  unattended or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
+  **commands** spells it (`/leeway-sdlc:run` in Claude Code): a bare `run` can reach another skill of that name.
 
-**Then state what this install did not settle.** Which docs are stubs, which CI claims are unverified, the
-local-notes-file answer, the trust or restart steps `HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
-cast") and anything the human declined. That list is the honest starting position, and it is more useful
-than a success message.
+**Then state what this install did not settle**, as facts that need no decision: anything that needed one
+was a question above. Which docs are stubs, which CI claims are unverified, a claim in an existing doc that
+detection found untrue (the doc is not edited), the local-notes-file answer, the trust or restart steps
+`HARNESS.md` left to the human, whether single-writer is prose (it is, for a raw HTTP call; `PROCESS.md`, "The
+cast"), from the process read back which types' `build` steps got the default per-story budget in step 5 and
+which have none (a run of those is limited only by the round caps), and that `sdlc-tune` changes either, a preset
+the server refused in step 5 (the refs it named, and that neither the preset nor the default budget was applied), and
+what follows from an answer the
+human gave: an evidence directory question 8 kept although it is gitignored (proof written there is not committed, so it does not outlive the worktree), an allow-list
+declined (run prompts for every command), an allow-list added (the startup warnings at each session, and what question
+16 said it leaves open), an allow-list entry detection found out of date (which ones, and whether it is dead or too wide), an allow-list added without `git push` (each push prompts until a guard `run` names exists; a push rule already there stays, and pushes run with no prompt: see too wide), a pre-push guard written (where it is, and that another clone gets one by running this install there),
+a hook or `core.hooksPath` that kept the guard from being written (what is there, and that the guard is theirs to combine), a `'` in the integration branch's name that did (why, and that the guard is theirs to write), a guard the write or `chmod` was refused for (what the person is to put where). Leave out changes the human made before the
+install: they are theirs, not the install's.
+
+Write each item for a reader who does not know the loop's terms, in plain words: **what it is, what it means
+for them, and what to do, if anything.** That list is the honest starting position, and it is more useful
+than a success message. The shape:
+
+```markdown
+- **Two docs are empty for now: RECIPES.md and GOTCHAS.md.** The agents will not quote them until they
+  have an entry. Nothing to do yet: each file says what its first entry should be.
+- **Restart Claude Code.** This session still has the old skills, so the loop starts in the next one.
+```

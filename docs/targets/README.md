@@ -32,6 +32,28 @@ agent:
 The probe logs payloads and environment variable **names**. It never logs environment values, apart from a few
 hook-metadata variables. Still read the `.jsonl` file before you commit any of it.
 
+## Waiting for an answer, per agent
+
+A run waits for an escalation's answer on `plugin/scripts/wait-answer.mjs` (`.sdlc/kit/scripts/` once installed). An
+agent may be marked as waiting (`wait:` in `scripts/targets.mjs`, rendered into its `HARNESS.md`) only when this run
+shows it; until then its `HARNESS.md` says `wait: stop`, and a run there stops after an escalation as before.
+`plan-project`'s developer interview uses the same script and follows the same line, and so does every other skill
+that raises an escalation (`PROCESS.md`, "Questions to the human are escalations"). Where a skill stops instead of
+waiting, nobody is listening, so a question a person asks of the agent on that escalation is handed back to them
+after 30 minutes.
+
+1. In the scratch repo, write a fake `leeway` that answers `--json issue get` with one escalation, `ref: "PRB-1", number: 1`, whose
+   `answer` is null on the first call and `{ "label": "Go ahead", "note": "probe", "by": {} }` after it, logging
+   each call with its time.
+2. Ask the agent to run, the way it runs a long command in the background,
+   `node .sdlc/kit/scripts/wait-answer.mjs --server https://probe.test PRB-1 e1 --first 5 --cap 10 -- <fake>`, and
+   then to end its turn without checking on it.
+3. It waits if the session resumes **on its own** when the command exits, with no message from you and no turn
+   spent per check, and is handed the exit code and the printed answer. Repeat with a fake that never answers and
+   `--deadline 9`, and check that exit 2 reaches the session too.
+4. Record the result under "Waiting for an answer" in `docs/targets/<agent>.md`, ending with `wait: background` or
+   `wait: stop`, and set `wait` in `scripts/targets.mjs` to match.
+
 ## Wiring, per agent
 
 These snippets are taken from each agent's docs as of 2026-11. If a snippet doesn't work, say so on that agent's
