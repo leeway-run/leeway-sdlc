@@ -100,11 +100,11 @@ test('sdlc-tune sets the budget within the bounds the process accepts', () => {
   );
 });
 
-test('sdlc-install writes the old default budget on the preset path only, and says where it went', () => {
+test('sdlc-install writes the default budget on the preset path only, and says where it went', () => {
   assert.equal(
     from(install, '**Written without asking, with a preset only: the per-story budget**', ' ## Step 5'),
-    '**Written without asking, with a preset only: the per-story budget** `{"tokens": 2000000, "rounds": 15, ' +
-      '"hours": 4}` (2,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
+    '**Written without asking, with a preset only: the per-story budget** `{"tokens": 8000000, "rounds": 15, ' +
+      '"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
       '`params.budget` on each `build` step that has none (step 5). No preset sets one, so the install does, as a ' +
       'default the human did not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) ' +
       'the process is the human\'s and no budget is written. Step 7 says which `build` steps have one.',
@@ -120,7 +120,7 @@ test('sdlc-install writes the old default budget on the preset path only, and sa
     from(step5, '4. **The default budget**', ' 5. **Read it back**'),
     '4. **The default budget**, only when the preset write (1) succeeded: a refused preset, `process_in_use` ' +
       'included, writes no budget. Read the stored definition (`<cli> process get <KEY> --json`), set ' +
-      '`params.budget` to `{"tokens": 2000000, "rounds": 15, "hours": 4}` on each `build` step that has no ' +
+      '`params.budget` to `{"tokens": 8000000, "rounds": 15, "hours": 4}` on each `build` step that has no ' +
       '`budget`, change nothing else, and send the whole definition back as in 3. Every `build` step already ' +
       'carrying one → skip the write.',
   );
@@ -183,6 +183,19 @@ test('the row is removed only after the process read back carries the budget', (
   assert.ok(order.every((n) => n >= 0));
   assert.deepEqual([...order].sort((a, b) => a - b), order);
   assert.match(sync, /a `Per-story budget` row is removed only after the process read back carries it;/);
+});
+
+test('the old default survives only in the conversion of an old row, and run\'s example says five rounds', () => {
+  // Every file in the plugin outside test/: skills, references, templates, agents, PROCESS.md, hooks, scripts, bin.
+  const files = readdirSync(plugin, { recursive: true, withFileTypes: true })
+    .filter((d) => d.isFile())
+    .map((d) => join(d.parentPath, d.name).slice(plugin.length + 1).replace(/\\/g, '/'))
+    .filter((path) => !path.startsWith('test/'));
+  assert.ok(files.includes('agents/sdlc-reviewer.md') && files.includes('skills/run/templates/BRIEF.md'));
+  const holding = files.filter((path) => /2,?000,?000/.test(read(path)));
+  assert.deepEqual(holding, ['skills/sync-repo/SKILL.md']);
+  assert.equal(sync.match(/2,?000,?000/g).length, 2, 'the conversion example, and nothing else in sync-repo');
+  assert.match(flat(run), /red tests first \(cap 2 attempts\), up to 5 code rounds,/);
 });
 
 test('converting the row: the rule, and its own example read the way it says', () => {
