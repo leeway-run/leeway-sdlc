@@ -24,16 +24,21 @@ const run = read('plugin/skills/run/SKILL.md');
 const permissions = () => under(harness, 'Permissions for an unattended run');
 const prereqs = () => under(run, 'Unattended prerequisites');
 
-// Naming a permission list or rule. A sentence that negates it ("writes no allow rule") is not an instruction to write one.
-const LIST = /allow[- ]?list|allow[- ]rules?|permission rules?|permissions\.allow|\bBash\(/i;
-const NEGATES = /\b(no|not|never|none|nor|neither|without|instead|rather than|gone|replaces?|replaced)\b|n't/i;
-// Clauses, so that a negation in one clause does not excuse a claim in the next.
-const sentences = (text) => flat(text).split(/(?<=[.!?,;])\s+/);
-const instructing = (text) => sentences(text).filter((s) => !NEGATES.test(s)).join(' ');
+// A mention of a permission list or rule. Only a negator standing directly before the term ("writes no allow rule") is not one:
+// a "not" elsewhere in the sentence excuses nothing.
+const NEGATED_BEFORE = /\b(no|not|never|without|none)\s+((write|writes|add|adds|keep|keeps|name|names|needs?)\s+)?((an?|the|any)\s+)?(permission\s+)?$/i;
+const mentions = (text, term) => {
+  const flatText = flat(text);
+  return [...flatText.matchAll(term)].filter((m) => !NEGATED_BEFORE.test(flatText.slice(0, m.index))).map((m) => m[0]);
+};
+const LIST = /allow[- ]?list|allow[- ]rules?|permission rules?|permissions\.allow|\bBash\(/gi;
+const rulesNamed = (text) => mentions(text, LIST);
 
-// A claim that a permission prompt holds, gates or is where the yes is given. "No permission prompt holds it" is not that claim.
-const PROMPT_HOLDS = /prompt[^.]*\b(yes|word|holds?|held|stops?|gates?|gated|asks?)\b|\b(yes|word|holds?|held|stops?|gates?|gated)\b[^.]*prompt/i;
-const promptHolds = (text) => sentences(text).filter((s) => !NEGATES.test(s) && PROMPT_HOLDS.test(s));
+// A sentence that ties a merge to a permission prompt, however it is worded. Only "no (permission) prompt" is allowed.
+const sentences = (text) => flat(text).split(/(?<=[.!?;])\s+/);
+const PROMPT = /\bprompts?\b/gi;
+const promptClaims = (text) => sentences(text).filter((s) => /merg/i.test(s) && mentions(s, PROMPT).length > 0);
+const promptsIn = (text) => mentions(text, PROMPT);
 
 test('TC-2: HARNESS says an unattended run uses auto mode, and without it a person approves each prompt', { skip: 'red-test-TC-2: HARNESS still has the rule table' }, () => {
   const text = permissions();
@@ -50,7 +55,7 @@ test('TC-2: HARNESS says an unattended run uses auto mode, and without it a pers
 
 test('TC-1: HARNESS, run, PROCESS and the agents tell nobody to write or rely on a permission rule', { skip: 'red-test-TC-1: these files still name an allow-list' }, () => {
   for (const file of ['plugin/HARNESS.md', 'plugin/skills/run/SKILL.md', 'plugin/PROCESS.md', 'plugin/agents/sdlc-implementer.md', 'plugin/agents/sdlc-reviewer.md']) {
-    assert.doesNotMatch(instructing(read(file)), LIST, file);
+    assert.deepEqual(rulesNamed(read(file)), [], file);
   }
 });
 
@@ -67,11 +72,11 @@ test('TC-1: PROCESS prints a call verb first without a rule, and the CLI\'s own 
   const verb = process_.slice(process_.indexOf('**Verb first.**'), process_.indexOf('- Long bodies go in through'));
   assert.ok(verb.length > 0, 'no "Verb first." bullet');
   assert.match(verb, /<cli> --server <server> <resource> <verb> <args> --as <alias>\/<role> --json/);
-  assert.doesNotMatch(instructing(verb), LIST);
+  assert.deepEqual(rulesNamed(verb), []);
   assert.doesNotMatch(verb, /matches the text before its first/);
   const raise = process_.match(/The CLI's own raise, with the fields as flags[^.]*\./);
   assert.ok(raise, 'no sentence on the CLI\'s own raise');
-  assert.doesNotMatch(instructing(raise[0]), LIST);
+  assert.deepEqual(rulesNamed(raise[0]), []);
   assert.doesNotMatch(raise[0], /off run's/);
 });
 
@@ -95,7 +100,7 @@ test('TC-3: run still requires the pre-push guard, and says --no-verify and core
   assert.doesNotMatch(guard, /allow-?list|allow rule|`push` verb off/i);
   const pre6 = flat(run.slice(run.indexOf('6. **The unattended prerequisites are in place**')));
   assert.match(pre6.slice(0, 300), /The unattended prerequisites are in place\*\*[^.]*or a human is watching and says so/);
-  assert.doesNotMatch(instructing(pre6.slice(0, 300)), LIST);
+  assert.deepEqual(rulesNamed(pre6.slice(0, 300)), []);
 });
 
 test('TC-4: the plan merges on the person\'s word, and no permission prompt is said to hold it', { skip: 'red-test-TC-4: run says the prompt is where the person\'s yes is their word' }, () => {
@@ -104,23 +109,29 @@ test('TC-4: the plan merges on the person\'s word, and no permission prompt is s
   const guardAt = all.indexOf('- **A pre-push guard');
   const mergeAt = all.lastIndexOf('`gh pr merge`', guardAt);
   const para = mergeAt < 0 ? '' : all.slice(mergeAt, guardAt);
-  assert.doesNotMatch(instructing(para), LIST);
-  assert.deepEqual(promptHolds(para), []);
-  const merging = sentences(run).filter((s) => /merge|person's (yes|word)/i.test(s));
-  assert.deepEqual(promptHolds(merging.join(' ')), []);
+  assert.ok(para.length > 0, 'no paragraph on `gh pr merge` in "Unattended prerequisites"');
+  assert.match(para, /person's word/);
+  assert.deepEqual(rulesNamed(para), []);
+  assert.deepEqual(promptsIn(para), [], 'a permission prompt is tied to the merge');
+  assert.deepEqual(promptClaims(run), [], 'a sentence in run ties a merge to a prompt');
+});
+
+test('TC-1: run mentions no allow-list at all, except in a sentence saying the plugin writes no rule', { skip: 'red-test-TC-1: run line 85 still says "`mkdir` is not on the allow-list" and the prerequisites still name the list' }, () => {
+  const stray = sentences(run).filter((s) => /allow[- ]?list/i.test(s) && !/\bwrites? no (allow|permission) rules?\b/i.test(s));
+  assert.deepEqual(stray, []);
 });
 
 test('negative: the printed call forms stay, in run and in both agents, with the reason for them and no list named', { skip: 'red-test-TC-2: line 33 and the agents still say the order "the allow-list matches"' }, () => {
   const line = flat(run.slice(run.indexOf('**Every call is printed verb first**'), run.indexOf('## What the ref is')));
   assert.match(line, /`leeway spend record <ref> 3 --as <alias>\/agent --json`/);
   assert.match(line, /Write each call as it is printed here, `--server` included\./);
-  assert.doesNotMatch(instructing(line), LIST);
+  assert.deepEqual(rulesNamed(line), []);
   for (const file of ['plugin/agents/sdlc-implementer.md', 'plugin/agents/sdlc-reviewer.md']) {
     const text = flat(read(file));
     assert.match(text, /<cli> --server <server> /, file);
     assert.match(text, /`git -C <the worktree's absolute path>`/, file);
     assert.match(text, /`cd <path> && git`[^.]*prompts|prompts[^.]*`cd <path> && git`/, file);
     assert.match(text, /(one|a single) (call|command|git verb)|per verb|one verb|verb per call/i, file);
-    assert.doesNotMatch(instructing(text), LIST, file);
+    assert.deepEqual(rulesNamed(text), [], file);
   }
 });

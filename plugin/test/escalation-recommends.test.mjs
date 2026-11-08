@@ -57,13 +57,17 @@ test('c2: every raise is the raise script with a fields file, and no field goes 
     assert.doesNotMatch(text, /--stdin context|--(question|tradeoff|advice|meanwhile) "/, `${path}: a field as a flag`);
   }
   assert.match(process_, /\*\*Every field goes in the file, never on a command line\.\*\* A question, a context, an argument or a piece of advice is drawn from a report or the code, and holds backticks, `\$` and apostrophes that a shell would run, expand or end a quote on/);
-  assert.match(process_, /The CLI's own raise, with the fields as flags, is off run's allow-list, so it prompts\./);
 });
 
+// Replaces the check that PROCESS says the CLI's own raise "is off run's allow-list, so it prompts" (LWY-189.1).
 test('TC-1: the CLI\'s own raise, with the fields as flags, is not said to sit off a list', { skip: 'red-test-TC-1: PROCESS still says it "is off run\'s allow-list, so it prompts"' }, () => {
   const raise = process_.match(/The CLI's own raise, with the fields as flags[^.]*\./);
   assert.ok(raise, 'no sentence on the CLI\'s own raise');
-  assert.ok(!/allow[- ]?list|allow[- ]rules?|permission rules?/i.test(raise[0]) || /\b(no|not|never|without)\b|n't/i.test(raise[0]), raise[0]);
+  const listed = [...raise[0].matchAll(/allow[- ]?list|allow[- ]rules?|permission rules?/gi)].filter(
+    (m) => !/\b(no|not|never|without)\s+((an?|the|any)\s+)?(permission\s+)?$/i.test(raise[0].slice(0, m.index)),
+  );
+  assert.deepEqual(listed.map((m) => m[0]), [], raise[0]);
+  assert.doesNotMatch(raise[0], /off run's/);
 });
 
 const TYPES = ['blocker', 'clarification', 'debt', 'nit'];

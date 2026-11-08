@@ -223,24 +223,10 @@ test('the plan merges into main only on the person\'s word, and closes only once
   assert.match(section, /if it already reads `done`, leave it/);
 });
 
-test('gh pr merge stays off the unattended allow-list, so the merge prompts for the person\'s word', () => {
-  const prereqs = under(run, 'Unattended prerequisites');
-  assert.match(prereqs, /naming what a run calls and nothing more:/);
-  assert.equal(
-    from(prereqs, '**`gh pr merge` stays off', '- **A pre-push guard'),
-    "**`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the pre-push guard does not cover it, and its prompt is where the person's yes is their word (\"When the plan merges into `main`\"). ",
-    'gh pr merge can be allow-listed, or the pre-push guard is said to cover it',
-  );
+// LWY-189.2 owns this text in sdlc-install, which LWY-189.1 does not change.
+test('sdlc-install says git push waits for the pre-push guard and gh pr merge stays off the list, because the guard does not cover a merge through GitHub', () => {
   const install = flat(read('skills/sdlc-install/SKILL.md'));
   assert.match(install, /`git push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
-});
-
-test('nothing outside that section merges the plan\'s pull request', () => {
-  const offList = from(under(run, 'Unattended prerequisites'), '**`gh pr merge` stays off', '- **A pre-push guard');
-  const rest = flat(run)
-    .replace(merges(), '')
-    .replace(offList, '');
-  assert.doesNotMatch(rest, MERGES);
 });
 
 // The paragraph on `gh pr merge` in "Unattended prerequisites": from its last mention before the pre-push guard bullet.
@@ -250,16 +236,26 @@ const mergeParagraph = () => {
   const at = prereqs.lastIndexOf('`gh pr merge`', guardAt);
   return at < 0 ? '' : prereqs.slice(at, guardAt);
 };
-const NEGATES = /\b(no|not|never|none|nor|neither|without|instead|rather than|gone)\b|n't/i;
 
-test('gh pr merge is held by the person\'s word, and no permission prompt or allow-list is said to hold it', { skip: 'red-test-TC-4: run says the merge stays off the allow-list and its prompt is where the yes is given' }, () => {
+// A mention counts unless a negator stands directly before it ("no permission prompt", "writes no allow rule"): a "not"
+// elsewhere in the sentence excuses nothing.
+const NEGATED_BEFORE = /\b(no|not|never|without|none)\s+((write|writes|add|adds|keep|keeps|name|names|needs?)\s+)?((an?|the|any)\s+)?(permission\s+)?$/i;
+const mentions = (text, term) => {
+  const one = flat(text);
+  return [...one.matchAll(term)].filter((m) => !NEGATED_BEFORE.test(one.slice(0, m.index))).map((m) => m[0]);
+};
+const sentencesOf = (text) => flat(text).split(/(?<=[.!?;])\s+/);
+
+// Replaces the test that pinned "stays off the allow-list" and "its prompt is where the person's yes is their word".
+test('gh pr merge is held by the person\'s word, and no allow-list or permission prompt is tied to it', { skip: 'red-test-TC-4: run says the merge stays off the allow-list and its prompt is where the yes is given' }, () => {
   assert.match(merges(), /the plan merges into `main` on the person's word/i);
   const para = mergeParagraph();
-  const claims = para.split(/(?<=[.!?,;])\s+/).filter((s) => !NEGATES.test(s));
-  for (const s of claims) {
-    assert.doesNotMatch(s, /allow[- ]?list|allow[- ]rules?/i, 'a list is said to hold the merge');
-    assert.doesNotMatch(s, /prompt[^.]*\b(yes|word|holds?|held|stops?|gates?|asks?)\b|\b(yes|word|holds?|held|stops?|gates?)\b[^.]*prompt/i, 'a prompt is said to hold the merge');
-  }
+  assert.ok(para.length > 0, 'no paragraph on `gh pr merge` in "Unattended prerequisites"');
+  assert.match(para, /person's word/);
+  assert.deepEqual(mentions(para, /allow[- ]?list|allow[- ]rules?|permission rules?/gi), [], 'a list is tied to the merge');
+  assert.deepEqual(mentions(para, /\bprompts?\b/gi), [], 'a permission prompt is tied to the merge');
+  const tied = sentencesOf(run).filter((s) => /merg/i.test(s) && mentions(s, /\bprompts?\b/gi).length > 0);
+  assert.deepEqual(tied, [], 'a sentence in run ties a merge to a prompt');
 });
 
 test('nothing outside that paragraph and "When the plan merges into `main`" merges the plan\'s pull request', () => {
