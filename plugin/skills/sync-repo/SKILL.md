@@ -177,6 +177,7 @@ which and why in the summary, and the next release asks again. Like the new flow
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
 | the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes", and `{{RUN_SKILL}}` from its **commands**), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
 | the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
+| run's 0.3.0 allow-list | `permissions.allow` of `.claude/settings.json` and of `.claude/settings.local.json`, where 0.3.0's `HARNESS.md` put it for Claude Code: the entries that are exactly one of the forms listed below, filled with the repo's `cli:` and `server:` from `.sdlc/leeway.md` | none: the forms are written in this skill, since the current `HARNESS.md` no longer lists them |
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
 
@@ -196,9 +197,38 @@ file with CRs stripped, so a CRLF and an LF checkout of one release give the sam
 plugin copy; for the contract block it is the template file (`AGENT-BLOCK.md.tmpl`, unfilled); for the kit,
 `git hash-object` of the sorted list of its files' hashes; a
 `.gitignore` line has no plugin file, so its `Kept` row carries `-`, and is kept until the line is added.
+The 0.3.0 allow-list has no plugin file either, so its `Kept` row carries `-`, as a `.gitignore` line does.
 
 The diff alone does not tell you whether the release changed the plugin's copy or the team edited
 its own. Say which you think it is, from `RELEASE_NOTES.md`, but let the answer decide.
+
+**The forms of run's 0.3.0 allow-list.** This copy is compared by reading the two files' `permissions.allow`, not
+with `diff`. It reads only `.claude/settings.json` and `.claude/settings.local.json`, and no other settings file. An
+entry is run's only when it equals one of these 38 forms, written with the repo's `cli:` as `<cli>` and `server:` as
+`<server>` from `.sdlc/leeway.md`; nothing else in either file is read as run's. The forms are 0.3.0's table, written here
+because the current `HARNESS.md` no longer has it:
+
+- **The 14 Leeway verbs:** `Bash(<cli> --server <server> issue get *)`, `Bash(<cli> --server <server> issue list *)`,
+  `Bash(<cli> --server <server> issue update *)`, `Bash(<cli> --server <server> issue create *)`,
+  `Bash(<cli> --server <server> comment add *)`, `Bash(<cli> --server <server> iteration record *)`,
+  `Bash(<cli> --server <server> spend record *)`, `Bash(<cli> --server <server> escalation list *)`,
+  `Bash(<cli> --server <server> clarification answer *)`, `Bash(<cli> --server <server> clarification list *)`,
+  `Bash(<cli> --server <server> review get *)`, `Bash(<cli> --server <server> project get *)`,
+  `Bash(<cli> --server <server> project link *)`, `Bash(<cli> --server <server> process get *)`.
+- **The 15 git verbs:** `Bash(git -C * add *)`, `Bash(git -C * commit *)`, `Bash(git -C * push *)`,
+  `Bash(git -C * fetch *)`, `Bash(git -C * merge *)`, `Bash(git -C * merge-base *)`, `Bash(git -C * worktree *)`,
+  `Bash(git -C * branch -d *)`, `Bash(git -C * ls-remote *)`, `Bash(git -C * rev-parse *)`, `Bash(git -C * diff *)`,
+  `Bash(git -C * status *)`, `Bash(git -C * show *)`, `Bash(git -C * log *)`, `Bash(git -C * blame *)`.
+- **The lane form:** `Bash(<command> *)`, with `<command>` a lane or setup command, or a part of a compound lane, named in
+  `.sdlc/CONFIG.md`. These are listed in the diff but are the person's call: a lane rule may be the repo's own, so the
+  question says so.
+- **The rest:** `Bash(node -e *)`, `Bash(gh pr create *)`, `Bash(gh pr view *)`, `Bash(leeway-sdlc-wait-answer *)`,
+  `Bash(leeway-sdlc-session-tokens *)`, `Bash(leeway-sdlc-raise *)`, `Edit(/.worktrees/**)` and
+  `Read(~/.claude/plugins/cache/*/leeway-sdlc/**)`.
+
+A rule the person wrote that is not one of these, such as `Bash(npm run lint *)` with no such lane in `.sdlc/CONFIG.md`,
+or `Bash(git status)`, is never offered or removed. A `Read(//<dir>/plugins/cache/*/leeway-sdlc/**)` that 0.3.0 wrote when
+`CLAUDE_CONFIG_DIR` was set is not matched either, since it is not one of the forms: it is left to the person to delete.
 
 **Never synced, never compared, never opened for writing:**
 
@@ -227,13 +257,18 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy, before anything is written, since that question is open). Record a `Kept` row too, since the repo copy
   now differs on purpose.
+- **Entries of run's 0.3.0 allow-list present** → one diff, the removal of those entries from each file they are in, and one
+  question, as for every other copy, pre-filled yes. Its question begins `Sync run's 0.3.0 allow-list to <this version>:`.
+  A yes removes only those entries, and leaves each file's other keys and entries as they were: `hooks`,
+  `enabledPlugins` and `permissions.deny` are untouched, and so is every other entry of `permissions.allow`. A no is
+  recorded as a `Kept` row with its reason. With none of the entries in either file, nothing is asked and nothing is written.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
   the local-notes file, account ids and local paths the contract block sends there get committed; without
   `.worktrees/`, a worktree is staged by accident; without `.sdlc/.governed/`, a live marker is committed and
   governs every clone. Declined → record it as `Kept` with the reason, and
   say so in the summary.
 
-One question per differing copy and per missing line, step 1's `filing-work:` question when the
+One question per differing copy and per missing line, per run's 0.3.0 allow-list when entries of it are there, step 1's `filing-work:` question when the
 binding lacks the line, step 1's friction migration for a legacy binding with a ref, step 1's budget move when a row is offered it,
 and step 1's new flow when a type is offered it (one or more left), no more. A copy
 that is the same, or kept with a matching hash, is not asked.
@@ -253,7 +288,7 @@ the human to push). In the same change, update `## Repo copies`:
 
 | Kept | Plugin copy hash | Why | Decided |
 |---|---|---|---|
-| <copy> | <Kept hash, or - for a .gitignore line> | <the reason given> | <who>, <date> |
+| <copy> | <Kept hash, or - for a .gitignore line or the 0.3.0 allow-list> | <the reason given> | <who>, <date> |
 ```
 
 The `Synced to` row is the stamp the session notice reads. Drop a `Kept` row whose copy was taken
@@ -261,12 +296,9 @@ this time. A `filing-work:` or `friction-project:` answer from step 1 goes into 
 branch, as the exception in step 2 describes. Write nothing to the repo without the answer for that copy, and nothing
 outside the branch.
 
-An upgrade to 0.3.0 from an install whose allow-list predates it: say that the old entries match nothing `run` prints, so
-run the sdlc-install skill again, whose question 16 adds the new ones (`references/detection.md`, "An existing allow-list").
-
 ## Done when
 
-Every copy in step 2 is the same, taken, or kept with a reason and a hash; `Synced to` names this
+Every copy in step 2, the 0.3.0 allow-list's entries included, is the same, taken, or kept with a reason and a hash; `Synced to` names this
 version; `.sdlc/leeway.md` is byte-identical to before, but for a `filing-work:` line added when it had
 none and a legacy friction line replaced by `friction-project:`; the process is changed only on a yes to the
 new flow, and the budget only on a yes to its move; a `Per-story budget` row is removed only after the process

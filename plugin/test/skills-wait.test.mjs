@@ -172,7 +172,9 @@ test('each skill that raises points to run\'s "Wait, then carry on" and the cont
     const text = skill(s);
     assert.match(text, /`run`, "Wait, then carry on"/, `${s} does not point to run's "Wait, then carry on"`);
     assert.match(text, /`PROCESS\.md`, "Questions to the human are escalations"/, `${s} does not point to the contract`);
-    assert.doesNotMatch(text, /clarification answer/, `${s} copies the loop for a question asked of the agent`);
+    // sync-repo's list of 0.3.0's allow-list rules names `clarification answer` as a rule to remove, not as a step of the loop.
+    const loop = text.replaceAll('`Bash(<cli> --server <server> clarification answer *)`', '');
+    assert.doesNotMatch(loop, /clarification answer/, `${s} copies the loop for a question asked of the agent`);
   }
 });
 
