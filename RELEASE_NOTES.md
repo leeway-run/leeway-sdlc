@@ -192,17 +192,17 @@ upgrading:**
 - **A plan still open under 0.2.x.** Its plan branch stays unlinked until its end. Once its stories are done, `run`
   on the project opens and links the draft pull request, or links the one already open, and sets the Plan record
   `in_review`. The record goes `done` only once the pull request has merged into `main`.
-- **The unattended allow-list (LWY-157).** sync-repo does not touch it. `run` now prints every call verb first
-  (`leeway spend record <ref> 3 --as <alias>/agent --json`), and an entry 0.2.0's install wrote, such as
-  `Bash(leeway spend record:*)`, does not match it. Re-run `sdlc-install` and answer yes to unattended runs: it
-  writes one narrow rule per verb and script, as `HARNESS.md` lists them under "Permissions for an unattended run",
-  and *Known limits* says what they leave open. Old entries are reported, not removed. Keep `gh pr merge` off, and
-  mind that a prefix entry such as `gh pr:*` covers it.
-- **Re-run `sdlc-install` for unattended runs (LWY-160).** An allow-list written before this release has no
-  `clarification answer`, `clarification list` or `leeway-sdlc-raise`, so an unattended run prompts, and stops, the
-  first time it raises an escalation or someone asks the agent a question. Re-running `sdlc-install` adds them. The
-  `escalation raise` rule an older list has now matches nothing a run prints: it is harmless, and the install reports
-  it as dead.
+- **Re-run `sdlc-install` for unattended runs (LWY-157, LWY-160).** sync-repo does not touch the allow-list. `run`
+  now prints every call as `<cli> --server <server> <verb> … --as … --json` (`leeway --server
+  https://app.leeway.run spend record <ref> 3 --as <alias>/agent --json`), so a flag-less entry such as
+  `Bash(leeway spend record:*)`, written by hand or by a pre-release install, does not match it. A list written
+  before this release also has no `clarification answer`, `clarification list` or `leeway-sdlc-raise`, so an
+  unattended run prompts, and stops, the first time it raises an escalation or someone asks the agent a question.
+  Re-run `sdlc-install` and answer yes to unattended runs: it writes one narrow rule per verb and script, as
+  `HARNESS.md` lists them under "Permissions for an unattended run", and *Known limits* says what they leave open.
+  Old entries are reported, not removed: the `escalation raise` rule an older list has now matches nothing a run
+  prints, is harmless, and is reported as dead. Keep `gh pr merge` off, and mind that a prefix entry such as
+  `gh pr:*` covers it.
 - **The kit**, where `HARNESS.md` says `plugin-files: .sdlc/kit/`. Taking it now also removes what is only in
   `.sdlc/kit/`, such as `skills/shape-work/` and `skills/run-task/`. The kit diff includes the changed
   `CONFIG.md.tmpl` and `EVIDENCE-STANDARD.md.tmpl`, the new `scripts/wait-answer.mjs`, `scripts/session-tokens.mjs`
