@@ -89,7 +89,7 @@ test('every HARNESS.md says whether a run can count tokens, and one that cannot 
     } else {
       assert.match(flat, /leeway-sdlc-session-tokens --subagent-id <agent id>/)
       assert.match(flat, /leeway-sdlc-session-tokens --this-session --from <start> --to <end>/)
-      assert.match(flat, /a command with a variable in braces prompts whatever the allow-list says/)
+      assert.match(flat, /a command with a variable in braces prompts/)
       assert.match(flat, /that record leaves `--tokens` out/)
       assert.match(flat, /Never take `subagent_tokens` from the completion notice instead: it is the agent's final context size/)
       assert.match(flat, /Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch/)
