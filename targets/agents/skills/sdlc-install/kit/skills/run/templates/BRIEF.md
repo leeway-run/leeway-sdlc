@@ -104,12 +104,22 @@ decision only the human can make goes under *Question* below, with `Status: BLOC
 Only when `Status: BLOCKED`. The orchestrator raises this, unedited, as a Leeway escalation, so write it as the
 human will read it:
 
-- **Question:** one sentence, at most 500 characters. Longer context goes above, under *Uncertainties*.
-- **Options:** 2 to 5, each a `label` (at most 60 characters) with its `argument` (why pick it, at most 1,000).
-  The recommended option comes first, so the human sees your pick and it survives being raised. Where you truly have
-  no pick, invent none: the first argument opens `No recommendation:` and says why.
-  1. `<label>` — Recommended: <why, and the rest of its argument>
-  2. `<label>` — <argument>
+Each line goes to its own field of the escalation, unchanged. Every text is at most 1,000 characters.
+
+- **Type:** `blocker`, the usual one for a BLOCKED round (the work has stopped on it), or `clarification` where the
+  round could go on and only a later part waits.
+- **Question:** one sentence. Longer context goes above, under *Uncertainties*.
+- **Context:** the specific thing behind the question, in plain lines: what you found, in which file, and what each
+  reading of the task would do. Never only a pointer ("see Uncertainties", a ref, a URL): the human decides from
+  this escalation alone. Too much to fit: the worst items, then how many more and where.
+- **Trade-off:** what the choice costs either way.
+- **Advice:** which option you pick and why, in a sentence or two. Where you truly have no pick, invent none: say
+  there is no pick and why, and mark no option.
+- **Options:** 2 to 5, each a `label` (at most 60 characters) with its `argument`: what happens if it is picked,
+  what you build next and what it costs. Your pick comes first and is marked `(suggested)`, so the human sees it and
+  it survives being raised; the reason for it is in Advice, not in the argument.
+  1. `<label>` (suggested) — <what happens if it is picked>
+  2. `<label>` — <what happens if it is picked>
 - **Meanwhile:** what you did before stopping, and what stays untouched until the answer. You stop implementing
   the blocked part; you do not guess.
 

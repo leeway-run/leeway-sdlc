@@ -57,6 +57,19 @@ type, and no deployed server has it yet** (see *Known limits*).
   adds the product process, an issue's `type` and `step`, `process get`, and `--type` and `--step`. LWY-125 names
   every stage as a step in the default presets and allows two `gate` steps per type. A new product gets
   `maintained`, stored at version 1, and a product with no stored process reads `mvp` at version 0.
+- **Every skill waits for its answer (LWY-160).** `shape-project`, `plan-project`, `sync-repo`, `sdlc-install` and
+  `sdlc-tune` now wait on the escalations they raise, as `run` does, instead of ending the turn, and carry on when
+  you answer. They still stop when nobody answers within about 16 hours, when Leeway does not answer, or when it
+  asks for `leeway login`.
+- **Ask the agent before you decide (LWY-160).** A question you ask the agent on an open escalation gets an answer
+  in the same session, and the agent then goes back to waiting. A question is not a decision: the agent does
+  nothing that depends on the escalation until it is answered.
+- **Escalations you can decide from (LWY-160).** Every escalation the plugin raises carries a type (blocker,
+  clarification, debt or nit), the context behind the question in plain lines rather than a pointer to a comment,
+  the trade-off, and the agent's advice. Its pick is the first option, marked as suggested, instead of an argument
+  opening "Recommended:". Where the agent has no pick it says so in the advice and marks nothing. `shape-project`
+  still suggests nothing. **These need a Leeway server with LWY-159**: on an older one the CLI refuses the new
+  flags, and the skill stops and says so.
 
 ### Upgrading a repo
 
@@ -98,6 +111,9 @@ upgrading:**
   `.gemini/agents/`, `.grok/agents/` or `.opencode/agents/`. The release changed all three: the implementer and the
   reviewer name the friction project, and the divergence reviewer names `plan-project`. sync-repo asks about each
   one on its own, and a `Kept` row on one is asked about again.
+- **Re-run `sdlc-install` for unattended runs (LWY-160).** An allow-list written before this release has no
+  `clarification answer` or `clarification list`, so an unattended run prompts, and stops, the first time someone
+  asks the agent a question. Re-running `sdlc-install` adds them.
 - **By hand, if you want the new words.** sync-repo never compares the installed `.sdlc/CONFIG.md` (outside
   `## Repo copies`) or the contract docs. A 0.2.x `.sdlc/CONFIG.md` still names `run-task` and `run-story` and says
   "before a story merges", and `EVIDENCE-STANDARD.md` still says "task". Edit them to `run`, "an issue" and

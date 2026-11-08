@@ -26,8 +26,11 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
   escalations, not the terminal. Each confirmation below is: the before and after posted first as a comment
   (`comment add <ref> --stdin body`) on the issue the human named when invoking this skill (no ref given:
   stop and say an issue is needed), then one escalation on it with `--comment cN`, 2 to 5 options
-  `{label, argument}` (label at most 60 characters, argument at most 1,000, question at most 500), the
-  pre-filled option first. Raise it with `--json` and **note the id it returns** (`escalation.escalation`:
+  `{label, argument}` (label at most 60 characters, argument at most 1,000 and saying what is written if it is
+  picked, question at most 1,000), the pre-filled option first, marked `"suggested": true`. It carries the fields of
+  `PROCESS.md`, "Questions to the human are escalations": `--type clarification`; the context, from a file outside
+  the repo (`--stdin context`), with the before and after in plain lines, as many as fit, never only the comment's
+  `cN`; `--tradeoff`; and `--advice` saying why the pre-filled option. Raise it with `--json` and **note the id it returns** (`escalation.escalation`:
   `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **wait on it**, as `run`
   does (`run`, "Wait, then carry on", with this skill in place of `run`), answering a question asked of you and
   waiting again (exit 5); wait even with the person at the terminal, since only the escalation's answer is one. On

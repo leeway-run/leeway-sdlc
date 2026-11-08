@@ -77,19 +77,23 @@ for (const [name, [s, lead, until]] of Object.entries(sites)) {
 // this skill at all. Each names the text that says so.
 const inRound = [
   ['plan-project', 'a session ended between the two calls: raise it now', 'Then wait on the first open escalation'],
-  ['plan-project', 'then `escalation raise <ref> --json`, `<ref>` the issue it is on', 'Then wait on the first open escalation'],
+  ['plan-project', 'then `escalation raise <ref> --type clarification --json`, `<ref>` the issue it is on', 'Then wait on the first open escalation'],
   ['plan-project', 'Then raise its escalation with `--comment` set to that QUESTION', 'Wait on each QUESTION\'s escalation in turn'],
+  ['plan-project', 'three more reports raise a new one on the latest report', 'Wait on it (step 0)'], // the same "Three RETURNs" escalation, raised again
   ['sdlc-install', 'raise the next round, the questions that waited', 'wait on each open one in turn'],
   ['sdlc-install', 'raise one escalation per ambiguous mapping', 'wait on each open one in turn'],
   ['sdlc-install', 'and raise one escalation on it with `--comment cN`', 'wait on each open one in turn'],
-  ['sync-repo', 'then `escalation raise <issue> --comment cN`', 'then wait on each open one in turn'],
+  ['sync-repo', 'then `escalation raise <issue> --type clarification --comment cN`', 'then wait on each open one in turn'],
   ['sync-repo', 'None → raise it, with the others', 'then wait on each open one in turn'],
   ['sync-repo', 'raise one follow-up escalation for that copy', 'then wait on each open one in turn'],
 ];
 const notRaises = [
   ['shape-project', 'and they raise it with the developer'], // the PO raises it, not this skill
+  ['sync-repo', 'and never raises it twice'], // says the filing-work: question is not raised again
 ];
-const RAISE_AT = /escalation raise|\b[Rr]aise (it|them|one|each|every|that|its|the|a held)\b/g;
+// "Raise" followed by what is raised, in any of the wordings the skills use: "raise it", "raise an escalation",
+// "raise a new one", "raise a held QUESTION", "raises its own" and the rest.
+const RAISE_AT = /escalation raise|\b[Rr]aises? (it|them|one|each|every|that|this|its|the|an|a|all)\b/g;
 
 test('every raise in a skill that waits is a site above, in a round a site waits on, or not this skill\'s', () => {
   for (const s of WAITERS.filter((w) => w !== 'run')) {
@@ -136,6 +140,17 @@ for (const [name, [lead, until]] of Object.entries(endings)) {
     assert.ok(end > gaps, `the ending at ${name} stops before it waits on the held stories' gaps`);
   });
 }
+
+test('a plan with no gate waits on the held stories\' gaps once, after every story is at ready', () => {
+  assert.match(skill('plan-project'), /`issue update <story> --status ready` \(no step\), story by story\. Once every story of the plan is at `ready`, and not after each one, wait on the held stories' gaps/);
+});
+
+test('a held story\'s interview escalations are named and left open, not waited on', () => {
+  const text = skill('plan-project');
+  assert.match(text, /A held story's interview escalations still open, where a product question held it in the middle of its interview \("The developer interview", "What is asked"\), are not waited on in this session: they hold no work in it/);
+  assert.match(text, /Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on each open gap escalation in turn/);
+  assert.match(text, /and a held story's interview escalation is not waited on at all \("The last wait"\)/);
+});
 
 test('plan-project waits on a held story\'s gaps last, never in the middle of another story\'s interview', () => {
   const text = skill('plan-project');

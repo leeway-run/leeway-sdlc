@@ -148,10 +148,16 @@ as `cN`. Check each against the code at this sha.
   Write it as the human will read it, not as an instruction to the implementer:
   - **Concerns:** the `F<n>` it is about, or `the round as a whole`. The orchestrator ties the escalation to that
     finding's comment; a question about the whole round is tied to none.
-  - **Question:** one sentence, at most 500 characters.
-  - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000). The recommended
-    option comes first, its argument opening `Recommended:` and saying why. Where you truly have no pick, invent none:
-    the first argument opens `No recommendation:` and says why.
+  - **Type:** `blocker` when the task cannot go on without the answer, `clarification` when it can.
+  - **Question:** one sentence, at most 1,000 characters.
+  - **Context:** the finding or the dispute behind the question, in plain lines: what the code does, where, and why
+    it matters. Never only its `F<n>`, a `cN` or a URL: the human decides from the escalation alone. At most 1,000
+    characters; more than fits is the worst items, then how many more and where.
+  - **Trade-off:** what the choice costs either way, at most 1,000.
+  - **Advice:** which option you pick and why, at most 1,000. Where you truly have no pick, invent none: say there is
+    no pick and why, and mark no option.
+  - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000): what happens if
+    it is picked. Your pick comes first, marked `(suggested)`; the reason for it is in Advice, not in the argument.
   - **Meanwhile:** what stays blocked and what does not.
 
 ## Rules read
@@ -239,10 +245,14 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
 - **Raises:** F1, F2, F3
 - **Escalates:**
   - **Concerns:** F1
+  - **Type:** blocker
   - **Question:** Should the cache key include the linter's rules version?
+  - **Context:** The cache keys each file on its size and mtime only (scripts/lint-docs.mjs, lines 58 to 61). A file that passed under the old rules is skipped under new ones, so after a linter upgrade nothing is linted until someone deletes .cache/doc-lint.json by hand.
+  - **Trade-off:** Including the version costs one full lint after every upgrade; leaving it out keeps upgrades fast but relies on a manual clear nobody is reminded of.
+  - **Advice:** Include the version: a stale cache hides violations silently, and that costs more than one full lint per upgrade.
   - **Options:**
-    1. `Include the version` — Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically.
-    2. `Leave it out, document the manual clear` — keeps upgrades fast; a forgotten clear hides every new violation.
+    1. `Include the version` (suggested) — the next round adds the rules version to the cache key and a test that bumps it; every entry is invalidated on a rule change.
+    2. `Leave it out, document the manual clear` — the next round documents the manual clear in docs/TESTING.md; upgrades stay fast, and a forgotten clear hides every new violation.
   - **Meanwhile:** LWY-12.3 stays `in_progress`; LWY-12.4 does not touch the linter and carries on.
 
 ## Friction
@@ -265,4 +275,4 @@ The orchestrator posts, in order (alias `quiet-wren`; `LWY-12.3`; `it.2`):
 2. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F2` block (no `--anchor`); `c7`.
 3. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F3` block (no `--anchor`): the finding that re-raises the disputed `c3`; `c8`.
 4. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --kind review --iteration 2 --settles '["c2"]' --disputes '["c3"]' --raises '["c6","c7","c8"]' --stdin body`, with the verdict as the body: the finding-body blocks removed, `F1`/`F2`/`F3` in the tables rewritten as `c6`/`c7`/`c8`, and the ledger's `Raises:` line the same. `c9`.
-5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway escalation raise LWY-12.3 --as quiet-wren/reviewer --question "Should the cache key include the linter's rules version?" --options '[{"label":"Include the version","argument":"Recommended: a stale cache hides violations, and that costs more than one full lint per upgrade. A rule change invalidates every entry automatically."},{"label":"Leave it out, document the manual clear","argument":"Keeps upgrades fast; a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6`. Then the orchestrator stops and reports the escalation id and the issue. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.
+5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): `leeway escalation raise LWY-12.3 --as quiet-wren/reviewer --json --type blocker --question "Should the cache key include the linter's rules version?" --tradeoff "Including the version costs one full lint after every upgrade; leaving it out keeps upgrades fast but relies on a manual clear nobody is reminded of." --advice "Include the version: a stale cache hides violations silently, and that costs more than one full lint per upgrade." --options '[{"label":"Include the version","argument":"The next round adds the rules version to the cache key and a test that bumps it; every entry is invalidated on a rule change.","suggested":true},{"label":"Leave it out, document the manual clear","argument":"The next round documents the manual clear in docs/TESTING.md; upgrades stay fast, and a forgotten clear hides every new violation."}]' --meanwhile "LWY-12.3 stays in_progress; LWY-12.4 does not touch the linter and carries on." --comment c6 --stdin context <context.md`, with the block's *Context* line in `context.md`. Then the orchestrator reports the escalation id and the issue, and waits on it. Round 3's brief addresses `c6`, `c7` and `c8`, not `c3`, which is `disputed` and cannot be addressed again.

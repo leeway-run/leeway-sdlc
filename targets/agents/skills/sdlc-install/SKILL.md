@@ -53,8 +53,13 @@ does. **A re-invoke does not resume yet**: this skill has no resume path. Re-inv
 interview on that issue is open (`<cli> issue get <ref> --json`, `escalations[]`), it asks nothing again, in the terminal or by escalation, and writes nothing: it names
 the open escalations, says they need answering on the issue, and stops. Once none is open, a re-invoke starts the
 interview over from step 1, and the answers already on the issue are not read back.
-Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
-sentence or two) at most 1,000, and the question at most 500.
+Every option is `{label, argument}`: the label at most 60 characters, the argument (what is set up if it is picked,
+in a sentence or two) at most 1,000, and the question at most 1,000. Each escalation carries the fields of
+`PROCESS.md`, "Questions to the human are escalations": `--type clarification`; the context, from a file outside
+the repo (`--stdin context`), saying in plain lines what you found that the pre-filled answer comes from (the file,
+the remote, the product it matched), never only a ref; `--tradeoff` where the options cost something different; and
+`--advice` saying why the pre-filled answer, which is your pick, marked `"suggested": true`. With no pre-filled
+answer, no option is marked, and Advice says there is no pick and why.
 
 - **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16, question 16's offer and any "Right?"): two options, the pre-filled one
   first.

@@ -54,9 +54,12 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
 **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question to the PO is never a terminal
 question: it is a Leeway escalation on the story, and then you wait for its answer (`PROCESS.md`, "Questions to the
 human are escalations"). Post the context first as a comment (`comment add <ref> --stdin body`), then
-`escalation raise <ref> --question "<at most 500 characters>" --options '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
+`escalation raise <ref> --type clarification --question "<at most 1,000 characters>" --tradeoff "<what each answer costs, where you can say it>" --options '[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN --stdin context < <context file>`:
 2 to 5 options, the likeliest answer first, and one of them is always *Leave it OPEN* where the question is a
-gap. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
+gap. Every question here, the approval round's too, is a `clarification`. The context, from a file outside the repo
+by absolute path, is the specific thing behind the question in plain lines, at most 1,000 characters: what exists
+today in that area and what is unclear, never only "see cN". **No pick:** no `--advice`, and no option is marked
+`"suggested"`, since the answer is the PO's to give. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
 answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and this skill cannot run: stop and
 say so.
 

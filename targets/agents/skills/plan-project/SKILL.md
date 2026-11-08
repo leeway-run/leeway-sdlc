@@ -83,12 +83,18 @@ whatever happened.
    step 8, "Three RETURNs".
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
    terminal question: it is a Leeway escalation on the story, and then you wait for its answer; one that stories share goes on their Plan record. Post the context first
-   (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
-   '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
-   2 to 5 options, each with its argument, one open escalation per comment. **The recommended option comes first**,
-   its argument opening `Recommended:` and saying why (`PROCESS.md`, "Questions to the human are escalations"). The
-   options a step below names are the choices, not their order. Where you truly have no pick, invent none: the first
-   argument opens `No recommendation:` and says why. **Every escalation this skill raises is waited on**, as "Wait,
+   (`comment add <ref> --stdin body`), then `escalation raise <ref> --type <type> --question "<at most 1,000
+   characters>" --tradeoff "<what each way costs>" --advice "<your pick and why, or no pick and why>" --options
+   '[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>","suggested":true}]'
+   --meanwhile "<what continues, or nothing>" --comment cN --stdin context < <context file>`: 2 to 5 options, each
+   with its argument, one open escalation per comment. **Each raise carries its fields** (`PROCESS.md`, "Questions to
+   the human are escalations"). The type is `clarification` for every question this skill asks (the product gaps,
+   the interview, the floor and repository questions, the plan gate's QUESTIONs) and `blocker` for "Three RETURNs",
+   where planning the story has stopped. The context is the specific thing behind the question, in plain lines from
+   the comment it is tied to: for a QUESTION, the QUESTION itself and the findings it rests on; for the product gaps,
+   each gap in a line of its own; never only "see cN". **Your pick comes first and is marked `"suggested": true`**,
+   and Advice says why. The options a step below names are the choices, not their order. Where you truly have no
+   pick, invent none: no option is suggested, and Advice says there is no pick and why. **Every escalation this skill raises is waited on**, as "Wait,
    then read" (under "The developer interview") says, with its exits and the answer to a question asked of you. The
    interview's questions and step 5's floor and repository questions are waited on where they are raised, since the
    work after them depends on them, and so are step 8's QUESTIONs and its "Three RETURNs" escalation; step 1's
@@ -163,7 +169,7 @@ to plan-project."* On a type with no shaped step, where shaping ends at `shape`,
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
-has N product gaps: how do we proceed?"*, with the options, your recommended one first, *Hold; the PO answers with shape-project*, *Split the story
+has N product gaps: how do we proceed?"*, with the options, your pick first, *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
 into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then wait on it once the rest of
 the plan is done, as step 8's "The last wait" says: at once, when this session plans no other story. The answer has
@@ -258,8 +264,8 @@ product decision.
 **Every open decision that depends on no other answer goes out together**, so one sitting answers them, and the ones
 that shape the plan most are among them. Check the round first (step 0): where one answer would settle or change
 another question, merge them, or hold the dependent one. For each, post its comment, the context and what the code
-shows, then `escalation raise <ref> --json`, `<ref>` the issue it is on (`escalation.escalation` in the answer is the
-`eN`) with `--comment cN`, 2 to 5 options, the recommended one first, and `--meanwhile "Nothing: no design doc, criteria
+shows, then `escalation raise <ref> --type clarification --json`, `<ref>` the issue it is on (`escalation.escalation` in the answer is the
+`eN`) with `--comment cN`, the fields step 0 names, 2 to 5 options, your pick first, and `--meanwhile "Nothing: no design doc, criteria
 or tasks until the interview closes."`. A decision with more than 5 options is cut to the real ones.
 
 Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them.
@@ -285,7 +291,7 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview |
+| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview, and a held story's interview escalation is not waited on at all ("The last wait") |
 | 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from step 0 and the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
@@ -468,7 +474,7 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    for a rule that asks for a decision on each user-facing story before it is built (for example whether a
    feature belongs on every surface a person uses). **User-facing** means a story whose acceptance criteria name
    something a person does through a surface. A question already raised (a comment opening `# Floor question`, on the story or on the Plan record naming it, with an escalation on it) is not raised again: read its answer. For each other such story post the context as a comment, opening `# Floor question: <refs>` and quoting the
-   rule's own sentence, and raise that rule's question as an escalation. Its options, your recommended one first, are the alternatives the
+   rule's own sentence, and raise that rule's question as an escalation. Its options, your pick first, are the alternatives the
    rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
    on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
    together share one comment and one escalation, naming each, on the Plan record, and a story whose question another answer would
@@ -565,7 +571,8 @@ make no further move of your own.
 The last step, once the whole hierarchy exists. **No task starts before it.**
 
 **A type without a plan gate** goes from plan to ready with no gate: `issue update <story> --status ready` (no
-step). Then wait on the held stories' gaps ("The last wait", below), and the skill ends.
+step), story by story. Once every story of the plan is at `ready`, and not after each one, wait on the held stories'
+gaps ("The last wait", below), and the skill ends.
 
 **A type with one**: `issue update <story> --step <the plan gate's id>`. You wrote the plan, so you are the one
 reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and a person decides by
@@ -626,7 +633,8 @@ or none, wait on the held stories' gaps ("The last wait", below), and **stop**, 
 A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Post each QUESTION as **its own top-level
 comment** on the story, as `<alias>/planner` (`comment add <story> --stdin body`), with a body opening
 `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment. Then raise its escalation with
-`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your recommended one first). A comment holds one open
+`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your pick first; the context
+the QUESTION and the findings it rests on, in plain lines, so a person decides it from the escalation alone). A comment holds one open
 escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment of its own. They are questions about
 the plan, not the gate decision.
 
@@ -669,7 +677,8 @@ does not say what anyone means by it. Wait on it (step 0). Give two options, eac
   writing and raising nothing. To plan it again, the person rewrites the story if they want to, then asks
   plan-project to plan it again. To drop it, they close it.
 
-The order above is not a pick: put first the one you recommend, or say you have none, as step 0 says.
+The order above is not a pick: put first and mark the one you pick, or mark none and say so in Advice, as step 0
+says. The context gives what the rounds could not trace, one line per unresolved BLOCKER of the latest reports.
 
 The same escalation is not raised twice. After a *Re-plan once more* answer, three more reports raise a new one on
 the latest report. When the latest is answered *Stop planning it*, say so and stop, unless the person asks in this
@@ -682,7 +691,10 @@ start a fresh window.
 **Before the plan ends, wait on every step 1 gap escalation of this session still open**: at the plan gate, with
 QUESTIONs or none; at `ready` on a type with no plan gate; and in a session whose every story step 1 held, where
 nothing else is planned. A gap escalation is waited on nowhere else, since the stories that pass go on without it.
-Say which held stories it waits on, then wait on each open one in turn as "Wait, then read" says, answering a question
+A held story's interview escalations still open, where a product question held it in the middle of its interview
+("The developer interview", "What is asked"), are not waited on in this session: they hold no work in it,
+since the story gets no tasks, and they stay open until a person answers them, as its gap comment says.
+Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on each open gap escalation in turn as "Wait, then read" says, answering a question
 asked of you. On an answer, say it as step 1 says, and wait on the next. With none still open, stop. Its answer goes
 to the PO, not to this plan, so the wait holds no work here: where it ends without an answer (exit 2, 3 or 4, or
 `wait: stop`), say once which escalations stay open and that the PO answers them with `shape-project`, and stop. A

@@ -143,8 +143,8 @@ test('the waiting probe in docs/targets/README.md gives its fake the ref wait-an
   assert.match(read('docs/targets/README.md'), /wait-answer\.mjs --server https:\/\/probe\.test PRB-1 e1/);
 });
 
-test('every interview path keeps the escalation shape: 2 to 5 options, the recommended first', () => {
-  assert.match(interview, /2 to 5 options, the recommended one first/);
+test('every interview path keeps the escalation shape: 2 to 5 options, the pick first', () => {
+  assert.match(interview, /2 to 5 options, your pick first/);
   assert.match(interview, /A decision with more than 5 options is cut to the real ones/);
 });
 
@@ -244,8 +244,8 @@ const partPins = [
   ['the read\'s size: stories only, their own escalations, no comments', 'What is asked', /That is one call a story, sub-issues skipped, and from each you keep only its own `escalations\[\]` \(step 0\), none of its comments/],
   ['the read has no cap, and says why', 'What is asked', /It has no cap: a story left unread is how one decision gets two answers/],
   ['a sibling\'s open question is held on, not asked again', 'What is asked', /A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`/],
-  ['first round: a question\'s comment, then the raise on the issue it is on', 'The first round', /For each, post its comment, the context and what the code shows, then `escalation raise <ref> --json`, `<ref>` the issue it is on/],
-  ['first round: the raise is tied by --comment cN', 'The first round', /\(`escalation\.escalation` in the answer is the `eN`\) with `--comment cN`, 2 to 5 options/],
+  ['first round: a question\'s comment, then the raise on the issue it is on', 'The first round', /For each, post its comment, the context and what the code shows, then `escalation raise <ref> --type clarification --json`, `<ref>` the issue it is on/],
+  ['first round: the raise is tied by --comment cN', 'The first round', /\(`escalation\.escalation` in the answer is the `eN`\) with `--comment cN`, the fields step 0 names, 2 to 5 options/],
   ['first round: --meanwhile says nothing moves until it closes', 'The first round', /--meanwhile "Nothing: no design doc, criteria or tasks until the interview closes\."/],
   ['first round: held questions are posted, naming what they wait on with its ref', 'The first round', /Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them/],
   ['the wait: says once what it waits on', 'Wait, then read', /Say once what you wait on and until when/],
