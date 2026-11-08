@@ -280,6 +280,7 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
 | 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
+| 5 | a question is waiting | not an answer: answer it and wait again on the same escalation, as `PROCESS.md`, "Questions to the human are escalations", says. Nothing else moves |
 
 Where `HARNESS.md` says `wait: stop`, skip the wait and act at once as for exit 2. A person can answer at once or days
 later: the answer is read the same way, and a re-invoke with one still open waits on it again, with no second comment or

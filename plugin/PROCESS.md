@@ -315,7 +315,32 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
   "Wait, then carry on"). `plan-project` waits the same way while its developer interview holds it, on any open
   escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
   and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
-  somewhere else.
+  somewhere else. A question asked of the agent while it waits does not end the wait (the next point).
+- **A question asked of the agent is answered, then the wait starts again.** A person can ask the agent about an open
+  escalation before deciding it, and the wait exits 5 on the question, printing
+  `{"clarification":"qN","question":"…","askedAt":<ms>}`. The orchestrator answers it, never a subagent:
+  1. **Answer from what you know**, reading the code where that settles it, and the questions already answered on
+     that escalation, so the answer agrees with them: `leeway clarification list <ref> <eN> --json`. At most 1,000
+     characters. An answer that changes the options or the advice says so in its text; the escalation itself is not
+     changed.
+  2. **Write it as the role that raised the escalation**: `<role>` is `by.actor.role` of the escalation's entry in
+     `escalations[]` of `leeway issue get <ref> --json` (the entry whose `ref` is `<ref>` and `number` is N), and
+     `<ref>` and `<eN>` are those of the wait.
+
+     ```sh
+     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --answer "…"
+     ```
+
+  3. **Say once in the session** that qN on eN is answered, and until when the new wait runs: "Answered q1 on e2 of
+     DRY-2.1; waiting again until <the time 16 hours from now>."
+  4. **Wait again on the same escalation**, the same command, with 16 hours of its own.
+
+  Nothing else is written: no second escalation and no comment for it. A question is not the answer: do no work
+  that depends on the escalation, and carry on only on exit 0. **If the answer is not written** (the CLI refuses
+  it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
+  would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3
+  otherwise, naming the escalation and the question and saying what the CLI said. A re-invoke waits again and
+  meets the question again.
 - **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
