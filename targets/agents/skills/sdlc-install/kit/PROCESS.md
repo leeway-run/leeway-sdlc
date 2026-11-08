@@ -337,7 +337,7 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
      (run, "Where `run`'s own files go"); in any other skill, a file outside the repo, by absolute path.
 
      ```sh
-     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --stdin answer <file>
+     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --stdin answer < <file>
      ```
 
   3. **Say once in the session** that qN on eN is answered, and until when the new wait runs: "Answered q1 on e2 of

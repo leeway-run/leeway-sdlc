@@ -86,7 +86,7 @@ test('PROCESS.md: on a question the orchestrator answers as the raising role, sa
   assert.match(loop, /Answer from what you know\*\*, reading the code where that settles it, and the questions already answered on that escalation, so the answer agrees with them: `leeway clarification list <ref> <eN> --json`/);
   assert.match(loop, /An answer that changes the options or the advice says so in its text; the escalation itself is not changed\./);
   assert.match(loop, /`<role>` is `by\.actor\.role` of the escalation's entry in `escalations\[\]` of `leeway issue get <ref> --json`/);
-  assert.match(loop, /leeway clarification answer <ref> <eN> <qN> --as <alias>\/<role> --stdin answer <file>/);
+  assert.match(loop, /leeway clarification answer <ref> <eN> <qN> --as <alias>\/<role> --stdin answer < <file>/);
   assert.doesNotMatch(loop, /--answer "/);
   assert.match(loop, /The answer goes in from a file, never inline, since an answer drawn from the code can hold a backtick or a `\$` the shell would run/);
   assert.match(loop, /Say once in the session\*\* that qN on eN is answered, and until when the new wait runs/);
