@@ -31,11 +31,18 @@ const rulesNamed = (text) => mentions(text, LIST);
 // What only a rule-writing install says: the rules' words, the warnings' counts, the push rule, the file they went in.
 const RULE_TALK = /Say before the yes|\bfourteen\b|\bfifteen\b|push rule|missing entr|(on|off) the list|An existing allow-list|\.claude\/settings\.json|16's offer/i;
 
-const guardStep = () => {
-  const bullets = skill.split(/\n(?=- \*\*)/).filter((b) => /^- \*\*16(?:'s offer)?, yes\*\*/.test(b));
-  assert.equal(bullets.length, 1, 'expected one "16, yes" bullet in the writes of step 6');
-  return flat(bullets[0]);
-};
+// The writes of step 6 for question 16: "16, yes" now, "16, yes: merge" and "16's offer, yes" in today's text.
+const guardBullets = () => skill.split(/\n(?=- \*\*)/).filter((b) => /^- \*\*16(?:'s offer)?, yes\*\*/.test(b)).map((b) => flat(b.split('\n### ')[0]));
+const guardStep = () => guardBullets().at(-1);
+
+// The closing paragraph, up to the shape of the report that follows it.
+const endingStart = skill.indexOf('**Then state what this install did not settle**');
+const closing = flat(skill.slice(endingStart, skill.indexOf('Write each item for a reader', endingStart)));
+
+// Words that only a permission list needs, on top of RULE_TALK. A negator directly before one excuses it. Excluded, because
+// they are not about a list: detection's "entry point" (a build file) and "which git allows" (a branch name with a `'`).
+const PERMISSION_WORDS = [/\bpermissions?\b/gi, /\ballow(?:ed|s)?\b/gi, /settings\.json|Claude settings/gi, /\bentr(?:y|ies)\b/gi];
+const permissionWords = (text) => PERMISSION_WORDS.flatMap((term) => mentions(text.replace(/entry points?/gi, '').replace(/which git allows/g, ''), term));
 
 test('TC-1: the install says nothing of a permission rule or allow-list, in the skill or in detection', { skip: 'red-test-TC-1: SKILL.md and detection.md still tell the install to write an allow-list' }, () => {
   assert.deepEqual(rulesNamed(skill), [], 'SKILL.md');
@@ -118,9 +125,40 @@ test('TC-1: detection no longer reads an allow-list, and keeps the guard and whe
   assert.match(text, /Report what you found, and why a hook you found does not count\. Question 16 tells the person the truth by it\./);
 });
 
+test('TC-1: question 16, its yes step, the ending and detection use no permission vocabulary, however it is reworded', { skip: 'red-test-TC-1: question 16, step 6, the ending and detection still say permission, allow, entry, settings.json and `git push`' }, () => {
+  assert.deepEqual(permissionWords(q16.body), [], 'question 16');
+  assert.deepEqual(permissionWords(guardBullets().join(' ')), [], 'the "16, yes" bullet');
+  assert.deepEqual(permissionWords(closing), [], 'the ending');
+  assert.deepEqual(permissionWords(detection), [], 'references/detection.md');
+  assert.deepEqual(mentions(q16.body, /`git push`/g), [], 'a `git push` in question 16');
+});
+
+test('TC-3: question 16 offers only on the three branches of today\'s offer, and a no is "no guard: an unattended run cannot start"', { skip: 'red-test-TC-3: question 16 has the guard-found bullet and a second step, and its no does not say the run cannot start' }, () => {
+  const bullets = [...(' ' + q16.body).matchAll(/ - \*\*([^*]+)\*\*/g)].map((m) => m[1]);
+  assert.deepEqual(bullets, [
+    'Nothing in the way:',
+    'A hook or `core.hooksPath` in the way:',
+    'A `\'` in the integration branch\'s name:',
+  ]);
+  for (const sentence of q16.body.split(/(?<=[.?!]) /).filter((s) => /\bguard (is )?found\b/i.test(s))) {
+    assert.match(sentence, /\b(not|no|never|nothing)\b/i, `a guard found must not ask or offer: ${sentence}`);
+  }
+  assert.match(q16.body, /no guard[^.]*an unattended run cannot start/i);
+});
+
+test('TC-3: the ending keeps "no guard: an unattended run cannot start"', { skip: 'red-test-TC-3: the ending does not say that no guard means an unattended run cannot start' }, () => {
+  assert.match(closing, /no guard[^.]*an unattended run cannot start/i);
+});
+
 // This one passes today and must keep passing: the negative case that a hook in the way is never overwritten.
 test('a hook or core.hooksPath already in the way is never overwritten, and nothing chains to it silently', () => {
   const text = flat(skill);
   assert.match(text, /Never overwrite it and never chain to it silently/);
   assert.match(text, /if anything is now at that path or `core\.hooksPath` is set, write nothing/);
+  const scope = { 'question 16': q16.body, 'the 16 yes step': guardBullets().join(' '), 'detection.md': flat(detection) };
+  for (const [where, body] of Object.entries(scope)) {
+    for (const m of body.matchAll(/overwrit\w*/gi)) {
+      assert.match(body.slice(0, m.index), /\b(never|not)\s+$/i, `${where}: "${body.slice(Math.max(0, m.index - 30), m.index + 20)}" is not directly after a negator`);
+    }
+  }
 });
