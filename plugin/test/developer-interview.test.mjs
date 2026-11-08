@@ -94,7 +94,7 @@ test('AC-6: no design doc while the interview is open', () => {
 });
 
 test('AC-7: a product question stays a gap for the PO', () => {
-  assert.match(interview, /\*\*A product question is not asked here\.\*\* What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO\. Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more, and stop/);
+  assert.match(interview, /\*\*A product question is not asked here\.\*\* What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO\. Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more for the interview, and wait as that step says/);
   assert.match(interview, /Nothing can withdraw an open escalation, so the gap comment names any still open: step 0 reads one as shaping unfinished on a type with no shaped step, and they must be answered too/);
   assert.match(interview, /\*\*A story step 1 held gets no interview until it passes\.\*\* Step 1 runs first, so a product gap and an interview question are never in one round: the gap's escalation is for the PO, and this round is for the developer/);
   assert.match(flat(part('What is asked')), /On a type without `shape` there is no PO: decide it with the human by escalation, as step 3 says, in this round, and say in its comment that it is a product decision/);
@@ -128,12 +128,13 @@ test('skipping: nothing open is the one way past it, tied to "Does this need pla
 });
 
 test('the contract and the harnesses say the interview waits', () => {
-  assert.match(read('plugin/PROCESS.md'), /`plan-project` waits the same way while its developer interview holds it, on any open escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn\. \*\*Every other skill stops the turn\*\*/);
+  assert.match(read('plugin/PROCESS.md'), /\*\*Then wait for the answer, in every skill that raises\*\*: `run`, `plan-project`, `shape-project`, `sync-repo`, `sdlc-install` and `sdlc-tune`\./);
+  assert.doesNotMatch(read('plugin/PROCESS.md'), /Every other skill stops the turn/);
   assert.match(read('plugin/PROCESS.md'), /Before the design doc it interviews the developer in rounds of escalations/);
-  assert.match(read('plugin/HARNESS.md'), /`plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it/);
+  assert.match(read('plugin/HARNESS.md'), /`plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it\. Every other skill that raises an escalation starts and reads its waits the same way/);
   assert.match(read('scripts/targets.mjs'), /plan-project\\`'s developer interview does not wait either/);
   assert.match(read('targets/agents/skills/sdlc-install/kit/harness/codex.md'), /`plan-project`'s developer interview does not wait either/);
-  assert.match(read('docs/targets/README.md'), /`plan-project`'s developer interview uses the same script and follows the same line\./);
+  assert.match(read('docs/targets/README.md'), /`plan-project`'s developer interview uses the same script and follows the same line, and so does every other skill that raises an escalation \(`PROCESS\.md`, "Questions to the human are escalations"\)\. Where a skill stops instead of waiting, nobody is listening, so a question a person asks of the agent on that escalation is handed back to them after 30 minutes\./);
   assert.match(read('targets/agents/HARNESS.md'), /`plan-project`'s developer interview stops the same way/);
 });
 
@@ -173,7 +174,7 @@ test("in this skill an issue's escalations are its own, read before step 0's tab
   assert.match(step0, /A sub-issue's open one, on a re-plan, is `run`'s and holds nothing here: name it in the session, and do not wait on it/);
   assert.match(step0, /with a body and no open escalation: /);
   assert.match(step0, /With no body, or an escalation still open: \*\*say shaping is not finished/);
-  assert.match(step0, /an open escalation with no answer means do not proceed/);
+  assert.match(step0, /An open escalation with no answer means do not proceed/);
   assert.match(flat(part('Where it stands, from Leeway alone')), /`comments` and `escalations\[\]`, each issue's own \(step 0\)/);
 });
 
@@ -262,8 +263,9 @@ const partPins = [
 ];
 for (const [name, heading, pattern] of partPins) test(name, () => assert.match(flat(part(heading)), pattern));
 
-test("step 0's exception: the interview waits where every other question stops the turn", () => {
-  assert.match(step0, /then you stop the turn/);
-  assert.match(step0, /it is a Leeway escalation on the story, and then you stop the turn; one that stories share goes on their Plan record\./);
-  assert.match(step0, /\*\*The one exception to stopping is "The developer interview", which waits on its escalations first\*\* and stops the turn where that wait ends with no answer/);
+test("step 0: every escalation is waited on, the interview's no longer the one exception", () => {
+  assert.doesNotMatch(step0, /then you stop the turn/);
+  assert.match(step0, /it is a Leeway escalation on the story, and then you wait for its answer; one that stories share goes on their Plan record\./);
+  assert.doesNotMatch(step0, /The one exception to stopping/);
+  assert.match(step0, /\*\*Every escalation this skill raises is waited on\*\*, as "Wait, then read" \(under "The developer interview"\) says/);
 });

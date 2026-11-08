@@ -34,11 +34,14 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
   stop and say an issue is needed), then one escalation on it with `--comment cN`, 2 to 5 options
   `{label, argument}` (label at most 60 characters, argument at most 1,000, question at most 500), the
   pre-filled option first. Raise it with `--json` and **note the id it returns** (`escalation.escalation`:
-  `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **stop the turn**. On
-  resume read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number` is the noted
-  id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it is the
-  yes option. No answer there, or an answer only on another escalation, is "not yet": write nothing and stop
-  again.
+  `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **wait on it**, as `run`
+  does (`run`, "Wait, then carry on", with this skill in place of `run`), answering a question asked of you and
+  waiting again (exit 5); wait even with the person at the terminal, since only the escalation's answer is one. On
+  its answer, or on resume, read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number`
+  is the noted id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it
+  is the yes option, and go on from the step that asked. No answer there, or an answer only on another escalation,
+  is "not yet": write nothing. On any exit but 0 and 5, or where `HARNESS.md` says `wait: stop`, stop the turn as
+  run's table says, naming the issue and the escalation.
 
   **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
   question, merge them into one, or hold the dependent one for the next round. Independent questions go out

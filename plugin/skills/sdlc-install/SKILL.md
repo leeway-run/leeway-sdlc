@@ -33,7 +33,20 @@ server secret is written to any file, and none is shown in the transcript.**
 `.sdlc/PROCESS.md` or contract says that questions go to the human as Leeway escalations (the Leeway repo
 does), do not prompt in the terminal: raise each interview question as an escalation on the install's issue
 (the ref the human gave when invoking this skill; with none, stop and say that an issue is needed), with the
-pre-filled answer as the first option and 2 to 5 options in all, and stop the turn until the round is answered.
+pre-filled answer as the first option and 2 to 5 options in all, and wait until the round is answered. Raise with
+`--json` (`escalation.escalation` is the `eN`) and wait on each open one in turn, as `run` does (`run`, "Wait, then
+carry on", for the wait and its exits; `PROCESS.md`, "Questions to the human are escalations"), answering a
+question asked of you and waiting again (exit 5). Wait even when the person is at the terminal: they answer on the
+escalation, and a reply typed in the terminal is not an answer. **On every answer, carry on as the interview's order
+says**: raise the next round, the questions that waited on the answers now in ("Rounds", below), and once the
+answers a step needs are all in, take that step (step 5 writes the process once 2 to 5 are answered, question 16 is
+asked against its read-back, step 6's plan once every one is). On any exit but 0 and 5, or where `HARNESS.md` says
+`wait: stop`, stop the turn, naming the issue, the escalations and why (exit 2: no answer by the deadline; 3: Leeway
+did not answer; 4: run `leeway login --server <server>`; 1 or any other: a bug in this run), and say what a re-invoke
+does. **A re-invoke does not resume yet**: this skill has no resume path. Re-invoked while an escalation of its
+interview on that issue is open (`<cli> issue get <ref> --json`, `escalations[]`), it asks nothing again, in the terminal or by escalation, and writes nothing: it names
+the open escalations, says they need answering on the issue, and stops. Once none is open, a re-invoke starts the
+interview over from step 1, and the answers already on the issue are not read back.
 Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
 sentence or two) at most 1,000, and the question at most 500.
 

@@ -46,7 +46,10 @@ wait that blocks nothing, such as a sub-issue run's debt proposal ("Land the tas
 posts what the path posts, says which escalation on which issue it stopped on, and stops the turn. The escalation and
 any `# Run status` comment stay, and re-invoking `run` once it is answered resumes where there is work left to
 resume (run, "Land the task", step 5). `plan-project`'s developer interview does not wait either: it stops the turn
-the same way, and re-invoking `plan-project` once it is answered resumes it.
+the same way, and re-invoking `plan-project` once it is answered resumes it. Nor does any other skill that raises
+one (`PROCESS.md`, "Questions to the human are escalations"): each stops the turn the same way. Nobody is listening
+once a skill stops, so a question a person asks of the agent on its escalation is handed back to them after 30
+minutes.
 
 ## Counting tokens
 

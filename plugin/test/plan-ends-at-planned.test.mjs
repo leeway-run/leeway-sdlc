@@ -127,7 +127,7 @@ test('each QUESTION is a top-level comment of its own, and a report\'s QUESTIONs
 
 test('answered QUESTIONs are applied before the move, and the application is a reply on the report', () => {
   const questions = section(skill, '### The QUESTIONs');
-  assert.match(questions, /Say in the session, in this order: answer every QUESTION, run plan-project to apply the answers, then move the story to `ready`\. `run` refuses the story until they are applied\./);
+  assert.match(questions, /Say in the session, in this order: answer every QUESTION; this session applies the answers as they come \(if it has ended, run plan-project to apply them\); then move the story to `ready`\. `run` refuses the story until they are applied\./);
   assert.match(questions, /\*\*reply to the report\*\* \(`comment add <story> --parent cN --stdin body`\) with a body opening `# QUESTIONs applied`/);
   assert.match(questions, /That reply is what makes them applied\./);
   assert.match(questions, /move nothing, so the story stays where it was, at the plan gate or at `ready`\./);
@@ -150,8 +150,8 @@ test('returned and three or more RETURNs count only the reports since the latest
   const gate = section(skill, '### The QUESTIONs');
   assert.match(gate, /\*\*Three RETURNs mean the story is wrong, not the plan\.\*\* Step 0 counts them, before any re-planning: three or more coverage reports in its window\. Then stop re-planning\./);
   assert.match(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
-  assert.match(gate, /When it has no `shape`, \*\*stop and raise one escalation on the story\*\*, tied to the latest report with `--comment cN`, asking the person how to go on/);
-  assert.match(gate, /how do we go on\?"\* The reviewer is tracing a story that does not say what anyone means by it\. Give two options, each naming what plan-project does next: - \*Re-plan once more\*: the next plan-project re-plans it\. The answer starts a fresh window \(step 0\), so the count starts again\. - \*Stop planning it\*: the next plan-project says the story is stopped and stops, writing and raising nothing\. To plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again\. To drop it, they close it\./);
+  assert.match(gate, /When it has no `shape`, \*\*raise one escalation on the story\*\*, tied to the latest report with `--comment cN`, asking the person how to go on/);
+  assert.match(gate, /how do we go on\?"\* The reviewer is tracing a story that does not say what anyone means by it\. Wait on it \(step 0\)\. Give two options, each naming what plan-project does next: - \*Re-plan once more\*: plan-project re-plans it, this session on the answer or the next one\. The answer starts a fresh window \(step 0\), so the count starts again\. - \*Stop planning it\*: plan-project says the story is stopped and stops, this session on the answer or the next one, writing and raising nothing\. To plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again\. To drop it, they close it\./);
   assert.doesNotMatch(gate, /moves it on by hand/);
   assert.match(gate, /The same escalation is not raised twice\. After a \*Re-plan once more\* answer, three more reports raise a new one on the latest report\./);
   assert.match(gate, /When the latest is answered \*Stop planning it\*, say so and stop, unless the person asks in this session to plan the story again\. Then post a comment on the story opening `# Re-plan requested`, saying it was posted because the person asked and naming who asked, and carry on from step 0: the reports after that comment start a fresh window\./);
@@ -178,9 +178,9 @@ test('PROCESS.md tells the two gates apart, and records the gate as a step', () 
   assert.match(shapingPart, /\*\*Planning starts at the plan step\.\*\* .* `plan-project` starts only there, or where shaping ends on a type with no shaped step: from `shape` or from no step at `backlog`, setting the plan step itself, since the approval escalation was the approval\./);
   assert.match(shapingPart, /On a story still at the shaped step it says the story waits on the product owner and stops, writing nothing\. A story it sends gaps back on goes back to `shape`\./);
   const gatePart = section(contract, '## The plan gate');
-  assert.match(gatePart, /posts each QUESTION as its own top-level comment opening `# QUESTION <n> of c<report>` \(`c<report>` the report's first comment\) with one escalation on it, and stops with the story at the plan gate\. A report's QUESTIONs are the escalations on those comments\./);
+  assert.match(gatePart, /posts each QUESTION as its own top-level comment opening `# QUESTION <n> of c<report>` \(`c<report>` the report's first comment\) with one escalation on it, waits on them, and stops with the story at the plan gate\. A report's QUESTIONs are the escalations on those comments\./);
   assert.match(gatePart, /No escalation asks for the gate decision: \*\*the decision is a person's move\.\*\* Moving the story from the plan gate to `ready` passes it; moving it back to the plan step returns it to planning\./);
-  assert.match(gatePart, /With QUESTIONs, the order is: answer them, run `plan-project` to apply the answers \(it replies `# QUESTIONs applied` to the report\), then move the story to `ready`\./);
+  assert.match(gatePart, /With QUESTIONs, the order is: answer them, let `plan-project` apply the answers \(the session waiting on them does, or a re-invoke once it has ended; it replies `# QUESTIONs applied` to the report and moves nothing\), then move the story to `ready`\./);
   assert.match(gatePart, /it refuses a story with no coverage report, one still at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied\./);
   assert.match(section(contract, '## Records'), /\| plan gate \| .* each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` \(`c<report>` the report's first comment\), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it \|/);
 });
