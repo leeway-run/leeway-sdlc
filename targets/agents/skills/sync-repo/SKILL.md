@@ -32,10 +32,17 @@ the only question held for a later round is the contract block's, while `filing-
 round drops what an answer settled.
 
 1. Per differing copy, `comment add <issue> --stdin body` with the diff and your guess at who changed it,
-   then `escalation raise <issue> --comment cN` with a question that **begins with the copy's name**
-   (for example `Sync .sdlc/templates/TASK.md to 0.1.0:`), 2 to 5 options (take, keep, merge, each with its
-   argument), and `--meanwhile` saying nothing is written.
-2. Raise every one of them in the same turn, with `--json` (`escalation.escalation` is the `eN`), then wait on
+   then raise an escalation on `<issue>`, `"type": "clarification"` and `"comment"` that comment's `cN`, with a
+   question that **begins with the copy's name** (for example `Sync .sdlc/templates/TASK.md to 0.1.0:`), 2 to 5
+   options (take, keep, merge, each with its argument saying what is written if it is picked), and `"meanwhile"`
+   saying nothing is written. Its fields are those of `PROCESS.md`, "Questions to the human are escalations", written
+   as JSON to a file outside the repo, by absolute path, and raised with
+   `<raise> --server <server> --as <alias>/agent <issue> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`, "Running
+   the plugin's scripts", names it), never on a command line: the context says in plain lines what differs, each
+   change with the lines it touches and your guess at who made it, never only the comment's `cN`; `"tradeoff"` what
+   taking or keeping loses; `"advice"` your pick and why, that option first and marked `"suggested": true`, or no
+   pick and why, with none marked. The other questions this skill asks are raised the same way.
+2. Raise every one of them in the same turn (`escalation.escalation` in what `<raise>` prints is the `eN`), then wait on
    each open one in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`;
    `PROCESS.md`, "Questions to the human are escalations"), answering a question asked of you and waiting again
    (exit 5). On every answer, carry on as "On resume" says, writing nothing twice. On any exit but 0 and 5, or where

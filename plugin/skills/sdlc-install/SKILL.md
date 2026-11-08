@@ -33,8 +33,8 @@ server secret is written to any file, and none is shown in the transcript.**
 `.sdlc/PROCESS.md` or contract says that questions go to the human as Leeway escalations (the Leeway repo
 does), do not prompt in the terminal: raise each interview question as an escalation on the install's issue
 (the ref the human gave when invoking this skill; with none, stop and say that an issue is needed), with the
-pre-filled answer as the first option and 2 to 5 options in all, and wait until the round is answered. Raise with
-`--json` (`escalation.escalation` is the `eN`) and wait on each open one in turn, as `run` does (`run`, "Wait, then
+pre-filled answer as the first option and 2 to 5 options in all, and wait until the round is answered. Each is
+raised with `<raise>` (`escalation.escalation` in what it prints is the `eN`); wait on each open one in turn, as `run` does (`run`, "Wait, then
 carry on", for the wait and its exits; `PROCESS.md`, "Questions to the human are escalations"), answering a
 question asked of you and waiting again (exit 5). Wait even when the person is at the terminal: they answer on the
 escalation, and a reply typed in the terminal is not an answer. **On every answer, carry on as the interview's order
@@ -47,15 +47,22 @@ does. **A re-invoke does not resume yet**: this skill has no resume path. Re-inv
 interview on that issue is open (`<cli> issue get <ref> --json`, `escalations[]`), it asks nothing again, in the terminal or by escalation, and writes nothing: it names
 the open escalations, says they need answering on the issue, and stops. Once none is open, a re-invoke starts the
 interview over from step 1, and the answers already on the issue are not read back.
-Every option is `{label, argument}`: the label at most 60 characters, the argument (why this option, in a
-sentence or two) at most 1,000, and the question at most 500.
+Every option is `{label, argument}`: the label at most 60 characters, the argument (what is set up if it is picked,
+in a sentence or two) at most 1,000, and the question at most 1,000. Each escalation carries the fields of
+`PROCESS.md`, "Questions to the human are escalations", written as JSON to a file outside the repo, by absolute path,
+and raised with `<raise> --server <server> --as <alias>/agent <ref> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`,
+"Running the plugin's scripts", names it), never on a command line: `"type": "clarification"`; the context saying in
+plain lines what you found that the pre-filled answer comes from (the file, the remote, the product it matched), never
+only a ref; `"tradeoff"` where the options cost something different; and `"advice"` saying why the pre-filled answer,
+which is your pick, marked `"suggested": true`. With no pre-filled
+answer, no option is marked, and Advice says there is no pick and why.
 
 - **Yes/no questions** (6, 7, 8, 10, 11, 13, 14, 15, 16, question 16's offer and any "Right?"): two options, the pre-filled one
   first.
 - **Question 1** with more than five candidate products: the top four by match, plus "Another, named in the
   note" as the fifth.
 - **Question 9** is a batch of yes/no lines: raise one escalation per ambiguous mapping, or post the batch as
-  a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `--comment cN`
+  a comment first (`comment add <ref> --stdin body`) and raise one escalation on it with `"comment"` its `cN`
   (one open escalation per comment).
 - **Rounds** (`PROCESS.md`, "Questions to the human are escalations"): each round is every question not yet answered that waits on no open answer, raised
   together, not rationed. What waits: questions 2 and 12 on question 1 (the product they read); question 10 on which agent this is, where that is asked (it names its instructions file); question 13 on 10

@@ -334,10 +334,13 @@ orchestrator posts each body as its own comment, then your verdict naming them.
   and `Disputes` only the findings your prompt lists as `open` or `addressed`.
 - **Raises:** this round's findings, `F1, F2, …`. A follow-up row is not raised.
 - **Escalates:** `none`, or a block — **Concerns** (the `F<n>`, or `the round as a whole`),
-  **Question** (one sentence, at most 500 characters), **Options** (2 to 5, each a label of at most 60
-  characters and an argument of at most 1,000, the recommended one first with its argument opening
-  `Recommended:` and saying why, or `No recommendation:` and why where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
-  a human decision rather than another round. Write it as the human will read it.
+  **Type** (`blocker` when the task cannot go on without the answer, `clarification` when it can), **Question**
+  (one sentence), **Context** (the finding or dispute behind it in plain lines, never only its `F<n>` or `cN`),
+  **Trade-off**, **Advice** (your pick and why, or that you have none and why), **Options** (2 to 5, each a label of
+  at most 60 characters and an argument saying what happens if it is picked; your pick first, marked
+  `(suggested)`, or none marked where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
+  a human decision rather than another round. Every text at most 1,000 characters. Write it as the human will read
+  it, deciding from the escalation alone.
 
 ## Verdict rules
 

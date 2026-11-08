@@ -109,10 +109,10 @@ const RULES = TEMPLATES.filter((r) => r.startsWith('Bash(')).flatMap(expand)
 test('the list names the verbs of a run and nothing more', () => {
   assert.deepEqual(LEEWAY, [
     'issue get', 'issue list', 'issue update', 'issue create', 'comment add', 'iteration record', 'spend record',
-    'escalation raise', 'escalation list', 'clarification answer', 'clarification list', 'review get', 'project get', 'project link', 'process get',
+    'escalation list', 'clarification answer', 'clarification list', 'review get', 'project get', 'project link', 'process get',
   ])
   assert.deepEqual(GIT, ['add', 'commit', 'push', 'fetch', 'merge', 'merge-base', 'worktree', 'branch -d', 'ls-remote', 'rev-parse', 'diff', 'status', 'show', 'log', 'blame'])
-  assert.deepEqual(spansIn(REST), ['.sdlc/CONFIG.md', 'node -e', 'gh pr create', 'gh pr view', '<wait-answer>', '<session-tokens>', '.worktrees/', 'run', 'run'])
+  assert.deepEqual(spansIn(REST), ['.sdlc/CONFIG.md', 'node -e', 'gh pr create', 'gh pr view', '<wait-answer>', '<session-tokens>', '<raise>', '.worktrees/', 'run', 'run'])
   assert.match(REST, /the lane and setup commands/)
   assert.match(REST, /reads of this plugin's own files/)
 })
@@ -127,6 +127,7 @@ test('the table the install writes holds these rules and no other', () => {
     'Bash(gh pr view *)',
     'Bash(leeway-sdlc-wait-answer *)',
     'Bash(leeway-sdlc-session-tokens *)',
+    'Bash(leeway-sdlc-raise *)',
     'Edit(/.worktrees/**)',
     'Read(~/.claude/plugins/cache/*/leeway-sdlc/**)',
   ])
@@ -176,7 +177,7 @@ test('the Read rule reaches the plugin files run reads first, and nothing beside
 })
 
 test('the verbs a run does not call miss every rule, so they prompt', () => {
-  for (const verb of ['escalation answer', 'issue delete', 'product delete', 'process update', 'some new-verb']) {
+  for (const verb of ['escalation raise', 'escalation answer', 'issue delete', 'product delete', 'process update', 'some new-verb']) {
     assert.ok(!LEEWAY.includes(verb), verb)
     assert.ok(!allowed(RULES, `${CLI} --server ${SERVER} ${verb} X --as a/agent --json`), `${verb} is allowed`)
   }
@@ -187,11 +188,11 @@ test('the verbs a run does not call miss every rule, so they prompt', () => {
 
 // ---- Every call the plugin prints where a run reads it: run, its two templates, PROCESS.md and both agent files.
 // A sh fence is commands. A fence with no language holds "$ " lines and placeholders. A markdown fence is an example of a
-// comment, so it reads as prose, and its "$ " lines still count. Any other fence is one this cannot read, so it fails.
+// comment, so it reads as prose, and its "$ " lines still count. A json fence is a file's content, an escalation's fields, never run. Any other fence is one this cannot read, so it fails.
 // A blank line ends a paragraph, so a stray backtick in prose spoils no more than that.
 // A line of prose can be a command with no backticks: an indented block, or a line of an example.
 const LINE_PROGRAM = /^(?:[A-Z_]+=\S* )?(?:git|leeway|gh|rm|mv|cp|sed|mkdir|chmod|touch|npm|npx|pnpm|yarn|curl|xargs|node|python3?|bash|sh|cat|env)\s/
-const FENCES = ['', 'sh', 'bash', 'markdown']
+const FENCES = ['', 'sh', 'bash', 'markdown', 'json']
 const parse = (text) => {
   const found = { shell: [], dollar: [], other: [], lines: [], unread: [] }
   const prose = []
@@ -208,6 +209,7 @@ const parse = (text) => {
       else if (/^\s*\$ /.test(line)) found.dollar.push(line.trim().slice(2))
       else if (fence.lang === 'sh' || fence.lang === 'bash') found.shell.push(line.trim())
       else if (fence.lang === 'markdown') asProse(line, true)
+      else if (fence.lang === 'json') continue
       else if (!fence.lang) found.other.push(line.trim())
     } else if (mark) {
       fence = { ticks: mark[1].length, lang: mark[2] }
@@ -241,7 +243,7 @@ test('the two sections the scan leaves out name these spans and no other', () =>
     'leeway-guard', 'git -C <worktree> add', 'Head sha', 'pending',
   ])
   assert.deepEqual(spansIn(run.slice(list[0], list[1])), [
-    'HARNESS.md', ...LEEWAY, 'escalation answer', 'issue delete', 'product delete', 'process update', 'leeway-guard', 'PROCESS.md',
+    'HARNESS.md', ...LEEWAY, 'escalation raise', '<raise>', 'escalation answer', 'issue delete', 'product delete', 'process update', 'leeway-guard', 'PROCESS.md',
     'git -C <absolute path> <verb>', ...GIT, ...spansIn(REST),
     'node -e', 'leeway escalation answer', 'leeway-guard', 'gh pr merge', 'main', 'main',
   ])
@@ -256,6 +258,7 @@ const fill = (call) =>
     .replace(/^<cli> --server <server>/, `${CLI} --server ${SERVER}`)
     .replace(/^<wait-answer>/, 'leeway-sdlc-wait-answer')
     .replace(/^<session-tokens>/, 'leeway-sdlc-session-tokens')
+    .replace(/^<raise>/, 'leeway-sdlc-raise')
     .replace(/<(lane|gate command|setup command)>/g, `${LANE} x`)
     .replace(/<[^<>]+>/g, 'x')
 
@@ -347,7 +350,7 @@ const NAMED = [
   /^(npm test|node scripts\/lint-docs\.mjs)$/, // an invented repo's lane, in a template's example
 ]
 // Any other span of two words or more whose first word could be a program is a call, so an unknown program fails.
-const PROGRAM = /^(?:[a-z][\w.+-]*|[.\/$(]\S*|[A-Za-z_]+=\S*|<cli>|<wait-answer>|<session-tokens>)\s/
+const PROGRAM = /^(?:[a-z][\w.+-]*|[.\/$(]\S*|[A-Za-z_]+=\S*|<cli>|<wait-answer>|<session-tokens>|<raise>)\s/
 const NOT_CALLS = new RegExp(`^(?:${[
   'issue', 'comment', 'iteration', 'spend', 'escalation', 'review', 'project', 'process', 'dependency', 'pr', 'product', // a Leeway verb with no program: the next test
   'merge-base', 'rev-parse', 'status', 'worktree', 'branch', // a git verb named on its own
@@ -458,6 +461,7 @@ test('the rest of what run runs matches: the scripts, the gh calls, the counting
     `leeway-sdlc-wait-answer --server ${SERVER} X e1 -- ${CLI}`,
     'leeway-sdlc-session-tokens --subagent-id abc',
     'leeway-sdlc-session-tokens --this-session --from 1 --to 2',
+    `leeway-sdlc-raise --server ${SERVER} --as a/agent X /r/.worktrees/.run/x-fields.json -- ${CLI}`,
     `gh pr create --draft --base main --head plan --title "x" --body-file /r/.worktrees/.run/b.md`,
     'gh pr view x --json number,state,url',
     "node -e 'console.log(Date.now())'",
@@ -488,12 +492,12 @@ test('a git verb with nothing after it misses, as the agents are told', () => {
 })
 
 // ---- The plugin's bin/.
-for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer.mjs'], ['leeway-sdlc-session-tokens', 'session-tokens.mjs']]) {
+for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer.mjs'], ['leeway-sdlc-session-tokens', 'session-tokens.mjs'], ['leeway-sdlc-raise', 'raise.mjs']]) {
   test(`${name} runs ${script} and hands back its exit code`, { skip: process.platform === 'win32' }, () => {
     const bin = join(ROOT, 'plugin', 'bin', name)
     assert.ok(statSync(bin).mode & 0o111, 'not executable')
     const usage = spawnSync(bin, ['--nonsense'], { encoding: 'utf8' })
-    assert.equal(usage.status, 1, usage.stderr)
+    assert.equal(usage.status, name === 'leeway-sdlc-raise' ? 2 : 1, usage.stderr)
     assert.match(usage.stderr, new RegExp(script.replace('.mjs', '')))
   })
 }
@@ -511,7 +515,7 @@ test('leeway-sdlc-wait-answer exits 0 with the answer, through the bin wrapper',
   }
 })
 
-for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer'], ['leeway-sdlc-session-tokens', 'session-tokens']]) {
+for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer'], ['leeway-sdlc-session-tokens', 'session-tokens'], ['leeway-sdlc-raise', 'raise']]) {
   test(`${name} reached through a symlink, absolute or relative, still finds its script`, { skip: process.platform === 'win32' }, () => {
     const dir = mkdtempSync(join(tmpdir(), 'allow-list-'))
     try {
@@ -522,7 +526,7 @@ for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer'], ['leew
         const link = join(sub, target === bin ? 'absolute' : 'relative')
         symlinkSync(target, link)
         const r = spawnSync(link, ['--nonsense'], { encoding: 'utf8' })
-        assert.equal(r.status, 1, r.stderr)
+        assert.equal(r.status, name === 'leeway-sdlc-raise' ? 2 : 1, r.stderr)
         assert.match(r.stderr, new RegExp(script))
         assert.doesNotMatch(r.stderr, /MODULE_NOT_FOUND/)
       }
@@ -537,10 +541,12 @@ test('other agents run the scripts from .sdlc/kit, where the build copies them, 
     const text = harness(t, '0.0.0', 'notice')
     assert.match(text, /\*\*wait-answer:\*\* `node \.sdlc\/kit\/scripts\/wait-answer\.mjs`/, t.id)
     assert.match(text, /\*\*session-tokens:\*\* `node \.sdlc\/kit\/scripts\/session-tokens\.mjs`/, t.id)
+    assert.match(text, /\*\*raise:\*\* `node \.sdlc\/kit\/scripts\/raise\.mjs`/, t.id)
     assert.match(flat(text), /UNVERIFIED: how .* matches a rule against a command with flags/, t.id)
   }
   assert.throws(() => statSync(join(ROOT, 'targets', 'agents', 'bin')))
   assert.ok(statSync(join(ROOT, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'scripts', 'wait-answer.mjs')))
+  assert.ok(statSync(join(ROOT, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'scripts', 'raise.mjs')))
 })
 
 // ---- The prose. Each is checked by deleting it in a copy: see the brief.
@@ -548,7 +554,7 @@ export const PINS = [
   // Claude Code's rule forms, and what its harness tells the person before the yes.
   ['plugin/HARNESS.md', '`Bash(<cli> --server <server> <verb> *)`'],
   ['plugin/HARNESS.md', '| a git verb | `Bash(git -C * <verb> *)`, for example `Bash(git -C * commit *)` |'],
-  ['plugin/HARNESS.md', '`Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)`'],
+  ['plugin/HARNESS.md', '`Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)`, `Bash(leeway-sdlc-raise *)`'],
   ['plugin/HARNESS.md', '`Edit(/.worktrees/**)`, which also covers the `Write` tool'],
   ['plugin/HARNESS.md', "so a call with flags before the verb, or with no `--server`, misses and prompts"],
   ['plugin/HARNESS.md', 'so start the session at the repo root'],
@@ -577,6 +583,7 @@ export const PINS = [
   ['plugin/HARNESS.md', "claude.ai and Cowork don't install a plugin with a top-level `bin/`"],
   ['plugin/HARNESS.md', '**wait-answer:** `leeway-sdlc-wait-answer`'],
   ['plugin/HARNESS.md', '**session-tokens:** `leeway-sdlc-session-tokens`'],
+  ['plugin/HARNESS.md', '**raise:** `leeway-sdlc-raise`'],
   ['README.md', "claude.ai and Cowork don't install a plugin that has one"],
   // The install says it before the yes.
   ['plugin/skills/sdlc-install/SKILL.md', '**Before the yes, tell the person what it approves and what it leaves open**'],
@@ -662,7 +669,7 @@ export const PINS = [
   ['plugin/skills/run/SKILL.md', '**Every call is printed verb first**'],
   ['plugin/skills/run/SKILL.md', "**Where `run`'s own files go.**"],
   ['plugin/skills/run/SKILL.md', 'goes in `.worktrees/.run/` of the primary checkout, named after the ref and passed by absolute path'],
-  ['plugin/skills/run/SKILL.md', 'Any other verb prompts: `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later CLI adds.'],
+  ['plugin/skills/run/SKILL.md', 'Any other verb prompts: `escalation raise` (a run raises through `<raise>`), `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later CLI adds.'],
   ['plugin/skills/run/SKILL.md', 'An improvised command, one an agent makes up that is not on the list, still prompts'],
   ['plugin/skills/run/SKILL.md', '`node -e` and the lane commands can run anything, including `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator'],
   ['plugin/skills/run/SKILL.md', 'A rule stops the call an agent ordinarily writes, not a determined one.'],

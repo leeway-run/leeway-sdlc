@@ -4,7 +4,9 @@
 
 The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
 of an approval question. **0.3.0 needs a Leeway server with the process model that allows two `gate` steps in a
-type, and no deployed server has it yet** (see *Known limits*).
+type, and no deployed server has it yet** (see *Known limits*). **It also needs one with LWY-159's escalation fields**
+(type, context, trade-off and advice): on an older server every escalation the plugin raises is refused, and the
+skill stops and says so.
 
 - **New names (LWY-114).** `shape-work` is now `shape-project`, and `plan-work` is now `plan-project`. `run-task`
   and `run-story` are one skill, `run`, which takes any ref. On a sub-issue it runs one task; on an issue it runs
@@ -57,6 +59,20 @@ type, and no deployed server has it yet** (see *Known limits*).
   adds the product process, an issue's `type` and `step`, `process get`, and `--type` and `--step`. LWY-125 names
   every stage as a step in the default presets and allows two `gate` steps per type. A new product gets
   `maintained`, stored at version 1, and a product with no stored process reads `mvp` at version 0.
+- **Every skill waits for its answer (LWY-160).** `shape-project`, `plan-project`, `sync-repo`, `sdlc-install` and
+  `sdlc-tune` now wait on the escalations they raise, as `run` does, instead of ending the turn, and carry on when
+  you answer. They still stop when nobody answers within about 16 hours, when Leeway does not answer, or when it
+  asks for `leeway login`.
+- **Ask the agent before you decide (LWY-160).** A question you ask the agent on an open escalation gets an answer
+  in the same session, and the agent then goes back to waiting. A question is not a decision: the agent does
+  nothing that depends on the escalation until it is answered.
+- **Escalations you can decide from (LWY-160).** Every escalation the plugin raises carries a type (blocker,
+  clarification, debt or nit), the context behind the question in plain lines rather than a pointer to a comment,
+  the trade-off, and the agent's advice. Its pick is the first option, marked as suggested, instead of an argument
+  opening "Recommended:". Where the agent has no pick it says so in the advice and marks nothing. `shape-project`
+  still suggests nothing. Each is raised from a file of its fields by a new script, `leeway-sdlc-raise`, so a
+  backtick, a `$` or an apostrophe quoted from the code reaches Leeway as written. **These need a Leeway server with
+  LWY-159**: on an older one the CLI refuses the new flags, and the skill stops and says so.
 
 ### Upgrading a repo
 
@@ -98,6 +114,11 @@ upgrading:**
   `.gemini/agents/`, `.grok/agents/` or `.opencode/agents/`. The release changed all three: the implementer and the
   reviewer name the friction project, and the divergence reviewer names `plan-project`. sync-repo asks about each
   one on its own, and a `Kept` row on one is asked about again.
+- **Re-run `sdlc-install` for unattended runs (LWY-160).** An allow-list written before this release has no
+  `clarification answer`, `clarification list` or `leeway-sdlc-raise`, so an unattended run prompts, and stops, the
+  first time it raises an escalation or someone asks the agent a question. Re-running `sdlc-install` adds them. The
+  `escalation raise` rule an older list has now matches nothing a run prints: it is harmless, and the install reports
+  it as dead.
 - **By hand, if you want the new words.** sync-repo never compares the installed `.sdlc/CONFIG.md` (outside
   `## Repo copies`) or the contract docs. A 0.2.x `.sdlc/CONFIG.md` still names `run-task` and `run-story` and says
   "before a story merges", and `EVIDENCE-STANDARD.md` still says "task". Edit them to `run`, "an issue" and

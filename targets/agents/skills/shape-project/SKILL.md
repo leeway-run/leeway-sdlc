@@ -53,14 +53,23 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
 
 **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question to the PO is never a terminal
 question: it is a Leeway escalation on the story, and then you wait for its answer (`PROCESS.md`, "Questions to the
-human are escalations"). Post the context first as a comment (`comment add <ref> --stdin body`), then
-`escalation raise <ref> --question "<at most 500 characters>" --options '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
+human are escalations"). Post the context first as a comment (`comment add <ref> --stdin body`), then write the
+escalation's fields as JSON to a file outside the repo, by absolute path, and raise it with `<raise> --server <server>
+--as <alias>/agent <ref> <fields file> -- <cli>`, `<raise>` being the command `HARNESS.md`, "Running the plugin's
+scripts", names. No field goes on a command line:
+
+```json
+{"type":"clarification","question":"<at most 1,000 characters>","context":"<what exists today in that area and what is unclear, in plain lines>","tradeoff":"<what each answer costs, where you can say it>","options":[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"},{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"}],"meanwhile":"<what continues, or nothing>","comment":"cN"}
+```
+
 2 to 5 options, the likeliest answer first, and one of them is always *Leave it OPEN* where the question is a
-gap. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
+gap. Every question here, the approval round's too, is a `clarification`. The context is the specific thing behind the question in plain lines, at most 1,000 characters: what exists
+today in that area and what is unclear, never only "see cN". **No pick:** no `"advice"`, and no option is marked
+`"suggested"`, since the answer is the PO's to give. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
 answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and this skill cannot run: stop and
 say so.
 
-**Wait, then carry on.** Raise with `--json` (`escalation.escalation` is the `eN`), then wait on each open
+**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on each open
 escalation of the round in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`):
 say once what you wait on and until when, start the wait as `HARNESS.md`, "Waiting for an answer", says, answer a
 question the PO asks of you and wait again (exit 5), and write nothing while one is open. On any exit but 0 and 5,

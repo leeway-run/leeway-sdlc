@@ -14,6 +14,7 @@ plugin-files: .sdlc/kit/
 
 - **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
 - **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+- **raise:** `node .sdlc/kit/scripts/raise.mjs`
 
 ## Delegating to a named agent
 

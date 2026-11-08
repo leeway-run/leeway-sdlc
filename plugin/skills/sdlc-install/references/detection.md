@@ -218,7 +218,8 @@ run's allow-list entries ("Unattended prerequisites") are already there, in the 
 out of date:
 
 - **Dead, matches nothing `run` prints:** a flag-less entry an install before 0.3.0 wrote, such as `Bash(leeway spend record:*)`
-  or `Bash(git commit:*)`, and a kit script's per-version path, such as `Bash(node <...>/cache/<marketplace>/leeway-sdlc/<version>/scripts/wait-answer.mjs:*)`.
+  or `Bash(git commit:*)`, a kit script's per-version path, such as `Bash(node <...>/cache/<marketplace>/leeway-sdlc/<version>/scripts/wait-answer.mjs:*)`,
+  and the `escalation raise` rule, which `run` no longer calls: it raises through `<raise>`.
   These are harmless and can be deleted by hand; the new rules do their work.
 - **Too wide:** an entry that covers the verbs `run` leaves off, such as `Bash(<cli> --server <server> *)` or `Bash(leeway *)`.
   Say that while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt, and that it is the

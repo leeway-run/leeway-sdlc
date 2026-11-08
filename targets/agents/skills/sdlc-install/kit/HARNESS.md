@@ -10,6 +10,7 @@ plugin-files: .sdlc/kit/
 
 - **wait-answer:** `node .sdlc/kit/scripts/wait-answer.mjs`
 - **session-tokens:** `node .sdlc/kit/scripts/session-tokens.mjs`
+- **raise:** `node .sdlc/kit/scripts/raise.mjs`
 
 This is the package's own harness file. The repo's is `.sdlc/kit/HARNESS.md`, which `sdlc-install` writes from
 `kit/harness/<agent>.md` for the agent you use. Until then, run `sdlc-install`.
