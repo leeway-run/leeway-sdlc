@@ -81,7 +81,7 @@ are a person's, made by them or by a skill they asked.
 
 **Both are enforced for this plugin's own agents, by hooks.** `git-guard` blocks a governed agent's
 git writes; `leeway-guard` blocks a governed agent's `leeway` call whose verb is outside
-`get|list|whoami|help|version`. In Claude Code a governed agent is one whose type carries the `leeway-sdlc:`
+`get|list|whoami|help|version`, and any call it makes to the plugin's raise script. In Claude Code a governed agent is one whose type carries the `leeway-sdlc:`
 prefix, so another plugin's agents are untouched. Other agents attribute calls differently, and some not at
 all: there the orchestrator marks the window in which a subagent runs (`HARNESS.md`, "Governed-agent
 marker"), and every shell call in it is judged as the subagent's. The hook is not a vault: a raw HTTP call to the MCP endpoint
@@ -293,27 +293,44 @@ because an escalation keeps the options that were put and the argument for each,
 as a decision record on the issue. This replaces "returns `BLOCKED`" for anything the human must decide;
 an implementer still writes the doubt it can live with under *Uncertainties*.
 
-```sh
-leeway escalation raise <ref> --as <alias>/<role> --json --type <type> --question "…" --tradeoff "…" --advice "…" --options '[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}]' --meanwhile "…" --comment cN --stdin context < <context file>
+Write the escalation's fields to a file, then raise it with the plugin's raise script, by the command `HARNESS.md`,
+"Running the plugin's scripts", names (`<raise>` here):
+
+```json
+{"type":"<type>","question":"…","context":"…","tradeoff":"…","advice":"…","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"…","comment":"cN"}
 ```
+
+```sh
+<raise> --server <server> --as <alias>/<role> <ref> <fields file> -- <cli>
+```
+
+**Every field goes in the file, never on a command line.** A question, a context, an argument or a piece of advice
+is drawn from a report or the code, and holds backticks, `$` and apostrophes that a shell would run, expand or end a
+quote on, so the text would arrive cut or changed. The script reads the file and runs the CLI's `escalation raise`
+once, each field an argument of its own and none through a shell, so every field arrives as written. It prints what
+the CLI prints, the raised escalation as JSON (`escalation.escalation` is its `eN`), and exits with the CLI's code;
+for a file it cannot use (not JSON, a field missing or of the wrong kind, or one it does not know) it raises
+nothing and exits 2, with a line starting `raise:`: fix the file and raise again. An exit of 126 or 127 means it never
+ran (not executable, or not on the `PATH`): stop the turn and say so. Write the file as JSON with the `Write` tool: in `run`, where run's other bodies go (run, "Where `run`'s own files go"); in
+any other skill, a file outside the repo, by absolute path. `"type"`, `"question"`, `"context"`, `"options"` and
+`"meanwhile"` always; `"tradeoff"`, `"advice"` and `"comment"` where the asker has them. The CLI's own raise, with
+the fields as flags, is off run's allow-list, so it prompts.
 
 An escalation is decided from what it carries, so a person can make the decision from the escalation alone, without
 opening the report behind it:
 
-- **`--type`, always.** `blocker` when work has stopped on it: a `BLOCKED` brief, a stalled round, a cap, a frozen
-  test that needs a spec amendment, a stop of an issue run. `clarification` for a question about how to go on that
-  stops nothing yet: an op question, a plan-gate QUESTION, a shaping, interview or floor question, an install, sync
-  or tune question. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of
-  its raises.
-- **`--context`: the specific thing behind the question, in plain lines**, taken from the report, the brief or the
+- **`"type"`, always, by what kind of question it is.** `blocker`: the work has stopped on a failure or a block,
+  and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that
+  needs a spec amendment, a stop of an issue run. `clarification`: a decision the plan or the operation needs from a
+  person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping,
+  interview or floor question, an install, sync or tune question. Either kind holds the work that depends on it until
+  it is answered. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
+  raises.
+- **`"context"`: the specific thing behind the question, in plain lines**, taken from the report, the brief or the
   code: each blocker, finding or question summarised in one line of its own, with what it is about. **Never only a
   reference**: "See c12", a URL or a ref alone is no context, and the server refuses it (`invalid_context`). A `cN`
-  may follow a line as where the detail is, never stand in for it. The context goes in from a file (`--stdin
-  context`), never inline, since a line drawn from a report or the code can hold a backtick or a `$` the shell would
-  run: in `run`, a file where run's other bodies go (run, "Where `run`'s own files go"); in any other skill, a file
-  outside the repo, by absolute path. One `--stdin` per call, so the other fields are quoted flags, in the agent's
-  own words, with no backtick or `$` in them.
-- **`--tradeoff`**: what the choice costs either way, where the asker can say it. **`--advice`**: which option the
+  may follow a line as where the detail is, never stand in for it.
+- **`"tradeoff"`**: what the choice costs either way, where the asker can say it. **`"advice"`**: which option the
   asker picks and why, in a sentence or two, or that it has no pick and why. Left out where the asker has neither,
   as `shape-project` is.
 - **2 to 5 options**, each a `label` and an `argument` that says what happens if it is picked: what the agent does
@@ -326,16 +343,26 @@ opening the report behind it:
   keeps its order and its pick. `shape-project` does not recommend: it puts the likeliest answer first, marks no
   option suggested, gives no Advice and takes the PO's answer as given.
 - **At most 1,000 characters** each in the question, the context, the trade-off, the advice and each argument; a
-  label at most 60 and `--meanwhile` at most 500. A context that would not fit lists the worst items, then says how
+  label at most 60 and `"meanwhile"` at most 500. A context that would not fit lists the worst items, then says how
   many more there are and where they are ("and 4 more MINOR findings, in c12").
-- **`--meanwhile`** says what continues while the question is open, or that nothing does.
-- **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it. The comment holds the
-  whole of it; `--context` still carries the specific thing.
-- **A raise the server refuses is not retried as it was.** `invalid_context` means the context was only a reference:
-  write the specific thing into it and raise once more. A raise the CLI refuses with `Unknown option '--type'` (or
-  `--context`, `--tradeoff`, `--advice`) is a Leeway server older than LWY-159, which this plugin needs: raise
-  nothing more and stop the turn, saying that the escalation was not raised because the server at `<server>` has no
-  escalation type, context, trade-off or advice yet, and needs a Leeway with LWY-159.
+- **`"meanwhile"`** says what continues while the question is open, or that nothing does.
+- **Longer context goes in a comment first**, then `"comment": "cN"` ties the escalation to it. The comment holds the
+  whole of it; `"context"` still carries the specific thing.
+- **A raise the server refuses is not retried as it was.** The CLI's message names the code, `invalid_context` and
+  the like. Fix the field in the file and raise once more:
+  - `invalid_context` has two causes. A context that is only a reference: write the specific thing behind it, one
+    plain line each. A context over 1,000 characters: cut it to the worst items, one line each, and end with how many
+    more there are and where.
+  - `invalid_question` (empty, or over 1,000 characters), `invalid_tradeoff` and `invalid_advice` (over 1,000),
+    `invalid_meanwhile` (over 500) and `invalid_options` (not 2 to 5, a label empty, over 60 or repeated, an
+    argument over 1,000, or more than one suggested): shorten or fix that field, keeping what decides the question.
+  - **A second refusal stops the turn**: raise nothing more, and say which escalation on which issue was not raised
+    and what the CLI printed. The work that would have waited on it does not go on.
+
+  A raise the CLI refuses with `Unknown option '--type'` (or `--context`, `--tradeoff`, `--advice`) is a Leeway
+  server older than LWY-159, which this plugin needs: raise nothing more and stop the turn, saying that the
+  escalation was not raised because the server at `<server>` has no escalation type, context, trade-off or advice
+  yet, and needs a Leeway with LWY-159.
 - **Then wait for the answer, in every skill that raises**: `run`, `plan-project`, `shape-project`, `sync-repo`,
   `sdlc-install` and `sdlc-tune`. Say once what it waits on and until when, wait on `scripts/wait-answer.mjs` (as
   `HARNESS.md`, "Waiting for an answer", says), act on its exit as run's "Wait, then carry on" does, and on an answer
@@ -413,7 +440,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' [--tokens N] [--minutes N] [--testMinutes N] --note "…" --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`; `--tokens` is new tokens, input + cache writes + output summed over the agent's model calls and never cache reads, counted by `scripts/session-tokens.mjs` as `HARNESS.md`, "Counting tokens", says, and left out when they cannot be counted, never `0`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round's review, its orchestration, or a round that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
-| dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --type … --question … --tradeoff … --advice … --options '[…]' --meanwhile … --stdin context` (Needs you is the one interrupt) |
+| dispute needing a human; a hard stop of `run` on an issue | an escalation, raised by `<raise>` from a file of its fields: `type`, `question`, `context`, `tradeoff`, `advice`, `options`, `meanwhile` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria a story body points to | the comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |

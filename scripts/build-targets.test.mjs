@@ -125,6 +125,11 @@ for (const [agent, hook] of Object.entries(HOOKS)) {
         readFileSync(join(ROOT, 'plugin', 'scripts', 'session-tokens.mjs')),
         'the kit carries the token-counting script',
       )
+      assert.deepEqual(
+        readFileSync(join(repo, '.sdlc', 'kit', 'scripts', 'raise.mjs')),
+        readFileSync(join(ROOT, 'plugin', 'scripts', 'raise.mjs')),
+        'the kit carries the raise script',
+      )
     } finally {
       rmSync(repo, { recursive: true, force: true })
     }

@@ -89,14 +89,23 @@ Nothing cleans the directory, and it is safe to delete between runs.
 **A question for the human is never a terminal question.** It is a Leeway escalation on the sub-issue in hand, and
 then you wait for its answer ("Wait, then carry on"). Nowhere in this skill do you ask the user.
 
-**Every escalation this skill raises carries its fields** (`PROCESS.md`, "Questions to the human are escalations"):
-`--type`, the context from a file (`--stdin context`, written where run's other bodies go), `--tradeoff`, `--advice`,
-and your pick first, marked `"suggested": true`. The options a path below names are the choices, not their order.
+**Every escalation this skill raises carries its fields, from a file** (`PROCESS.md`, "Questions to the human are
+escalations"). Write them as JSON where run's other bodies go, then raise it with the raise script, by the command
+`HARNESS.md`, "Running the plugin's scripts", names (`<raise>` below), as the role the path names:
+
+```sh
+<raise> --server <server> --as <alias>/<role> <ref> <fields file> -- <cli>
+```
+
+No field goes on a command line: a field drawn from a brief, a verdict or the code holds backticks, `$` and
+apostrophes, and the file carries them as written. The fields are `"type"`, `"question"`, `"context"`,
+`"tradeoff"`, `"advice"`, the options with your pick first, marked `"suggested": true`, `"meanwhile"`, and
+`"comment"` where the path ties it to one. The options a path below names are the choices, not their order.
 Where you truly have no pick, invent none: no option is suggested, and Advice says there is no pick and why. The context
 names the specific thing: each outstanding finding, blocker or line in one plain line, never only its `cN`. The type
 of each raise:
 
-| Raise | `--type` |
+| Raise | `"type"` |
 |---|---|
 | a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story | `blocker` |
 | a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block | the block's own `Type:` line, unedited |
@@ -105,7 +114,8 @@ of each raise:
 | a friction proposal ("Land the task", step 6; "The friction harvest") | `nit` |
 
 An implementer's `## Question` and a reviewer's `Escalates:` block already carry their fields: raise them unedited, in
-the block's order, its pick marked as the block marks it.
+the block's order, its pick marked as the block marks it, each line copied into its field of the file as written,
+backticks and all.
 
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
 <ref> --step <id>` and `--status <status>`. No iteration, comment, verdict or escalation moves anything; a stalled
@@ -134,7 +144,8 @@ work nobody reviewed.
 project run. Where a path below says to raise an escalation and wait, do this:
 
 1. **Post what the path posts**, unchanged: the context comment, the escalation and, on an issue run's stop, the
-   `# Run status` comment. Raise with `--json`: `escalation.escalation` in the answer (`e1`) is the `eN` you wait on.
+   `# Run status` comment. `<raise>` prints the escalation as JSON: `escalation.escalation` in it (`e1`) is the `eN` you
+   wait on.
 2. **Say once in the session** what you wait on and until when: "Waiting for the answer to e2 on DRY-2.1, until
    <the time 16 hours from now>." Once, not per check.
 3. **Wait on `wait-answer.mjs`**, by the command `HARNESS.md`, "Running the plugin's scripts", names (`<wait-answer>`
@@ -169,8 +180,8 @@ project run. Where a path below says to raise an escalation and wait, do this:
      waited on.
    - **An answer that ends the work** (for example "Cancel it") is followed: stop there and say so. Say too that any
      other escalation of the round stays open, because nothing can withdraw it, and must be answered before a re-invoke.
-   - **An answer that needs a person to act first** is put to them as a new escalation, saying what to do and to
-     answer it once done, and waited on the same way. Stop and name the action only when it is outside Leeway, such
+   - **An answer that needs a person to act first** is put to them as a new escalation, `"type": "clarification"`, saying what
+     to do and to answer it once done, and waited on the same way. Stop and name the action only when it is outside Leeway, such
      as a login on the machine.
 6. **Only the answer is an answer.** A comment, a status change, an edited description or another escalation's
    answer is not, and a run never proceeds on an unanswered escalation.
@@ -411,7 +422,7 @@ Round 0 runs "Delegate to the implementer" to "Gate again, record, act" below, w
   worktree, and the next attempt is a new commit on top.
 - **The cap.** After a FAIL, if the round-0 attempts have reached `round0Cap`: stop. Two failed attempts mean the
   criteria are ambiguous, which is a question about the story for its owner, not another round. Leave the task at
-  `red-tests` (set again after the FAIL) and raise one escalation on the sub-issue as `<alias>/agent`, `--type blocker`, whose context
+  `red-tests` (set again after the FAIL) and raise one escalation on the sub-issue as `<alias>/agent`, `"type": "blocker"`, whose context
   gives each outstanding finding in a line of its own, what it says and its `cN`, and names the owner (the product owner for an `AC-n`, the developer for a `TC-n`), with options such as
   "Clarify the criterion", "Split the story" and "Allow one more attempt", each with its argument. Then wait on it
   ("Wait, then carry on").
@@ -509,8 +520,12 @@ a step that fails stops the round.
    sub-issue, "Recording spend"), leaves the sub-issue where it is, raises an escalation on it and waits. It is
    never counted and never retried silently, and you do not force a commit to get past it:
 
+   ```json
+   {"type":"blocker","question":"Round N produced no new commit on <branch>: how should it go on?","context":"<what the round did, in plain lines>","tradeoff":"<what another round costs against doing it inline or stopping>","advice":"<which option this round's evidence picks and why, or that it picks none and why>","options":[{"label":"Re-run the implementer","argument":"The prompt was at fault; the next round goes out with a sharper prompt, and may produce the change.","suggested":true},{"label":"Take it inline","argument":"The task is smaller than a round; the orchestrator does it itself and says the workflow degraded."},{"label":"Re-scope or cancel","argument":"The task is already satisfied or mis-specified; no more rounds run, and the task is re-scoped or cancelled."}],"meanwhile":"The sub-issue keeps its status and nothing is merged."}
+   ```
+
    ```sh
-   leeway escalation raise <ref> --as <alias>/agent --json --type blocker --question "Round N produced no new commit on <branch>: how should it go on?" --tradeoff "<what another round costs against doing it inline or stopping>" --advice "<which option this round's evidence picks and why, or that it picks none and why>" --options '[{"label":"Re-run the implementer","argument":"The prompt was at fault; the next round goes out with a sharper prompt, and may produce the change.","suggested":true},{"label":"Take it inline","argument":"The task is smaller than a round; the orchestrator does it itself and says the workflow degraded."},{"label":"Re-scope or cancel","argument":"The task is already satisfied or mis-specified; no more rounds run, and the task is re-scoped or cancelled."}]' --meanwhile "The sub-issue keeps its status and nothing is merged." --stdin context <context.md
+   <raise> --server <server> --as <alias>/agent <ref> <fields file> -- <cli>
    ```
 
    The context says what the round did: what the implementer's brief reported, what was staged (or that nothing
@@ -564,9 +579,10 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    record its spend on the sub-issue instead, now, before the escalation at step 3 ("Recording spend").
 2. Post the brief as a comment (step 5), so there is a `cN` to point at. With nothing committed write its `Head sha`
    line as `none (BLOCKED, nothing committed)`.
-3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its flag:
-   `leeway escalation raise <ref> --as <alias>/implementer --json --type <Type> --question "…" --tradeoff "<Trade-off>" --advice "<Advice>" --options '[…]' --meanwhile "…" --comment cN --stdin context <context.md`,
-   the block's *Context* in the file, its options in its order with `"suggested": true` on the one it marks.
+3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
+   *Question*, *Context*, *Trade-off*, *Advice* and *Meanwhile* copied into the fields file as written, backticks and
+   all, its options in its order with `"suggested": true` on the one it marks, and `"comment"` the brief's `cN`; then
+   `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`.
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
 4. Set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears).
@@ -639,14 +655,18 @@ sufficient: the verdict exists nowhere else.
 3. **A dispute or a finding that needs a human** (`Escalates:` is not `none`) becomes an escalation on the
    sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"):
 
-   ```sh
-   leeway escalation raise <ref> --as <alias>/reviewer --json --type <Type> --question "…" --tradeoff "<Trade-off>" --advice "<Advice>" --options '[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}]' --meanwhile "…" [--comment cN] --stdin context <context.md
+   ```json
+   {"type":"<Type>","question":"<Question>","context":"<Context>","tradeoff":"<Trade-off>","advice":"<Advice>","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"<Meanwhile>","comment":"cN"}
    ```
 
-   Each line of the block goes to its flag, unedited, its *Context* in the file and `"suggested": true` on the
-   option it marks, or on none where its Advice says there is no pick.
+   ```sh
+   <raise> --server <server> --as <alias>/reviewer <ref> <fields file> -- <cli>
+   ```
 
-   `--comment cN` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
+   Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it
+   marks, or on none where its Advice says there is no pick.
+
+   `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
    review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
    them all in this round; a second block on one finding gets a comment of its own, naming the finding, and its
@@ -663,7 +683,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | The follow-up is | What you do |
 |---|---|
 | Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway issue create <KEY> --as <alias>/agent --projectId <project.id> --title "…" --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`, in the task's project |
-| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `--type debt`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and in an issue run that the run waits here for the answer (its stop 4). In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal ("Wait, then carry on") before it ends ("Land the task", step 5). On a yes, `issue create` as above, quoting the answer's `label` and `note`; on a no it stays a nit |
+| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `"type": "debt"`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and in an issue run that the run waits here for the answer (its stop 4). In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal ("Wait, then carry on") before it ends ("Land the task", step 5). On a yes, `issue create` as above, quoting the answer's `label` and `note`; on a no it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway comment add <collector> --as <alias>/agent --stdin body <nit.md` |
 
 **Debt proposals from one verdict are one round**: raised together, with those one answer would settle merged into
@@ -686,7 +706,7 @@ edit to its body.
 
 **The caps.** Count with the one-liner under "Counting rounds". A verdict of FAIL with the code rounds at `roundCap`
 (or round-0 attempts at `round0Cap`, see Round 0) is a stop: leave the sub-issue as it is and raise an escalation
-on it as `<alias>/agent`, `--type blocker`, whose context gives each outstanding finding in a line of its own, what it
+on it as `<alias>/agent`, `"type": "blocker"`, whose context gives each outstanding finding in a line of its own, what it
 says and its `cN`, and whose options are the human's real choices (for example "Re-scope the task", "Allow one more round", "Cancel it"), each with its argument, and wait on
 it ("Wait, then carry on"). **You may not override the cap.** Overriding a PASS and the cap together is the
 pattern the cap exists to prevent.
@@ -725,8 +745,8 @@ On a PASS of a code round.
    against each other and against the open issues of the friction project (`friction-project:` in
    `.sdlc/leeway.md`; `leeway issue list <KEY> <friction project> --json` is one page, and the dedupe reads its
    open issues only, not the `done` or `cancelled` ones). Propose what is left as **one escalation** on the
-   sub-issue, as `<alias>/agent`, `--type nit` (options "File them" and "File none", the lines in the question's context
-   comment and in `--context`, as many as fit), `--meanwhile` saying nothing waits. Only on a yes, file each accepted line as its own issue, the line
+   sub-issue, as `<alias>/agent`, `"type": "nit"` (options "File them" and "File none", the lines in the question's context
+   comment and in `"context"`, as many as fit), `"meanwhile"` saying nothing waits. Only on a yes, file each accepted line as its own issue, the line
    with its task and round as the description: `leeway issue create <KEY> --as <alias>/agent --projectId <friction
    project> --type chore --title "…" --summary "<at most 280 characters>" --status backlog --stdin description
    <desc.md`. `n/a` there: the proposal is still made, nothing is filed.
@@ -837,7 +857,7 @@ you, as `<alias>/agent`:
      exits 1 in a shell with no terminal. Where `gh` is not installed, or `gh pr create` fails, the person opens it.
      Read the collector's escalations first (`leeway issue get <collector> --json`, `escalations[]`): wait on an open
      one that asks for it, and take the number from an answered one's note. Only with neither, raise an escalation on
-     the nit collector (`--type clarification`) asking them to open it as a draft (naming the `gh` error, if any) and to answer with its number
+     the nit collector (`"type": "clarification"`) asking them to open it as a draft (naming the `gh` error, if any) and to answer with its number
      in the note, and wait ("Wait, then carry on"). A wait that ends without an answer stops the turn, and re-invoking
      `run` on the project resumes here.
 
@@ -894,14 +914,14 @@ moves an issue.
 |---|---|---|
 | 1 | start (once) | `issue update <story> --step build`; `issue update <ref> --step red-tests` or `--step implementing` (branch written back first) |
 | 2 | implementer | none |
-| 3 | gate, commit, stalled check, push | none (a stalled round: `escalation raise`, wait) |
+| 3 | gate, commit, stalled check, push | none (a stalled round: an escalation by `<raise>`, wait) |
 | 4 | iteration | `iteration record <ref> <sha> --as <alias>/implementer --tests "…" [--passed] [--addresses '[…]'] [--tokens N] [--minutes N] [--testMinutes N] --note "…"` |
 | 5 | brief | `comment add <ref> --as <alias>/implementer --stdin body` |
 | 6 | hand over | `issue update <ref> --status in_review`, in round 0 too |
 | 7 | reviewer | none |
 | 8 | findings | `comment add <ref> --as <alias>/reviewer [--anchor '{…}'] --stdin body`, one each |
 | 9 | verdict | `comment add <ref> --as <alias>/reviewer --kind review --iteration X --settles … --disputes … --raises … --stdin body`, then `spend record <ref> <minutes> --as <alias>/reviewer [--tokens N] --note "review of it.X"` and `spend record <ref> 0 --as <alias>/agent [--tokens N] --note "orchestrating it.X"` |
-| 10 | a human is needed | `escalation raise <ref> --as <alias>/reviewer --type <the block's> … [--comment <the finding's cN>] --stdin context` (never the verdict's), then wait |
+| 10 | a human is needed | `<raise> --server <server> --as <alias>/reviewer <ref> <fields file> -- <cli>`, the block's fields in the file and `"comment"` the finding's `cN` (never the verdict's), then wait |
 | 11 | nits, follow-ups | comment on the nit collector; `issue create` for a security follow-up; an escalation for a debt proposal |
 | 12 | outcome | round-0 PASS: `issue update <ref> --step implementing`. Code-round PASS: merge, `issue update <ref> --status done`. FAIL: `issue update <ref> --step implementing` (round-0 FAIL: `--step red-tests`) |
 
@@ -1106,9 +1126,9 @@ Do these, in this order, and nothing else:
    `of <budget>` (`7 rounds`).
 
 5. **Raise the stop's escalation** (the last column of "Hard stop conditions"). One the issue run raises is on the story, as
-   `<alias>/agent`, `--type blocker`, tied to the status comment (`--comment cN`, its `comment.number`), its context
-   the status comment's *Stopped on* in plain lines (what fired, on which task, and why), with the human's real
-   choices as options (2 to 5, each with its argument) and `--meanwhile` saying what stays blocked and what does not.
+   `<alias>/agent`, `"type": "blocker"`, tied to the status comment (`"comment"`, its `comment.number` as `cN`), its
+   context the status comment's *Stopped on* in plain lines (what fired, on which task, and why), with the human's
+   real choices as options (2 to 5, each with its argument) and `"meanwhile"` saying what stays blocked and what does not.
    Where the sub-issue run raised it or them, add each id to the status comment, and raise no other.
 6. **Tell the user the same thing** in the session, with the comment's `cN` and each escalation id.
 7. **Wait on each of the stop's escalations** ("Wait, then carry on"), one after another. Once every one is answered the run carries on from where step 1
@@ -1146,8 +1166,8 @@ that was written down; this is where it leaves them.
 2. **Drop** `none`.
 3. **Dedupe** the lines against each other (two tasks missing the same seed is one line naming both) and against the
    open issues of the friction project (`friction-project:` in `.sdlc/leeway.md`; `leeway issue list <KEY> <friction project> --json` is one page, and the dedupe reads its open issues only, not the `done` or `cancelled` ones).
-4. **Propose** what is left as one escalation on the story, as `<alias>/agent`, `--type nit`, options "File them" and
-   "File none", the lines (each with its task and round) in the question's context comment and in `--context`, as
+4. **Propose** what is left as one escalation on the story, as `<alias>/agent`, `"type": "nit"`, options "File them" and
+   "File none", the lines (each with its task and round) in the question's context comment and in `"context"`, as
    many as fit. The proposal never waits: the story
    has ended.
 5. **File only on a human yes**, each accepted line as its own issue, the line with its task and round as the
@@ -1166,15 +1186,15 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
 - **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it and in
   the form it gives, naming what a run calls and nothing more:
   - **Leeway verbs:** `issue get`, `issue list`, `issue update`, `issue create`, `comment add`, `iteration record`,
-    `spend record`, `escalation raise`, `escalation list`, `clarification answer`, `clarification list`, `review get`,
+    `spend record`, `escalation list`, `clarification answer`, `clarification list`, `review get`,
     `project get`, `project link`, `process get`.
-    Any other verb prompts: `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later
+    Any other verb prompts: `escalation raise` (a run raises through `<raise>`), `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later
     CLI adds. A run calls none of them. A subagent is stopped from the write verbs by the plugin's
     `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
   - **git verbs,** each as `git -C <absolute path> <verb>` and at least one argument: `add`, `commit`, `push`, `fetch`, `merge`, `merge-base`,
     `worktree`, `branch -d`, `ls-remote`, `rev-parse`, `diff`, `status`, `show`, `log`, `blame`.
   - **The rest:** the lane and setup commands `.sdlc/CONFIG.md` names; `node -e` for the counting one-liner, the time
-    stamps, and an agent's delete, rename or test mutation; `gh pr create` and `gh pr view`; the two scripts, `<wait-answer>` and `<session-tokens>`;
+    stamps, and an agent's delete, rename or test mutation; `gh pr create` and `gh pr view`; the three scripts, `<wait-answer>`, `<session-tokens>` and `<raise>`;
     file edits under `.worktrees/`, for the implementer's work and `run`'s own files ("Where `run`'s own files go"); and reads of
     this plugin's own files.
   **What the list cannot promise.** An improvised command, one an agent makes up that is not on the list, still prompts,

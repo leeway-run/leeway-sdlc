@@ -45,7 +45,7 @@ test('every escalation run raises is followed by the wait, not the end of the tu
 test('it posts what it posts today, then says once what it waits on and until when', () => {
   const wait = under(skill, 'Wait, then carry on');
   assert.match(wait, /Post what the path posts\*\*, unchanged: the context comment, the escalation and, on an issue run's stop, the `# Run status` comment/);
-  assert.match(wait, /`escalation\.escalation` in the answer \(`e1`\) is the `eN` you wait on/);
+  assert.match(wait, /`<raise>` prints the escalation as JSON: `escalation\.escalation` in it \(`e1`\) is the `eN` you wait on/);
   assert.match(wait, /Say once in the session\*\* what you wait on and until when/);
   assert.match(wait, /Once, not per check/);
 });

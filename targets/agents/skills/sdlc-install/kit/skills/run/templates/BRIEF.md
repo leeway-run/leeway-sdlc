@@ -104,7 +104,9 @@ decision only the human can make goes under *Question* below, with `Status: BLOC
 Only when `Status: BLOCKED`. The orchestrator raises this, unedited, as a Leeway escalation, so write it as the
 human will read it:
 
-Each line goes to its own field of the escalation, unchanged. Every text is at most 1,000 characters.
+Each line goes to its own field of the escalation, unchanged. Every text is at most 1,000 characters. Quote code as
+you would anywhere in the brief: the orchestrator copies each line into a file of the escalation's fields, never onto
+a command line, so a backtick, a `$` or an apostrophe arrives as you wrote it.
 
 - **Type:** `blocker`, the usual one for a BLOCKED round (the work has stopped on it), or `clarification` where the
   round could go on and only a later part waits.

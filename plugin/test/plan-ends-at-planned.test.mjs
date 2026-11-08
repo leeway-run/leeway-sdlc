@@ -116,7 +116,7 @@ test('planning ends at the plan gate with the report, and the move to ready is a
 test('each QUESTION is a top-level comment of its own, and a report\'s QUESTIONs are the escalations on those comments', () => {
   const questions = section(skill, '### The QUESTIONs');
   assert.match(questions, /Post each QUESTION as \*\*its own top-level comment\*\* on the story, as `<alias>\/planner` \(`comment add <story> --stdin body`\), with a body opening `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment\./);
-  assert.match(questions, /Then raise its escalation with `--comment` set to that QUESTION comment's `cN`/);
+  assert.match(questions, /Then raise its escalation with `"comment"` set to that QUESTION comment's `cN`/);
   assert.match(questions, /\*\*A report's QUESTIONs are the escalations on the comments opening `# QUESTION … of c<report>`\*\*; an escalation on no comment, or on the report itself, is not one\./);
   for (const text of [skill, run, contract]) {
     assert.doesNotMatch(text.replace(/\s+/g, ' '), /escalations? whose `comment` is/);
@@ -150,7 +150,7 @@ test('returned and three or more RETURNs count only the reports since the latest
   const gate = section(skill, '### The QUESTIONs');
   assert.match(gate, /\*\*Three RETURNs mean the story is wrong, not the plan\.\*\* Step 0 counts them, before any re-planning: three or more coverage reports in its window\. Then stop re-planning\./);
   assert.match(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
-  assert.match(gate, /When it has no `shape`, \*\*raise one escalation on the story\*\*, tied to the latest report with `--comment cN`, asking the person how to go on/);
+  assert.match(gate, /When it has no `shape`, \*\*raise one escalation on the story\*\*, tied to the latest report with `"comment"` its `cN`, asking the person how to go on/);
   assert.match(gate, /how do we go on\?"\* The reviewer is tracing a story that does not say what anyone means by it\. Wait on it \(step 0\)\. Give two options, each naming what plan-project does next: - \*Re-plan once more\*: plan-project re-plans it, this session on the answer or the next one\. The answer starts a fresh window \(step 0\), so the count starts again\. - \*Stop planning it\*: plan-project says the story is stopped and stops, this session on the answer or the next one, writing and raising nothing\. To plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again\. To drop it, they close it\./);
   assert.doesNotMatch(gate, /moves it on by hand/);
   assert.match(gate, /The same escalation is not raised twice\. After a \*Re-plan once more\* answer, three more reports raise a new one on the latest report\./);

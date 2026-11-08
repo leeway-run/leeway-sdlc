@@ -77,11 +77,16 @@ whatever happened.
    step 8, "Three RETURNs".
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
    terminal question: it is a Leeway escalation on the story, and then you wait for its answer; one that stories share goes on their Plan record. Post the context first
-   (`comment add <ref> --stdin body`), then `escalation raise <ref> --type <type> --question "<at most 1,000
-   characters>" --tradeoff "<what each way costs>" --advice "<your pick and why, or no pick and why>" --options
-   '[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>","suggested":true}]'
-   --meanwhile "<what continues, or nothing>" --comment cN --stdin context < <context file>`: 2 to 5 options, each
-   with its argument, one open escalation per comment. **Each raise carries its fields** (`PROCESS.md`, "Questions to
+   (`comment add <ref> --stdin body`), then write the escalation's fields as JSON to a file outside the repo, by
+   absolute path, and raise it with `<raise> --server <server> --as <alias>/planner <ref> <fields file> -- <cli>`,
+   `<raise>` being the command `HARNESS.md`, "Running the plugin's scripts", names. No field goes on a command line
+   (`PROCESS.md`, "Questions to the human are escalations"):
+
+   ```json
+   {"type":"<type>","question":"<at most 1,000 characters>","context":"<the specific thing behind the question, in plain lines>","tradeoff":"<what each way costs>","advice":"<your pick and why, or no pick and why>","options":[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>","suggested":true},{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"}],"meanwhile":"<what continues, or nothing>","comment":"cN"}
+   ```
+
+   2 to 5 options, each with its argument, one open escalation per comment. **Each raise carries its fields** (`PROCESS.md`, "Questions to
    the human are escalations"). The type is `clarification` for every question this skill asks (the product gaps,
    the interview, the floor and repository questions, the plan gate's QUESTIONs) and `blocker` for "Three RETURNs",
    where planning the story has stopped. The context is the specific thing behind the question, in plain lines from
@@ -216,7 +221,7 @@ Every invocation starts here, after step 2, and takes nothing from an earlier se
 its Plan record and on any `<ref>` a `Held on` names holds it all: `comments` and `escalations[]`, each issue's own (step 0).
 
 A question is **its own top-level comment**, its body opening `# Interview question <n>, round <r>: <refs>`, the stories
-it binds, with its escalation's `--comment` set to that comment's `cN`. A comment's own escalation is
+it binds, with its escalation's `"comment"` set to that comment's `cN`. A comment's own escalation is
 `comments[].escalation`, `{number, open}` or null. A question's comment holding `Held on <ref> eN`, with none on it, has
 not been raised. **A story's question comments** are these and any `# Floor question: <refs>`, on it or on the Plan record
 naming it. Its interview ends at a comment on it opening `# Interview closed`, and "after" goes by `createdAt`. The first
@@ -258,9 +263,10 @@ product decision.
 **Every open decision that depends on no other answer goes out together**, so one sitting answers them, and the ones
 that shape the plan most are among them. Check the round first (step 0): where one answer would settle or change
 another question, merge them, or hold the dependent one. For each, post its comment, the context and what the code
-shows, then `escalation raise <ref> --type clarification --json`, `<ref>` the issue it is on (`escalation.escalation` in the answer is the
-`eN`) with `--comment cN`, the fields step 0 names, 2 to 5 options, your pick first, and `--meanwhile "Nothing: no design doc, criteria
-or tasks until the interview closes."`. A decision with more than 5 options is cut to the real ones.
+shows, then raise it with `<raise>` as step 0 says, `"type": "clarification"`, on `<ref>`, the issue it is on
+(`escalation.escalation` in what it prints is the `eN`), with `"comment"` its comment's `cN`, the fields step 0 names,
+2 to 5 options, your pick first, and `"meanwhile": "Nothing: no design doc, criteria or tasks until the interview
+closes."`. A decision with more than 5 options is cut to the real ones.
 
 Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them.
 
@@ -627,7 +633,7 @@ or none, wait on the held stories' gaps ("The last wait", below), and **stop**, 
 A verdict of PASS WITH DECISIONS has QUESTIONs only a human can answer. Post each QUESTION as **its own top-level
 comment** on the story, as `<alias>/planner` (`comment add <story> --stdin body`), with a body opening
 `# QUESTION <n> of c<report>`, where `c<report>` is the report's first comment. Then raise its escalation with
-`--comment` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your pick first; the context
+`"comment"` set to that QUESTION comment's `cN` (the options the report gives, 2 to 5, your pick first; the context
 the QUESTION and the findings it rests on, in plain lines, so a person decides it from the escalation alone). A comment holds one open
 escalation, and a reply has no `cN`, so each QUESTION needs a top-level comment of its own. They are questions about
 the plan, not the gate decision.
@@ -662,7 +668,7 @@ moving.
 **Three RETURNs mean the story is wrong, not the plan.** Step 0 counts them, before any re-planning: three or more
 coverage reports in its window. Then stop re-planning. When the type has `shape`, set `--step shape` and post what
 the rounds could not trace as a step 1 comment to the PO, with step 1's ending. When it has no `shape`, **raise one
-escalation on the story**, tied to the latest report with `--comment cN`, asking the person how to go on:
+escalation on the story**, tied to the latest report with `"comment"` its `cN`, asking the person how to go on:
 *"`<ref>` has three or more coverage reports and none passed: how do we go on?"* The reviewer is tracing a story that
 does not say what anyone means by it. Wait on it (step 0). Give two options, each naming what plan-project does next:
 - *Re-plan once more*: plan-project re-plans it, this session on the answer or the next one. The answer starts a

@@ -12,8 +12,9 @@ plugin-files: the plugin root (this file's directory)
 
 - **wait-answer:** `leeway-sdlc-wait-answer`
 - **session-tokens:** `leeway-sdlc-session-tokens`
+- **raise:** `leeway-sdlc-raise`
 
-Both are in the plugin's `bin/`, which Claude Code 2.1.91 and later puts on the Bash tool's `PATH` while the plugin is enabled, so a call and
+All three are in the plugin's `bin/`, which Claude Code 2.1.91 and later puts on the Bash tool's `PATH` while the plugin is enabled, so a call and
 its allow rule read the same for every person and every version. **The limit:** claude.ai and Cowork don't install a plugin
 with a top-level `bin/`, so this plugin installs in Claude Code only. Other agents have no `bin/`: their harness names `node .sdlc/kit/scripts/<script>.mjs`.
 
@@ -94,7 +95,7 @@ run's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`
 | a lane or setup command | `Bash(<command> *)`, one rule per part of a compound lane |
 | `node -e` | `Bash(node -e *)` |
 | `gh pr create`, `gh pr view` | `Bash(gh pr create *)`, `Bash(gh pr view *)` |
-| the two scripts | `Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)` |
+| the three scripts | `Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)`, `Bash(leeway-sdlc-raise *)` |
 | file edits under `.worktrees/` | `Edit(/.worktrees/**)`, which also covers the `Write` tool |
 | the plugin's own files | `Read(~/.claude/plugins/cache/*/leeway-sdlc/**)` |
 

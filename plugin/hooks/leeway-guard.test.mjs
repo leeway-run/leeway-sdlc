@@ -56,6 +56,21 @@ test('the other writes are blocked', () => {
   ]) expectExit(command, 2)
 })
 
+test('a governed agent cannot raise through the plugin\'s raise script, and the orchestrator can', () => {
+  for (const command of [
+    'leeway-sdlc-raise --server https://app.leeway.run --as a/implementer LWY-1 /r/.worktrees/.run/f.json -- leeway',
+    'node .sdlc/kit/scripts/raise.mjs --server https://app.leeway.run --as a/implementer LWY-1 f.json -- leeway',
+    'node /home/x/.claude/plugins/cache/m/leeway-sdlc/0.3.0/scripts/raise.mjs --server s --as a/b LWY-1 f.json -- leeway',
+    'cd /w && sh -c "leeway-sdlc-raise --server s --as a/b LWY-1 f.json -- leeway"',
+  ]) {
+    const result = expectExit(command, 2)
+    assert.match(result.stderr, /raise script raises an escalation, and the orchestrator is the only writer/)
+  }
+  expectExit('leeway-sdlc-raise --server https://app.leeway.run --as a/agent LWY-1 /r/.worktrees/.run/f.json -- leeway', 0, null)
+  expectExit('node scripts/build-targets.mjs --check', 0)
+  expectExit('leeway-sdlc-wait-answer --server https://app.leeway.run LWY-1 e1 -- leeway', 0)
+})
+
 test('a verb-first write is refused as run prints it: the server first, the flags after the verb', () => {
   for (const command of [
     'leeway --server https://app.leeway.run spend record LWY-1 3 --as a/agent --json',
