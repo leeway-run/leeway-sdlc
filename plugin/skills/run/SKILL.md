@@ -1188,8 +1188,8 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
   and no permission setting, and the mode is no boundary: `node -e` and the lane commands can run anything, including
   `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator. **You never answer your own escalation:**
   an answer is the person's ("Only the answer is an answer"). What holds you to that is this rule, not a list.
-  `gh pr merge` is never run by an agent: it merges into `main` through GitHub, not by a push, so the pre-push guard does
-  not cover it, and the plan merges into `main` on the person's word ("When the plan merges into `main`").
+  `gh pr merge` runs only on the person's word ("When the plan merges into `main`"): it merges into `main` through
+  GitHub, not by a push, so the pre-push guard does not cover it.
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
   plugin, and this skill only states the requirement; `sdlc-install` offers to write it (question 16). It refuses an update to the integration branch named in
   `.sdlc/CONFIG.md` and a force push to any ref, deciding from the refs git passes on its stdin, so it refuses

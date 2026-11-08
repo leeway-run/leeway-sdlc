@@ -54,7 +54,7 @@ tokens: transcripts
 Claude Code writes each agent's transcript under `${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects/`, and the Bash tool's
 environment names the session in `CLAUDE_CODE_SESSION_ID`. Run `session-tokens.mjs` (run, "Recording spend") with the
 Bash tool, in one of these forms, in place of run's `--subagent <its transcript>` and `--session <your transcript>`. The
-script finds the file itself, because a command with a variable in braces prompts:
+script finds the file itself, because a command with a variable in braces prompts when a person approves each call:
 
 - **A subagent:** `leeway-sdlc-session-tokens --subagent-id <agent id>`, which reads
   `projects/*/<session>/subagents/agent-<agent id>.jsonl`. The Agent tool's result says `agentId: <agent id>`, and a
@@ -89,14 +89,15 @@ writes no allow rule and no permission setting for it. Without auto mode, a pers
 attended; `run` ("Unattended prerequisites") says what else an unattended run needs.
 
 **UNVERIFIED:** what auto mode asks for and what it lets through. Not known: whether it prompts for a `git push`, for
-`gh pr merge`, for a call that reads a variable in braces, or for a write outside the working directory; whether a
-subagent follows the session's mode; whether `claude -p` accepts it. LWY-189.6 replaces this paragraph with what was tried.
+`gh pr merge`, for a write outside the working directory, or for a write in `.git` or `.claude` inside a worktree, which
+Claude Code's own protection asks about without auto mode; whether a subagent follows the session's mode; whether `claude -p` accepts it. LWY-189.6 replaces this paragraph with what was tried.
 
 **How calls are written.** Every call is printed verb first, with `--server` on a Leeway call and `git -C <path>` for git, one
-call per verb. Write each as it is printed: `cd <path> && git` is not the same call, and a harness that asks before it
-may ask again at a flag placed before the verb or at a call with no `--server`. A git verb needs at least one argument:
+call per verb. Write each as it is printed: `cd <path> && git` is not the same call, and a harness that asks about calls
+may stop at it, at a flag placed before the verb or at a call with no `--server`. A git verb takes at least one argument:
 `git -C <path> status --short`, `git -C <path> diff HEAD`, `git -C <path> show HEAD`, `git -C <path> fetch origin` and
-`git -C <path> log -5` are the forms, and the same verbs with nothing after them are not. A lane runs in a worktree as
+`git -C <path> log -5` are the forms. Start the session at the repo root: edits under `.worktrees/` are judged against the
+directory the session started in, and `run` ("Where `run`'s own files go") relies on that. A lane runs in a worktree as
 `cd <worktree> && <lane>`. A compound lane is run part by part when a harness asks about each part, and a lane that
 needs a leading variable (`FOO=1 npm test`) goes in a script.
 
