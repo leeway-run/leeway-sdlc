@@ -78,7 +78,7 @@ test('the excerpt is what the v0.3.0 tag holds, where the tag is in the clone', 
   assert.ok(fixture.includes(run.slice(1187, 1195).join('\n')), 'the verbs are not the tag\'s');
 });
 
-test('step 2 lists "run\'s 0.3.0 allow-list" as a copy, with its two settings files', { skip: 'red-test-TC-5: sync-repo has no run\'s 0.3.0 allow-list copy yet' }, () => {
+test('step 2 lists "run\'s 0.3.0 allow-list" as a copy, with its two settings files', () => {
   const step2 = skill.slice(skill.indexOf('## 2. Compare each copy'), skill.indexOf('## 3. Ask'));
   const row = step2.split('\n').find((l) => l.startsWith(`| ${NAME} |`));
   assert.ok(row, `no table row starting "| ${NAME} |" in step 2`);
@@ -87,13 +87,13 @@ test('step 2 lists "run\'s 0.3.0 allow-list" as a copy, with its two settings fi
   assert.ok(/`cli:`/.test(row) && /`server:`/.test(row), 'the row does not say the rules are filled with the repo\'s `cli:` and `server:`');
 });
 
-test('every form of 0.3.0\'s table is in sync-repo\'s list', { skip: 'red-test-TC-5: sync-repo does not list 0.3.0\'s forms yet' }, () => {
+test('every form of 0.3.0\'s table is in sync-repo\'s list', () => {
   const list = block();
   const missing = FORMS.filter((f) => !list.includes(`\`${f}\``));
   assert.deepEqual(missing, [], 'in 0.3.0\'s table and missing from sync-repo\'s list');
 });
 
-test('the list holds no rule that is not one of 0.3.0\'s forms, unless to say it is left alone', { skip: 'red-test-TC-5: sync-repo does not list 0.3.0\'s forms yet' }, () => {
+test('the list holds no rule that is not one of 0.3.0\'s forms, unless to say it is left alone', () => {
   const list = block();
   const named = (s) => /^(Bash|Edit|Read)\b/.test(s);
   const stray = spans(list).filter((s) => named(s) && !FORMS.includes(s));
@@ -107,7 +107,7 @@ test('the list holds no rule that is not one of 0.3.0\'s forms, unless to say it
   assert.deepEqual(loose, [], 'a generic "any Bash(git" rule');
 });
 
-test('a yes removes only the 0.3.0 entries and leaves the file\'s other keys and entries as they were', { skip: 'red-test-TC-5: sync-repo has no removal paragraph yet' }, () => {
+test('a yes removes only the 0.3.0 entries and leaves the file\'s other keys and entries as they were', () => {
   hit(/one diff[^.]*\bone question[^.]*\bpre-filled yes\b/i, 'one diff, one question, pre-filled yes');
   hit(/\b(a|on a|on) yes removes only those entries\b/i, 'a yes removes only those entries');
   hit(/\b(other keys|`hooks`).{0,150}?\b(as they were|untouched|byte-identical)\b/i, 'the other keys are left as they were');
@@ -116,24 +116,24 @@ test('a yes removes only the 0.3.0 entries and leaves the file\'s other keys and
   hit(/`permissions\.deny`/, 'the keys left alone are named: permissions.deny');
 });
 
-test('a repo with none of the rules is asked nothing', { skip: 'red-test-TC-5: sync-repo has no removal paragraph yet' }, () => {
+test('a repo with none of the rules is asked nothing', () => {
   hit(/\b(none|no such entries|no entries)\b[^.]*\b(nothing is asked|ask nothing|is not asked|no question)\b/i, 'with none there, nothing is asked');
 });
 
-test('a no is recorded as a Kept row with its reason, and carries "-" for the hash', { skip: 'red-test-TC-5: sync-repo has no removal paragraph yet' }, () => {
+test('a no is recorded as a Kept row with its reason, and carries "-" for the hash', () => {
   hit(/\ba no\b[^.]*`Kept` row[^.]*\breason\b/i, 'a no is a Kept row with its reason');
   const kept = flat(skill.slice(skill.indexOf('**The Kept hash**'), skill.indexOf('The diff alone does not tell you')));
   assert.match(kept, /allow-list[^.]*`-`/, 'The Kept hash paragraph does not say this copy carries "-", having no plugin file');
 });
 
-test('the lane rules are listed but are the person\'s call, and nothing else in the file is read as run\'s', { skip: 'red-test-TC-5: sync-repo has no lane-rule wording yet' }, () => {
+test('the lane rules are listed but are the person\'s call, and nothing else in the file is read as run\'s', () => {
   hit(/`Bash\(<command> \*\)`[^.]*\.sdlc\/CONFIG\.md/, 'the lane rule is tied to a lane named in .sdlc/CONFIG.md');
   hit(/\bperson's call\b/i, 'the lane rules are the person\'s call');
   hit(/\bmay be the repo's own\b/i, 'they may be the repo\'s own');
   hit(/\bnothing else\b[^.]*\bread as run's\b/i, 'nothing else in the settings file is read as run\'s');
 });
 
-test('the 0.3.0 upgrade paragraph is gone, and no live text points at question 16 for the old entries', { skip: 'red-test-TC-5: the 0.3.0 upgrade paragraph is still in sync-repo' }, () => {
+test('the 0.3.0 upgrade paragraph is gone, and no live text points at question 16 for the old entries', () => {
   const text = flat(skill);
   assert.ok(!text.includes('An upgrade to 0.3.0 from an install whose allow-list predates it'), 'the paragraph is still there');
   assert.ok(!text.includes('whose question 16 adds the new ones'), 'the pointer at question 16 is still there');
