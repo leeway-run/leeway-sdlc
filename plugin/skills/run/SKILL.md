@@ -136,7 +136,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
 4. **Act on how it exits.** A wait on something that blocks nothing carries on instead of stopping when it ends
    without an answer (exit 2, 3 or 4), such as a sub-issue run's debt proposal after its task is `done` ("Land the
-   task", step 5). Every other wait does as the table says:
+   task", step 5); on any other exit it does as the table says, exit 5 included. Every other wait does as the table says:
 
    | Exit | It means | So |
    |---|---|---|
@@ -145,6 +145,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    | 4 | the CLI asked for `leeway login` | a blocker outside Leeway: stop the turn, and name the action, `leeway login --server <server>`, after which re-invoking `run` resumes |
    | 3 | Leeway did not answer | stop the turn and say so, as stop 10 ("Hard stop conditions") does |
    | 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
+   | 5 | a question is waiting; `{"clarification","question","askedAt"}` on stdout | not an answer and not an end: answer it and wait again on the same escalation, as `PROCESS.md`, "Questions to the human are escalations", says. Carry on only on exit 0 |
    | any other | the wait never ran (126 or 127: the script is not executable, or not on the `PATH` because the plugin is disabled or the agent too old for it) | stop the turn and say so, naming the exit code |
 
 5. **On an answer, carry on exactly as a re-invoke of `run` would.** Read the issue again (`leeway issue get <ref> --json`): `escalations[].answer` is the answer a re-invoke reads, and its `label` and `note` reach the work as that
@@ -1143,7 +1144,8 @@ A run is only unattended if nothing in it waits for a keypress. That needs four 
 - **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it and in
   the form it gives, naming what a run calls and nothing more:
   - **Leeway verbs:** `issue get`, `issue list`, `issue update`, `issue create`, `comment add`, `iteration record`,
-    `spend record`, `escalation raise`, `escalation list`, `review get`, `project get`, `project link`, `process get`.
+    `spend record`, `escalation raise`, `escalation list`, `clarification answer`, `clarification list`, `review get`,
+    `project get`, `project link`, `process get`.
     Any other verb prompts: `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later
     CLI adds. A run calls none of them. A subagent is stopped from the write verbs by the plugin's
     `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").

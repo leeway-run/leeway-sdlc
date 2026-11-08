@@ -224,6 +224,7 @@ const exitPins = [
   ['exit 1: a bug in this run stops the turn', '1', /\| the call was wrong, or `<ref>` has no `eN` \| a bug in this run: stop the turn and say so \|/],
   ['exit 2: stops the turn', '2', /\| no answer by the deadline \| stop the turn/],
   ['exit 3: Leeway did not answer stops the turn', '3', /\| Leeway did not answer \| stop the turn and say so; re-invoking resumes \|/],
+  ['exit 5: a question is answered and the same escalation waited on again', '5', /\| a question is waiting \| not an answer: answer it and wait again on the same escalation, as `PROCESS\.md`, "Questions to the human are escalations", says\. Nothing else moves \|/],
   ['exit 4: names the login action', '4', /\| the CLI asked for `leeway login` \| stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes \|/],
 ];
 for (const [name, code, pattern] of exitPins) {

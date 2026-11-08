@@ -109,7 +109,7 @@ const RULES = TEMPLATES.filter((r) => r.startsWith('Bash(')).flatMap(expand)
 test('the list names the verbs of a run and nothing more', () => {
   assert.deepEqual(LEEWAY, [
     'issue get', 'issue list', 'issue update', 'issue create', 'comment add', 'iteration record', 'spend record',
-    'escalation raise', 'escalation list', 'review get', 'project get', 'project link', 'process get',
+    'escalation raise', 'escalation list', 'clarification answer', 'clarification list', 'review get', 'project get', 'project link', 'process get',
   ])
   assert.deepEqual(GIT, ['add', 'commit', 'push', 'fetch', 'merge', 'merge-base', 'worktree', 'branch -d', 'ls-remote', 'rev-parse', 'diff', 'status', 'show', 'log', 'blame'])
   assert.deepEqual(spansIn(REST), ['.sdlc/CONFIG.md', 'node -e', 'gh pr create', 'gh pr view', '<wait-answer>', '<session-tokens>', '.worktrees/', 'run', 'run'])
