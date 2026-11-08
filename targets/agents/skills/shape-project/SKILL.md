@@ -52,13 +52,33 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
      write the body only on their yes (step 5, "When the approval round stays"), and do not set `--step shape`.
 
 **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question to the PO is never a terminal
-question: it is a Leeway escalation on the story, and then you stop the turn (`PROCESS.md`, "Questions to the
-human are escalations"). Post the context first as a comment (`comment add <ref> --stdin body`), then
-`escalation raise <ref> --question "<at most 500 characters>" --options '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
+question: it is a Leeway escalation on the story, and then you wait for its answer (`PROCESS.md`, "Questions to the
+human are escalations"). Post the context first as a comment (`comment add <ref> --stdin body`), then write the
+escalation's fields as JSON to a file outside the repo, by absolute path, and raise it with `<raise> --server <server>
+--as <alias>/agent <ref> <fields file> -- <cli>`, `<raise>` being the command `HARNESS.md`, "Running the plugin's
+scripts", names. No field goes on a command line:
+
+```json
+{"type":"clarification","question":"<at most 1,000 characters>","context":"<what exists today in that area and what is unclear, in plain lines>","tradeoff":"<what each answer costs, where you can say it>","options":[{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"},{"label":"<at most 60>","argument":"<what happens if it is picked, at most 1,000>"}],"meanwhile":"<what continues, or nothing>","comment":"cN"}
+```
+
 2 to 5 options, the likeliest answer first, and one of them is always *Leave it OPEN* where the question is a
-gap. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
+gap. Every question here, the approval round's too, is a `clarification`. The context is the specific thing behind the question in plain lines, at most 1,000 characters: what exists
+today in that area and what is unclear, never only "see cN". **No pick:** no `"advice"`, and no option is marked
+`"suggested"`, since the answer is the PO's to give. The PO's answer and note are in `escalations[].answer` on the next `issue get`; an open escalation with no
 answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and this skill cannot run: stop and
 say so.
+
+**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on each open
+escalation of the round in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`):
+say once what you wait on and until when, start the wait as `HARNESS.md`, "Waiting for an answer", says, answer a
+question the PO asks of you and wait again (exit 5), and write nothing while one is open. On any exit but 0 and 5,
+or where `HARNESS.md` says `wait: stop`, stop the turn as run's table says, naming the story and its open
+escalations: re-invoking `shape-project` resumes from step 1, reading the answers that came. **On every answer of the round, carry on as a re-invoke would**,
+writing nothing twice: step 1 reads the answers, a follow-up goes out as step 3 says and is waited on the same way,
+and with none, steps 4 and 5 propose and write the body and set the shaped step; an answer to the approval
+escalation is acted on as "When the approval round stays" says. No answer moves the story out of the shaped step:
+that move is the PO's.
 
 ## The line you do not cross
 
@@ -113,7 +133,7 @@ Each area is one comment (what exists today) and one escalation (the question, t
 **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
 question, merge them into one, or hold the dependent one for the next round. Every other question goes out now,
 together, so the PO answers in one sitting and the first round covers as much ground as it can. Do not ration them.
-Then stop. The round's
+Then wait on them ("Wait, then carry on", above). The round's
 first comment also quotes the description as it is (or "none yet") under the line `Description at this round:`; the
 latest round's quote is what step 5 checks before it writes.
 
@@ -153,7 +173,7 @@ what the work is checked against, not its background.
 ## 5. Write the body, then stop at the shaped step
 
 **Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
-that does is a follow-up: raise it as in step 3 and stop. A later round drops what an answer settled: it is not asked
+that does is a follow-up: raise it as in step 3 and wait. A later round drops what an answer settled: it is not asked
 again, and it is not raised for confirmation. No escalation asks whether to write the body: the PO's
 answers are the approval, and moving the story on from the shaped step is theirs. The two exceptions are under
 "When the approval round stays" below.
@@ -166,7 +186,7 @@ at this round:` in the latest round's first comment, or the one step 0 read when
 description silently clobbers an edit made in the UI in between. Take the edit into the body instead: rebuild the
 body on the version just read (step 4), keeping the edit, and list in the inference comment what the edit changed
 and how the body keeps it. Where the edit contradicts an answer, that is something new unclear: raise it as in
-step 3 and stop. Otherwise the version just read is the baseline now: start this step again.
+step 3 and wait. Otherwise the version just read is the baseline now: start this step again.
 
 The Status line's name is the PO's: the answerer's name on the latest round's escalations
 (`escalations[].answer.by.userName`). When shaping asked nothing, it is the name `<cli> whoami` shows, the person
@@ -203,7 +223,8 @@ Two stories keep the approval round, and the PO is told why:
 Post one comment on the story with the current description (or "none yet"), the proposed body, and what is
 still `OPEN:`; when `issue.summary` is empty, a proposed summary too. Then raise one escalation, *Write this body
 to `<ref>`?* (*Write this body and summary to `<ref>`?* when a summary is proposed), with the options *Write it*,
-*Write it with the changes in my note* and *Do not write*, and stop. **Write nothing without the PO's yes.**
+*Write it with the changes in my note* and *Do not write*, and wait on it ("Wait, then carry on"). **Write nothing
+without the PO's yes.** On *Do not write*, write nothing, say so and stop.
 
 On a yes, write the description (and an empty summary) and read it back as above, but check the description
 against the one the proposal comment showed (on a mismatch, show the new version in a new proposal comment and ask

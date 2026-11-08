@@ -32,15 +32,26 @@ the only question held for a later round is the contract block's, while `filing-
 round drops what an answer settled.
 
 1. Per differing copy, `comment add <issue> --stdin body` with the diff and your guess at who changed it,
-   then `escalation raise <issue> --comment cN` with a question that **begins with the copy's name**
-   (for example `Sync .sdlc/templates/TASK.md to 0.1.0:`), 2 to 5 options (take, keep, merge, each with its
-   argument), and `--meanwhile` saying nothing is written.
-2. Raise every one of them in the same turn, then stop the turn, naming the issue and the escalations
-   (`PROCESS.md`, "Questions to the human are escalations").
+   then raise an escalation on `<issue>`, `"type": "clarification"` and `"comment"` that comment's `cN`, with a
+   question that **begins with the copy's name** (for example `Sync .sdlc/templates/TASK.md to 0.1.0:`), 2 to 5
+   options (take, keep, merge, each with its argument saying what is written if it is picked), and `"meanwhile"`
+   saying nothing is written. Its fields are those of `PROCESS.md`, "Questions to the human are escalations", written
+   as JSON to a file outside the repo, by absolute path, and raised with
+   `<raise> --server <server> --as <alias>/agent <issue> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`, "Running
+   the plugin's scripts", names it), never on a command line: the context says in plain lines what differs, each
+   change with the lines it touches and your guess at who made it, never only the comment's `cN`; `"tradeoff"` what
+   taking or keeping loses; `"advice"` your pick and why, that option first and marked `"suggested": true`, or no
+   pick and why, with none marked. The other questions this skill asks are raised the same way.
+2. Raise every one of them in the same turn (`escalation.escalation` in what `<raise>` prints is the `eN`), then wait on
+   each open one in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`;
+   `PROCESS.md`, "Questions to the human are escalations"), answering a question asked of you and waiting again
+   (exit 5). On every answer, carry on as "On resume" says, writing nothing twice. On any exit but 0 and 5, or where
+   `HARNESS.md` says `wait: stop`, stop the turn as run's table says, naming the issue and the escalations:
+   re-invoking `sync-repo` resumes.
 
 **On resume**, run steps 0 to 2 again, then `issue get <issue> --json` and match each escalation's
 `question` to its copy by the full prefix `Sync <copy> to <this version>:`, version included. An escalation whose prefix names another version is from an earlier release: ignore it, even if answered. An answered one is acted on in step 3, once no question remains open. The latest answered one for a copy is its answer. An open one with no
-answer is not: do not write that copy. A copy with no escalation yet gets one now. **While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, stop the turn, and do not go on to step 3's writes or to step 4.** So the tree stays clean for step 0 at every resume, and every `--meanwhile` stays true. Never write a copy on an unanswered question. The `filing-work:` question is the exception only in how it is found:
+answer is not: do not write that copy. A copy with no escalation yet gets one now. **While any question is open, the `filing-work:` question included, write nothing, in the repo or to the process, wait on it (above), and do not go on to step 3's writes or to step 4.** So the tree stays clean for step 0 at every resume, and every `--meanwhile` stays true. Never write a copy on an unanswered question. The `filing-work:` question is the exception only in how it is found:
 step 1 reads its escalation itself, before step 2, and never raises it twice. The legacy friction migration
 (step 1) is matched like a copy, by the prefix `Sync friction-project: to <this version>:`, and so is the new
 flow (step 1), by `Sync process: to <this version>:`, and so is the budget move (step 1), by
@@ -86,7 +97,7 @@ Then the `filing-work:` line of `.sdlc/leeway.md`, which step 2 needs to fill th
 Only the contract block waits on this answer, because the block cannot be compared without it: while the question is
 open, step 2 skips the block and its question is held for the next round, once the answer has filled the block (a
 block that then matches is not asked). Every other copy and step 1's other offers depend on no answer here, so they
-are compared and go out in the same round as this question. An open `filing-work:` question stops the turn like any other open question ("On resume"), even with every copy answered: step 4 never runs on it, so nothing stamps `Synced to` over a block never compared. The answer fills the
+are compared and go out in the same round as this question. An open `filing-work:` question is waited on like any other open question ("On resume"), even with every copy answered: step 4 never runs on it, so nothing stamps `Synced to` over a block never compared. The answer fills the
 block in step 2 and is written in step 4.
 
 Then the friction line of `.sdlc/leeway.md`:

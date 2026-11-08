@@ -37,7 +37,10 @@ hook-metadata variables. Still read the `.jsonl` file before you commit any of i
 A run waits for an escalation's answer on `plugin/scripts/wait-answer.mjs` (`.sdlc/kit/scripts/` once installed). An
 agent may be marked as waiting (`wait:` in `scripts/targets.mjs`, rendered into its `HARNESS.md`) only when this run
 shows it; until then its `HARNESS.md` says `wait: stop`, and a run there stops after an escalation as before.
-`plan-project`'s developer interview uses the same script and follows the same line.
+`plan-project`'s developer interview uses the same script and follows the same line, and so does every other skill
+that raises an escalation (`PROCESS.md`, "Questions to the human are escalations"). Where a skill stops instead of
+waiting, nobody is listening, so a question a person asks of the agent on that escalation is handed back to them
+after 30 minutes.
 
 1. In the scratch repo, write a fake `leeway` that answers `--json issue get` with one escalation, `ref: "PRB-1", number: 1`, whose
    `answer` is null on the first call and `{ "label": "Go ahead", "note": "probe", "by": {} }` after it, logging

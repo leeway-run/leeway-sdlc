@@ -32,8 +32,10 @@ setTimeout(() => {
 `
 
 const by = { userId: 'u1', userName: 'Nick', actor: null }
-const esc = (number, answer = null) => ({ number, ref: 'LWY-1', question: 'q', options: [], meanwhile: 'm', answer })
+const esc = (number, answer = null, clarifications = []) => ({ number, ref: 'LWY-1', question: 'q', options: [], meanwhile: 'm', answer, clarifications })
 const answered = (label, note = '') => ({ label, note, by, answeredAt: 1 })
+// A question about an escalation as `issue get` gives it, oldest first in `clarifications`: answer is null until it is answered.
+const asked = (number, answer = null) => ({ number, question: `question ${number}`, askedAt: 1000 + number, by, answer, answeredAt: answer === null ? null : 2000 + number, answeredBy: answer === null ? null : by })
 const issue = (...escalations) => ({ stdout: { issue: { ref: 'LWY-1', status: 'todo' }, comments: [], escalations } })
 
 const run = (plan, args = [], timings = ['--first', '0.05', '--cap', '0.2', '--deadline', '1.5', '--call-timeout', '1']) => {
@@ -197,6 +199,41 @@ test('an escalation the issue does not have exits 1 instead of waiting', async (
   assert.equal(r.status, 1)
   assert.match(r.stderr, /no escalation e9/)
   assert.equal(r.calls.length, 1)
+})
+
+test('an open question about its escalation stops the wait with exit 5 and prints it, never a label', async () => {
+  const r = await run([issue(esc(1), esc(2)), issue(esc(1), esc(2, null, [asked(1, 'yes'), asked(2), asked(3)]))], ['e2'])
+  assert.equal(r.status, 5, r.stderr)
+  assert.equal(r.stderr, '')
+  const out = JSON.parse(r.stdout)
+  assert.deepEqual(out, { clarification: 'q2', question: 'question 2', askedAt: 1002 })
+  assert.ok(!('label' in out))
+  assert.equal(r.calls.length, 2)
+  readOnly(r.calls)
+})
+
+test('an answer wins over an open question: an answered escalation exits 0', async () => {
+  const r = await run([issue(esc(1, answered('Yes'), [asked(1)]))], ['e1'])
+  assert.equal(r.status, 0, r.stderr)
+  assert.deepEqual(JSON.parse(r.stdout), { label: 'Yes', note: '', by })
+  assert.equal(r.calls.length, 1)
+})
+
+test('a question that has an answer does not stop the wait', async () => {
+  const r = await run([issue(esc(1, null, [asked(1, 'yes'), asked(2, 'no')]))], ['e1'])
+  assert.equal(r.status, 2, `${r.stderr} ${r.stdout}`)
+  assert.equal(r.stdout, '')
+  assert.ok(r.calls.length >= 3)
+})
+
+test("a question on another escalation, or on a sub-issue's escalation with the same number, does not stop the wait", async () => {
+  // Merged oldest first, so the sub-issue's e2 and its open question come before the ref's own e2.
+  const sub = { ...esc(2, null, [asked(1)]), ref: 'LWY-1.1' }
+  const r = await run([issue(esc(1, null, [asked(1)]), sub, esc(2))], ['e2'])
+  assert.equal(r.status, 2, `${r.stderr} ${r.stdout}`)
+  assert.equal(r.stdout, '')
+  assert.ok(r.calls.length >= 3)
+  readOnly(r.calls)
 })
 
 test('usage errors exit 1 without calling the CLI', async () => {

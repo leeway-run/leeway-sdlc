@@ -33,7 +33,7 @@ for (const [where, v] of [
 
 // A bin/ at the root of the Claude Code plugin is how run's allow rules stay the same for every person and version; the
 // generated package has none, so its scripts stay at .sdlc/kit/scripts/.
-for (const name of ["wait-answer", "session-tokens"]) {
+for (const name of ["wait-answer", "session-tokens", "raise"]) {
   const bin = new URL(`../../plugin/bin/leeway-sdlc-${name}`, import.meta.url);
   if (!fs.existsSync(bin)) problems.push(`plugin/bin/leeway-sdlc-${name} is missing`);
   else if (process.platform !== "win32" && !(fs.statSync(bin).mode & 0o111)) problems.push(`plugin/bin/leeway-sdlc-${name} is not executable`);

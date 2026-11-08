@@ -14,6 +14,7 @@
 //       hooks/git-guard.mjs, hooks/leeway-guard.mjs, hooks/adapters/{guard,governed}.mjs
 //       scripts/wait-answer.mjs                 what run waits on for an escalation's answer (plugin/bin/ is Claude Code's only)
 //       scripts/session-tokens.mjs              what run counts tokens with, where HARNESS.md says it can
+//       scripts/raise.mjs                       what every skill raises an escalation with, its fields from a file
 //       harness/<agent>.md                      one HARNESS.md per agent (scripts/targets.mjs)
 //       wiring/<agent>/...                      that agent's subagents and guard hook, at their repo paths
 //
@@ -93,6 +94,7 @@ plugin-files: .sdlc/kit/
 
 - **wait-answer:** \`node .sdlc/kit/scripts/wait-answer.mjs\`
 - **session-tokens:** \`node .sdlc/kit/scripts/session-tokens.mjs\`
+- **raise:** \`node .sdlc/kit/scripts/raise.mjs\`
 
 This is the package's own harness file. The repo's is \`.sdlc/kit/HARNESS.md\`, which \`sdlc-install\` writes from
 \`kit/harness/<agent>.md\` for the agent you use. Until then, run \`sdlc-install\`.
@@ -105,7 +107,8 @@ How a run waits depends on the agent, and \`.sdlc/kit/HARNESS.md\` says so for y
 wait: it acts at once as run's "Wait, then carry on" step 4 says for exit 2. A wait that blocks nothing carries on;
 any other stops the turn, and re-invoking \`run\` once it is answered resumes where there is work left to resume
 (run, "Land the task", step 5). \`plan-project\`'s developer interview stops the same way, and re-invoking
-\`plan-project\` resumes it.
+\`plan-project\` resumes it. Every other skill that raises an escalation stops the same way. Nobody is listening once a
+skill stops, so a question a person asks of the agent on its escalation is handed back to them after 30 minutes.
 
 ## Counting tokens
 
@@ -147,7 +150,7 @@ const build = (out) => {
   for (const f of ['git-guard.mjs', 'leeway-guard.mjs', 'adapters/guard.mjs', 'adapters/governed.mjs']) {
     write(join(kit, 'hooks', f), readFileSync(join(PLUGIN, 'hooks', f)))
   }
-  for (const f of ['wait-answer.mjs', 'session-tokens.mjs']) write(join(kit, 'scripts', f), readFileSync(join(PLUGIN, 'scripts', f)))
+  for (const f of ['wait-answer.mjs', 'session-tokens.mjs', 'raise.mjs']) write(join(kit, 'scripts', f), readFileSync(join(PLUGIN, 'scripts', f)))
   for (const t of TARGETS) {
     write(join(kit, 'harness', `${t.id}.md`), harness(t, version, NOTICE))
     for (const [path, content] of Object.entries(t.wiring(agents))) write(join(kit, 'wiring', t.id, path), content)

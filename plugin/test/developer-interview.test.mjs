@@ -94,7 +94,7 @@ test('AC-6: no design doc while the interview is open', () => {
 });
 
 test('AC-7: a product question stays a gap for the PO', () => {
-  assert.match(interview, /\*\*A product question is not asked here\.\*\* What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO\. Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more, and stop/);
+  assert.match(interview, /\*\*A product question is not asked here\.\*\* What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO\. Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more for the interview, and wait as that step says/);
   assert.match(interview, /Nothing can withdraw an open escalation, so the gap comment names any still open: step 0 reads one as shaping unfinished on a type with no shaped step, and they must be answered too/);
   assert.match(interview, /\*\*A story step 1 held gets no interview until it passes\.\*\* Step 1 runs first, so a product gap and an interview question are never in one round: the gap's escalation is for the PO, and this round is for the developer/);
   assert.match(flat(part('What is asked')), /On a type without `shape` there is no PO: decide it with the human by escalation, as step 3 says, in this round, and say in its comment that it is a product decision/);
@@ -128,12 +128,13 @@ test('skipping: nothing open is the one way past it, tied to "Does this need pla
 });
 
 test('the contract and the harnesses say the interview waits', () => {
-  assert.match(read('plugin/PROCESS.md'), /`plan-project` waits the same way while its developer interview holds it, on any open escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn\. \*\*Every other skill stops the turn\*\*/);
+  assert.match(read('plugin/PROCESS.md'), /\*\*Then wait for the answer, in every skill that raises\*\*: `run`, `plan-project`, `shape-project`, `sync-repo`, `sdlc-install` and `sdlc-tune`\./);
+  assert.doesNotMatch(read('plugin/PROCESS.md'), /Every other skill stops the turn/);
   assert.match(read('plugin/PROCESS.md'), /Before the design doc it interviews the developer in rounds of escalations/);
-  assert.match(read('plugin/HARNESS.md'), /`plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it/);
+  assert.match(read('plugin/HARNESS.md'), /`plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it\. Every other skill that raises an escalation starts and reads its waits the same way/);
   assert.match(read('scripts/targets.mjs'), /plan-project\\`'s developer interview does not wait either/);
   assert.match(read('targets/agents/skills/sdlc-install/kit/harness/codex.md'), /`plan-project`'s developer interview does not wait either/);
-  assert.match(read('docs/targets/README.md'), /`plan-project`'s developer interview uses the same script and follows the same line\./);
+  assert.match(read('docs/targets/README.md'), /`plan-project`'s developer interview uses the same script and follows the same line, and so does every other skill that raises an escalation \(`PROCESS\.md`, "Questions to the human are escalations"\)\. Where a skill stops instead of waiting, nobody is listening, so a question a person asks of the agent on that escalation is handed back to them after 30 minutes\./);
   assert.match(read('targets/agents/HARNESS.md'), /`plan-project`'s developer interview stops the same way/);
 });
 
@@ -142,8 +143,8 @@ test('the waiting probe in docs/targets/README.md gives its fake the ref wait-an
   assert.match(read('docs/targets/README.md'), /wait-answer\.mjs --server https:\/\/probe\.test PRB-1 e1/);
 });
 
-test('every interview path keeps the escalation shape: 2 to 5 options, the recommended first', () => {
-  assert.match(interview, /2 to 5 options, the recommended one first/);
+test('every interview path keeps the escalation shape: 2 to 5 options, the pick first', () => {
+  assert.match(interview, /2 to 5 options, your pick first/);
   assert.match(interview, /A decision with more than 5 options is cut to the real ones/);
 });
 
@@ -173,7 +174,7 @@ test("in this skill an issue's escalations are its own, read before step 0's tab
   assert.match(step0, /A sub-issue's open one, on a re-plan, is `run`'s and holds nothing here: name it in the session, and do not wait on it/);
   assert.match(step0, /with a body and no open escalation: /);
   assert.match(step0, /With no body, or an escalation still open: \*\*say shaping is not finished/);
-  assert.match(step0, /an open escalation with no answer means do not proceed/);
+  assert.match(step0, /An open escalation with no answer means do not proceed/);
   assert.match(flat(part('Where it stands, from Leeway alone')), /`comments` and `escalations\[\]`, each issue's own \(step 0\)/);
 });
 
@@ -224,6 +225,7 @@ const exitPins = [
   ['exit 1: a bug in this run stops the turn', '1', /\| the call was wrong, or `<ref>` has no `eN` \| a bug in this run: stop the turn and say so \|/],
   ['exit 2: stops the turn', '2', /\| no answer by the deadline \| stop the turn/],
   ['exit 3: Leeway did not answer stops the turn', '3', /\| Leeway did not answer \| stop the turn and say so; re-invoking resumes \|/],
+  ['exit 5: a question is answered and the same escalation waited on again', '5', /\| a question is waiting \| not an answer: answer it and wait again on the same escalation, as `PROCESS\.md`, "Questions to the human are escalations", says\. Nothing else moves \|/],
   ['exit 4: names the login action', '4', /\| the CLI asked for `leeway login` \| stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes \|/],
 ];
 for (const [name, code, pattern] of exitPins) {
@@ -233,7 +235,7 @@ for (const [name, code, pattern] of exitPins) {
 const partPins = [
   ['a question is its own comment, naming its stories', 'Where it stands, from Leeway alone', /A question is \*\*its own top-level comment\*\*, its body opening `# Interview question <n>, round <r>: <refs>`, the stories it binds/],
   ['reads each story and its Plan record, nothing from a session', 'Where it stands, from Leeway alone', /`issue get` on each story, on its Plan record and on any `<ref>` a `Held on` names holds it all: `comments` and `escalations\[\]`, each issue's own \(step 0\)/],
-  ['the tie: a question\'s escalation is set on its own comment', 'Where it stands, from Leeway alone', /with its escalation's `--comment` set to that comment's `cN`/],
+  ['the tie: a question\'s escalation is set on its own comment', 'Where it stands, from Leeway alone', /with its escalation's `"comment"` set to that comment's `cN`/],
   ['a comment\'s own escalation is read from comments[].escalation', 'Where it stands, from Leeway alone', /A comment's own escalation is `comments\[\]\.escalation`, `\{number, open\}` or null/],
   ['what a story\'s question comments are, on it or on the Plan record', 'Where it stands, from Leeway alone', /\*\*A story's question comments\*\* are these and any `# Floor question: <refs>`, on it or on the Plan record naming it/],
   ['the end mark is on the story, and "after" goes by createdAt', 'Where it stands, from Leeway alone', /Its interview ends at a comment on it opening `# Interview closed`, and "after" goes by `createdAt`\. The first row that fits decides/],
@@ -242,9 +244,9 @@ const partPins = [
   ['the read\'s size: stories only, their own escalations, no comments', 'What is asked', /That is one call a story, sub-issues skipped, and from each you keep only its own `escalations\[\]` \(step 0\), none of its comments/],
   ['the read has no cap, and says why', 'What is asked', /It has no cap: a story left unread is how one decision gets two answers/],
   ['a sibling\'s open question is held on, not asked again', 'What is asked', /A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`/],
-  ['first round: a question\'s comment, then the raise on the issue it is on', 'The first round', /For each, post its comment, the context and what the code shows, then `escalation raise <ref> --json`, `<ref>` the issue it is on/],
-  ['first round: the raise is tied by --comment cN', 'The first round', /\(`escalation\.escalation` in the answer is the `eN`\) with `--comment cN`, 2 to 5 options/],
-  ['first round: --meanwhile says nothing moves until it closes', 'The first round', /--meanwhile "Nothing: no design doc, criteria or tasks until the interview closes\."/],
+  ['first round: a question\'s comment, then the raise on the issue it is on', 'The first round', /For each, post its comment, the context and what the code shows, then raise it with `<raise>` as step 0 says, `"type": "clarification"`, on `<ref>`, the issue it is on/],
+  ['first round: the raise is tied by --comment cN', 'The first round', /\(`escalation\.escalation` in what it prints is the `eN`\), with `"comment"` its comment's `cN`, the fields step 0 names, 2 to 5 options/],
+  ['first round: --meanwhile says nothing moves until it closes', 'The first round', /`"meanwhile": "Nothing: no design doc, criteria or tasks until the interview closes\."`/],
   ['first round: held questions are posted, naming what they wait on with its ref', 'The first round', /Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them/],
   ['the wait: says once what it waits on', 'Wait, then read', /Say once what you wait on and until when/],
   ['the wait: as run does, on the first open one, polling nothing', 'Wait, then read', /Then wait on the first open escalation, as `run` does \(`run`, "Wait, then carry on"\), started as `HARNESS\.md`, "Waiting for an answer", says, polling nothing and doing no other work of this plan/],
@@ -261,8 +263,9 @@ const partPins = [
 ];
 for (const [name, heading, pattern] of partPins) test(name, () => assert.match(flat(part(heading)), pattern));
 
-test("step 0's exception: the interview waits where every other question stops the turn", () => {
-  assert.match(step0, /then you stop the turn/);
-  assert.match(step0, /it is a Leeway escalation on the story, and then you stop the turn; one that stories share goes on their Plan record\./);
-  assert.match(step0, /\*\*The one exception to stopping is "The developer interview", which waits on its escalations first\*\* and stops the turn where that wait ends with no answer/);
+test("step 0: every escalation is waited on, the interview's no longer the one exception", () => {
+  assert.doesNotMatch(step0, /then you stop the turn/);
+  assert.match(step0, /it is a Leeway escalation on the story, and then you wait for its answer; one that stories share goes on their Plan record\./);
+  assert.doesNotMatch(step0, /The one exception to stopping/);
+  assert.match(step0, /\*\*Every escalation this skill raises is waited on\*\*, as "Wait, then read" \(under "The developer interview"\) says/);
 });

@@ -81,7 +81,7 @@ are a person's, made by them or by a skill they asked.
 
 **Both are enforced for this plugin's own agents, by hooks.** `git-guard` blocks a governed agent's
 git writes; `leeway-guard` blocks a governed agent's `leeway` call whose verb is outside
-`get|list|whoami|help|version`. In Claude Code a governed agent is one whose type carries the `leeway-sdlc:`
+`get|list|whoami|help|version`, and any call it makes to the plugin's raise script. In Claude Code a governed agent is one whose type carries the `leeway-sdlc:`
 prefix, so another plugin's agents are untouched. Other agents attribute calls differently, and some not at
 all: there the orchestrator marks the window in which a subagent runs (`HARNESS.md`, "Governed-agent
 marker"), and every shell call in it is judged as the subagent's. The hook is not a vault: a raw HTTP call to the MCP endpoint
@@ -187,13 +187,13 @@ exists.
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
    comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
-   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   waits on them, and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
    QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
    escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
    `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
-   `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
-   `plan-project` to apply the answers (it replies `# QUESTIONs applied` to the report), then move the story to
-   `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   `ready`**, and no skill makes it on its own initiative, nor on a QUESTION's answer. With QUESTIONs, the order is:
+   answer them, let `plan-project` apply the answers (the session waiting on them does, or a re-invoke once it has
+   ended; it replies `# QUESTIONs applied` to the report and moves nothing), then move the story to `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
    at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
@@ -293,29 +293,121 @@ because an escalation keeps the options that were put and the argument for each,
 as a decision record on the issue. This replaces "returns `BLOCKED`" for anything the human must decide;
 an implementer still writes the doubt it can live with under *Uncertainties*.
 
-```sh
-leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{"label":"…","argument":"…"}]' --meanwhile "…"
+Write the escalation's fields to a file, then raise it with the plugin's raise script, by the command `HARNESS.md`,
+"Running the plugin's scripts", names (`<raise>` here):
+
+```json
+{"type":"<type>","question":"…","context":"…","tradeoff":"…","advice":"…","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"…","comment":"cN"}
 ```
 
-- **2 to 5 options**, each with its argument. A question with one option is an instruction; a question
-  with six has not been thought through.
-- **From `plan-project` and `run`, the recommended option comes first**, and its argument opens `Recommended:` and
-  says why. Where the agent truly has no pick it invents none: the first argument opens `No recommendation:` and says
-  why. An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block keeps its order.
-  `shape-project` does not recommend: it puts the likeliest answer first, states no pick and takes the PO's answer as
-  given.
-- **`--meanwhile`** says what continues while the question is open, or that nothing does.
-- **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
-- **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
-  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), and on an answer carry on
-  as a re-invoke would, writing nothing twice. It stops the turn only when the wait ends without an
-  answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
-  outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
-  answer that needs a person to act first is put to them as an escalation and waited on too (run's
-  "Wait, then carry on"). `plan-project` waits the same way while its developer interview holds it, on any open
-  escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
-  and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
-  somewhere else.
+```sh
+<raise> --server <server> --as <alias>/<role> <ref> <fields file> -- <cli>
+```
+
+**Every field goes in the file, never on a command line.** A question, a context, an argument or a piece of advice
+is drawn from a report or the code, and holds backticks, `$` and apostrophes that a shell would run, expand or end a
+quote on, so the text would arrive cut or changed. The script reads the file and runs the CLI's `escalation raise`
+once, each field an argument of its own and none through a shell, so every field arrives as written. It prints what
+the CLI prints, the raised escalation as JSON (`escalation.escalation` is its `eN`), and exits with the CLI's code;
+for a file it cannot use (not JSON, a field missing or of the wrong kind, or one it does not know) it raises
+nothing and exits 2, with a line starting `raise:`: fix the file and raise again. An exit of 126 or 127 means it never
+ran (not executable, or not on the `PATH`): stop the turn and say so. Write the file as JSON with the `Write` tool: in `run`, where run's other bodies go (run, "Where `run`'s own files go"); in
+any other skill, a file outside the repo, by absolute path. `"type"`, `"question"`, `"context"`, `"options"` and
+`"meanwhile"` always; `"tradeoff"`, `"advice"` and `"comment"` where the asker has them. The CLI's own raise, with
+the fields as flags, is off run's allow-list, so it prompts.
+
+An escalation is decided from what it carries, so a person can make the decision from the escalation alone, without
+opening the report behind it:
+
+- **`"type"`, always, by what kind of question it is.** `blocker`: the work has stopped on a failure or a block,
+  and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that
+  needs a spec amendment, a stop of an issue run. `clarification`: a decision the plan or the operation needs from a
+  person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping,
+  interview or floor question, an install, sync or tune question. Either kind holds the work that depends on it until
+  it is answered. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
+  raises.
+- **`"context"`: the specific thing behind the question, in plain lines**, taken from the report, the brief or the
+  code: each blocker, finding or question summarised in one line of its own, with what it is about. **Never only a
+  reference**: "See c12", a URL or a ref alone is no context, and the server refuses it (`invalid_context`). A `cN`
+  may follow a line as where the detail is, never stand in for it.
+- **`"tradeoff"`**: what the choice costs either way, where the asker can say it. **`"advice"`**: which option the
+  asker picks and why, in a sentence or two, or that it has no pick and why. Left out where the asker has neither,
+  as `shape-project` is.
+- **2 to 5 options**, each a `label` and an `argument` that says what happens if it is picked: what the agent does
+  next, and what it costs. A question with one option is an instruction; a question with six has not been thought
+  through.
+- **The pick comes first and is marked `"suggested": true`**, the only option so marked, and Advice says why. Where
+  the agent truly has no pick it invents none: no option is suggested, and Advice says there is no pick and why. No
+  argument repeats the pick: the recommendation is in Advice and on the option, nowhere else. An orchestrator
+  raising an implementer's `## Question` or a reviewer's `Escalates` block passes its fields through unchanged and
+  keeps its order and its pick. `shape-project` does not recommend: it puts the likeliest answer first, marks no
+  option suggested, gives no Advice and takes the PO's answer as given.
+- **At most 1,000 characters** each in the question, the context, the trade-off, the advice and each argument; a
+  label at most 60 and `"meanwhile"` at most 500. A context that would not fit lists the worst items, then says how
+  many more there are and where they are ("and 4 more MINOR findings, in c12").
+- **`"meanwhile"`** says what continues while the question is open, or that nothing does.
+- **Longer context goes in a comment first**, then `"comment": "cN"` ties the escalation to it. The comment holds the
+  whole of it; `"context"` still carries the specific thing.
+- **A raise the server refuses is not retried as it was.** The CLI's message names the code, `invalid_context` and
+  the like. Fix the field in the file and raise once more:
+  - `invalid_context` has two causes. A context that is only a reference: write the specific thing behind it, one
+    plain line each. A context over 1,000 characters: cut it to the worst items, one line each, and end with how many
+    more there are and where.
+  - `invalid_question` (empty, or over 1,000 characters), `invalid_tradeoff` and `invalid_advice` (over 1,000),
+    `invalid_meanwhile` (over 500) and `invalid_options` (not 2 to 5, a label empty, over 60 or repeated, an
+    argument over 1,000, or more than one suggested): shorten or fix that field, keeping what decides the question.
+  - **A second refusal stops the turn**: raise nothing more, and say which escalation on which issue was not raised
+    and what the CLI printed. The work that would have waited on it does not go on.
+
+  A raise the CLI refuses with `Unknown option '--type'` (or `--context`, `--tradeoff`, `--advice`) is a Leeway
+  server older than LWY-159, which this plugin needs: raise nothing more and stop the turn, saying that the
+  escalation was not raised because the server at `<server>` has no escalation type, context, trade-off or advice
+  yet, and needs a Leeway with LWY-159.
+- **Then wait for the answer, in every skill that raises**: `run`, `plan-project`, `shape-project`, `sync-repo`,
+  `sdlc-install` and `sdlc-tune`. Say once what it waits on and until when, wait on `scripts/wait-answer.mjs` (as
+  `HARNESS.md`, "Waiting for an answer", says), act on its exit as run's "Wait, then carry on" does, and on an answer
+  carry on as a re-invoke of that skill would, writing nothing twice: each skill says where an answer takes it. An
+  answer that needs a person to act first is put to them as an escalation and waited on too (run's "Wait, then carry
+  on"). Where `HARNESS.md` says `wait: stop`, no wait starts: act at once as for exit 2. A wait that holds work stops
+  the turn only when:
+  - it ends without an answer (exit 2, about 16 hours; exit 3, Leeway unreachable), naming the escalation and the issue;
+  - it ends on a blocker outside Leeway (exit 4, `leeway login`), naming the action;
+  - it ends in a bug (exit 1) or never ran (any other exit), saying so;
+  - the answer to a question asked of the agent is not written (the next point);
+  - or the answer ends the work.
+
+  A wait that blocks nothing (run's debt proposal once its task has landed, "Land the task", step 5) does not stop the
+  turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and
+  carries on. Either way, do not continue the work that depends on the answer, and do not ask again somewhere else.
+  A question asked of the agent while it waits does not end the wait (the next point).
+- **A question asked of the agent is answered, then the wait starts again.** A person can ask the agent about an open
+  escalation before deciding it, and the wait exits 5 on the question, printing
+  `{"clarification":"qN","question":"…","askedAt":<ms>}`. The orchestrator answers it, never a subagent:
+  1. **Answer from what you know**, reading the code where that settles it, and the questions already answered on
+     that escalation, so the answer agrees with them: `leeway clarification list <ref> <eN> --json`. At most 1,000
+     characters. An answer that changes the options or the advice says so in its text; the escalation itself is not
+     changed.
+  2. **Write it as the role that raised the escalation**: `<role>` is `by.actor.role` of the escalation's entry in
+     `escalations[]` of `leeway issue get <ref> --json` (the entry whose `ref` is `<ref>` and `number` is N), and
+     `<ref>` and `<eN>` are those of the wait. The answer goes in from a file, never inline, since an answer drawn
+     from the code can hold a backtick or a `$` the shell would run: in `run`, a file where run's other bodies go
+     (run, "Where `run`'s own files go"); in any other skill, a file outside the repo, by absolute path.
+
+     ```sh
+     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --stdin answer < <file>
+     ```
+
+  3. **Say once in the session** that qN on eN is answered, and until when the new wait runs: "Answered q1 on e2 of
+     DRY-2.1; waiting again until <the time 16 hours from now>."
+  4. **Wait again on the same escalation**, the same command, with 16 hours of its own.
+
+  Nothing else is written: no second escalation and no comment for it. A question is not the answer: do no work
+  that depends on the escalation, and carry on only on exit 0. **If the answer is not written** (the CLI refuses
+  it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
+  would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3
+  otherwise, naming the escalation and the question and saying what the CLI said. Where the wait holds work, that
+  stops the turn, and a re-invoke waits again and meets the question again. Where it blocks nothing, say once in the
+  session that qN on eN is unanswered, and carry on as on exit 3 or 4.
 - **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.
@@ -348,7 +440,7 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | round | commit and push the task branch, then `iteration record <ref> <sha> --tests "<lane line>" [--passed] --addresses '["c1","c2"]' [--tokens N] [--minutes N] [--testMinutes N] --note "…" --as <impl>/implementer` (`--passed` is a valueless flag: a lane that failed omits it and starts `--tests` with `FAILED:`; `--tokens` is new tokens, input + cache writes + output summed over the agent's model calls and never cache reads, counted by `scripts/session-tokens.mjs` as `HARNESS.md`, "Counting tokens", says, and left out when they cannot be counted, never `0`); the round count is the iterations; round-0 attempts are those before the `step_set {to: implementing}` entry |
 | spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round's review, its orchestration, or a round that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
-| dispute needing a human; a hard stop of `run` on an issue | `escalation raise <ref> --question … --options '[…]' --meanwhile …` (Needs you is the one interrupt) |
+| dispute needing a human; a hard stop of `run` on an issue | an escalation, raised by `<raise>` from a file of its fields: `type`, `question`, `context`, `tradeoff`, `advice`, `options`, `meanwhile` (Needs you is the one interrupt) |
 | plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
 | technical criteria a story body points to | the comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |

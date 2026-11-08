@@ -10,6 +10,8 @@ Not run yet (README.md, "The run, per agent").
 ## Waiting for an answer
 Not probed: `gemini` is not installed on the machine this was checked on (`which gemini` printed nothing).
 Until the probe in README.md, "Waiting for an answer, per agent", shows that Google Gemini CLI resumes the session on its own
-when a background command exits, a run here stops after an escalation.
+when a background command exits, a run here stops after an escalation, and so does every other skill that raises one.
+Nobody is listening once it stops, so a question a person asks of the agent on such an escalation is handed back
+to them after 30 minutes.
 
 wait: stop

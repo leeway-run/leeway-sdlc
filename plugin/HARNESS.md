@@ -12,8 +12,9 @@ plugin-files: the plugin root (this file's directory)
 
 - **wait-answer:** `leeway-sdlc-wait-answer`
 - **session-tokens:** `leeway-sdlc-session-tokens`
+- **raise:** `leeway-sdlc-raise`
 
-Both are in the plugin's `bin/`, which Claude Code 2.1.91 and later puts on the Bash tool's `PATH` while the plugin is enabled, so a call and
+All three are in the plugin's `bin/`, which Claude Code 2.1.91 and later puts on the Bash tool's `PATH` while the plugin is enabled, so a call and
 its allow rule read the same for every person and every version. **The limit:** claude.ai and Cowork don't install a plugin
 with a top-level `bin/`, so this plugin installs in Claude Code only. Other agents have no `bin/`: their harness names `node .sdlc/kit/scripts/<script>.mjs`.
 
@@ -38,9 +39,12 @@ Start `wait-answer.mjs` (run, "Wait, then carry on") with the Bash tool and `run
 with nothing appended: an `; echo` after it would become the exit code the harness reports. The harness runs it
 detached and wakes the session when it exits, naming its exit code and its output file, so no turn is spent per
 check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
-on the exit code as run's table says. If the session ends first, the run has stopped as at the deadline: the
+on the exit code as run's table says. Exit 5 is a question, not the end: answer it, then start the wait again the same
+way, a new background command (`PROCESS.md`, "Questions to the human are escalations"). If the session ends first, the run has stopped as at the deadline: the
 escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
 `plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it.
+Every other skill that raises an escalation starts and reads its waits the same way (`PROCESS.md`, "Questions to
+the human are escalations").
 docs/targets/claude.md records the probe.
 
 ## Counting tokens
@@ -91,7 +95,7 @@ run's allow-list goes in the repo's `.claude/settings.json` (`permissions.allow`
 | a lane or setup command | `Bash(<command> *)`, one rule per part of a compound lane |
 | `node -e` | `Bash(node -e *)` |
 | `gh pr create`, `gh pr view` | `Bash(gh pr create *)`, `Bash(gh pr view *)` |
-| the two scripts | `Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)` |
+| the three scripts | `Bash(leeway-sdlc-wait-answer *)`, `Bash(leeway-sdlc-session-tokens *)`, `Bash(leeway-sdlc-raise *)` |
 | file edits under `.worktrees/` | `Edit(/.worktrees/**)`, which also covers the `Write` tool |
 | the plugin's own files | `Read(~/.claude/plugins/cache/*/leeway-sdlc/**)` |
 

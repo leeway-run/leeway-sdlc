@@ -13,14 +13,18 @@
 //
 // Each check runs `<cli> --server <url> --json issue get <ref>` and reads `escalations[]`, the entry whose `ref` is <ref> and `number` is N:
 // a parent's list also holds its sub-issues', oldest first, with numbers that collide.
-// Only its `answer` ends the wait; a comment, a status change or another escalation's answer does not.
+// Only its `answer` ends the wait as answered; a comment, a status change or another escalation's answer does not.
+// A question asked about it, an entry of its `clarifications` whose `answer` is null, stops the wait early with exit 5, so the caller
+// can answer it and wait again; it is read from the same check. The escalation's answer wins, so an answered escalation exits 0 with a
+// question still open, and an answered question does not stop the wait.
 //
-// Exit codes, with a line on stderr for every one but 0:
+// Exit codes, with a line on stderr for every one but 0 and 5:
 //   0  answered: prints {"label","note","by"} as JSON on stdout
 //   1  usage, or <ref> has no escalation eN
 //   2  gave up: no answer by the deadline
 //   3  Leeway unreachable: the last <max-failures> checks failed
 //   4  unauthorised: the last <max-failures> checks failed and the CLI asked for `leeway login`
+//   5  a question is waiting: prints {"clarification":"qN","question","askedAt"} as JSON on stdout, the oldest unanswered one
 //
 // No dependencies.
 
@@ -28,10 +32,10 @@ import { spawn } from 'node:child_process'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
-const EXIT = { answered: 0, usage: 1, gaveUp: 2, unreachable: 3, unauthorised: 4 }
+const EXIT = { answered: 0, usage: 1, gaveUp: 2, unreachable: 3, unauthorised: 4, question: 5 }
 
 const usage = (msg) => {
-  process.stderr.write(`wait-answer: ${msg}\nusage: node wait-answer.mjs --server <url> <ref> <eN> [--first s] [--cap s] [--deadline s] [--call-timeout s] [--max-failures n] -- <cli...>\n`)
+  process.stderr.write(`wait-answer: ${msg}\nusage: node wait-answer.mjs --server <url> <ref> <eN> [--first s] [--cap s] [--deadline s] [--call-timeout s] [--max-failures n] -- <cli...>\nexits: 0 answered, 1 usage or no such escalation, 2 gave up, 3 unreachable, 4 unauthorised, 5 a question is waiting\n`)
   process.exit(EXIT.usage)
 }
 
@@ -119,7 +123,9 @@ const wait = async (o) => {
       failures = 0
       const esc = r.issue.escalations.find((e) => e.ref === o.ref && e.number === o.number)
       if (!esc) return { code: EXIT.usage, message: `${o.ref} has no escalation e${o.number}` }
-      if (esc.answer) return { code: EXIT.answered, answer: { label: esc.answer.label, note: esc.answer.note, by: esc.answer.by } }
+      if (esc.answer) return { code: EXIT.answered, json: { label: esc.answer.label, note: esc.answer.note, by: esc.answer.by } }
+      const open = Array.isArray(esc.clarifications) ? esc.clarifications.find((c) => c.answer === null) : undefined
+      if (open) return { code: EXIT.question, json: { clarification: `q${open.number}`, question: open.question, askedAt: open.askedAt } }
     }
     if (last) return { code: EXIT.gaveUp, message: `no answer to ${o.ref} e${o.number} by ${new Date(deadline).toISOString()}` }
     gap = Math.min(gap * 2, o.cap * 1000)
@@ -129,7 +135,7 @@ const wait = async (o) => {
 // Run only as a script, so a test can import `parse` without starting a wait.
 if (process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))) {
   const result = await wait(parse(process.argv.slice(2)))
-  if (result.answer) process.stdout.write(JSON.stringify(result.answer) + '\n')
+  if (result.json) process.stdout.write(JSON.stringify(result.json) + '\n')
   else process.stderr.write(`wait-answer: ${result.message}\n`)
   process.exit(result.code)
 }
