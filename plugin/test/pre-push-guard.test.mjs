@@ -15,7 +15,9 @@ const template = readFileSync(join(ROOT, 'plugin', TEMPLATE), 'utf8')
 const skip = process.platform === 'win32'
 // The lines the install prints for writing the hook, as sdlc-install's step says them: the fixture runs these, so a line the
 // step drops is a line no test here has.
-const step = readFileSync(join(ROOT, 'plugin/skills/sdlc-install/SKILL.md'), 'utf8').split("**16's offer, yes**")[1]
+// The last "16, yes" bullet: "16's offer, yes" before LWY-189.2, "16, yes" after it, when the allow-list's bullet of that name is gone.
+const skillText = readFileSync(join(ROOT, 'plugin/skills/sdlc-install/SKILL.md'), 'utf8')
+const step = skillText.slice([...skillText.matchAll(/\*\*16(?:'s offer)?, yes\*\*/g)].at(-1).index)
 const printed = step.slice(step.indexOf('```sh') + 5, step.indexOf('```', step.indexOf('```sh') + 5)).trim().split('\n').map((l) => l.trim())
 
 // The machine's config can set core.hooksPath, init.defaultBranch or a signing rule, and a test run from a hook has GIT_DIR.
