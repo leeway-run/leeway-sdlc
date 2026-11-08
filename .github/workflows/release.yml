@@ -1,7 +1,8 @@
 name: Release
 
-# A v* tag push tests, checks the tag against plugin.json and creates the GitHub release.
-# workflow_dispatch runs the tests and the manifest parse only and never creates a release.
+# A v* tag push tests on Node 22 and 26, checks the tag against plugin.json and, only if both versions
+# pass, creates the GitHub release once. workflow_dispatch runs the same checks on both versions, without
+# the tag check, and never creates a release.
 # There is no pull_request trigger, so a pull request cannot run this workflow.
 on:
   push:
@@ -17,12 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      # Let the other version finish, so a failure shows whether it is one version or both.
+      fail-fast: false
+      matrix:
+        node: [22, 26]
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node }}
 
       - name: Tests
         run: node --test "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs" "plugin/test/*.test.mjs" "scripts/*.test.mjs"
