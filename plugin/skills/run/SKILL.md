@@ -29,9 +29,9 @@ sub-issue in hand (`DRY-2.1`), `<story>` its parent issue (`DRY-2`) and `<projec
 no credential is written to a file, a prompt or a brief: `leeway login` keeps the sign-in on the machine.
 
 **Every call is printed verb first**, with `--as` and `--json` after the verb:
-`leeway spend record <ref> 3 --as <alias>/agent --json`. The CLI takes those flags on either side, but a permission
-rule matches the text before its first `*` as written, so this is the only order the allow-list ("Unattended
-prerequisites") matches. Write each call as it is printed here, `--server` included.
+`leeway spend record <ref> 3 --as <alias>/agent --json`. The CLI takes those flags on either side, but a harness that
+asks about a call matches it as written, so this is the order the rest of this skill relies on. Write each call as it is
+printed here, `--server` included.
 
 ## What the ref is
 
@@ -81,8 +81,8 @@ override, and you never paste a credential into a prompt. Hold the line yourself
 **Where `run`'s own files go.** A brief, a finding, a verdict, a status comment, a commit message or a pull request body goes
 in `.worktrees/.run/` of the primary checkout, named after the ref and passed by absolute path. `.worktrees/` is ignored by
 git, and it is inside the working directory, so a redirect from it (`--stdin body <file`) does not prompt, where one from the
-system's temp directory does. Create the directory by writing the first file there with the `Write` tool: `mkdir` is not on the
-allow-list, and `Write` makes the directories it needs. No branch can be called `.run`, so it never meets a worktree. A quoted heredoc also works
+system's temp directory does. Create the directory by writing the first file there with the `Write` tool: `Write` makes the
+directories it needs, so there is no `mkdir`. No branch can be called `.run`, so it never meets a worktree. A quoted heredoc also works
 while the whole command stays short (Claude Code prompts for any command over 10,000 characters, which a brief can be).
 Nothing cleans the directory, and it is safe to delete between runs.
 
@@ -1183,37 +1183,21 @@ that was written down; this is where it leaves them.
 
 A run is only unattended if nothing in it waits for a keypress. That needs four things, set up before the first run.
 
-- **A permission allow-list**, where `HARNESS.md` ("Permissions for an unattended run") says this agent keeps it and in
-  the form it gives, naming what a run calls and nothing more:
-  - **Leeway verbs:** `issue get`, `issue list`, `issue update`, `issue create`, `comment add`, `iteration record`,
-    `spend record`, `escalation list`, `clarification answer`, `clarification list`, `review get`,
-    `project get`, `project link`, `process get`.
-    Any other verb prompts: `escalation raise` (a run raises through `<raise>`), `escalation answer`, `issue delete`, `product delete`, `process update`, and any verb a later
-    CLI adds. A run calls none of them. A subagent is stopped from the write verbs by the plugin's
-    `leeway-guard` hook, not by the allow-list, and the hook is not a vault (`PROCESS.md`, "The cast").
-  - **git verbs,** each as `git -C <absolute path> <verb>` and at least one argument: `add`, `commit`, `push`, `fetch`, `merge`, `merge-base`,
-    `worktree`, `branch -d`, `ls-remote`, `rev-parse`, `diff`, `status`, `show`, `log`, `blame`.
-  - **The rest:** the lane and setup commands `.sdlc/CONFIG.md` names; `node -e` for the counting one-liner, the time
-    stamps, and an agent's delete, rename or test mutation; `gh pr create` and `gh pr view`; the three scripts, `<wait-answer>`, `<session-tokens>` and `<raise>`;
-    file edits under `.worktrees/`, for the implementer's work and `run`'s own files ("Where `run`'s own files go"); and reads of
-    this plugin's own files.
-  **What the list cannot promise.** An improvised command, one an agent makes up that is not on the list, still prompts,
-  so no list alone can promise no prompt: agents stay on these calls. Nor is it a boundary: `node -e` and the lane
-  commands can run anything, including `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator.
-  A rule stops the call an agent ordinarily writes, not a determined one. **You never answer your own escalation:** an answer
-  is the person's ("Only the answer is an answer"). What holds you to that is this rule, not the list.
-  **`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the
-  pre-push guard does not cover it, and its prompt is where the person's yes is their word ("When the plan merges
-  into `main`").
+- **The agent's unattended mode**, where `HARNESS.md` ("Permissions for an unattended run") names it for this agent and
+  says who starts it. Without it a person approves each prompt, and the run is attended. The plugin writes no allow rule
+  and no permission setting, and the mode is no boundary: `node -e` and the lane commands can run anything, including
+  `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator. **You never answer your own escalation:**
+  an answer is the person's ("Only the answer is an answer"). What holds you to that is this rule, not a list.
+  `gh pr merge` is never run by an agent: it merges into `main` through GitHub, not by a push, so the pre-push guard does
+  not cover it, and the plan merges into `main` on the person's word ("When the plan merges into `main`").
 - **A pre-push guard that refuses the integration branch and a force push.** It lives in the target repo, not in this
   plugin, and this skill only states the requirement; `sdlc-install` offers to write it (question 16). It refuses an update to the integration branch named in
   `.sdlc/CONFIG.md` and a force push to any ref, deciding from the refs git passes on its stdin, so it refuses
   `HEAD:<integration branch>` from a detached HEAD, which is how the story gate pushes. It does so on a push from any
   process that does not skip it: `--no-verify` and
-  `-c core.hooksPath` skip it, and the allow-list's push rule approves both, so it stops the push an agent ordinarily
-  writes, not a determined one. Never pass either. An allow-listed push is one wrong argument away from the integration
-  branch, and the plugin's git guard governs subagents, never the orchestrator. **Until the guard exists, leave the
-  `push` verb off the allow-list** and let each push prompt: that run is attended, and should say so.
+  `-c core.hooksPath` skip it, so it stops the push an agent ordinarily writes, not a determined one. Never pass either.
+  A push is one wrong argument away from the integration branch, and the plugin's git guard governs subagents, never the
+  orchestrator. **Until the guard exists, the run is attended**, and should say so.
 - **A per-worktree setup command** in `.sdlc/CONFIG.md` that runs without a prompt and gives each worktree its own
   scratch database and ports. A setup that asks a question stops the run at the first new worktree.
 - **A session allowed to run long.** A story is hours, not minutes: no idle timeout on the session or the machine,

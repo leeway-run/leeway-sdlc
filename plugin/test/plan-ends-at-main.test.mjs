@@ -247,7 +247,7 @@ const mentions = (text, term) => {
 const sentencesOf = (text) => flat(text).split(/(?<=[.!?;])\s+/);
 
 // Replaces the test that pinned "stays off the allow-list" and "its prompt is where the person's yes is their word".
-test('gh pr merge is held by the person\'s word, and no allow-list or permission prompt is tied to it', { skip: 'red-test-TC-4: run says the merge stays off the allow-list and its prompt is where the yes is given' }, () => {
+test('gh pr merge is held by the person\'s word, and no allow-list or permission prompt is tied to it', () => {
   assert.match(merges(), /the plan merges into `main` on the person's word/i);
   const para = mergeParagraph();
   assert.ok(para.length > 0, 'no paragraph on `gh pr merge` in "Unattended prerequisites"');

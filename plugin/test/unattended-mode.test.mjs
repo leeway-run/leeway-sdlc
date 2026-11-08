@@ -40,7 +40,7 @@ const PROMPT = /\bprompts?\b/gi;
 const promptClaims = (text) => sentences(text).filter((s) => /merg/i.test(s) && mentions(s, PROMPT).length > 0);
 const promptsIn = (text) => mentions(text, PROMPT);
 
-test('TC-2: HARNESS says an unattended run uses auto mode, and without it a person approves each prompt', { skip: 'red-test-TC-2: HARNESS still has the rule table' }, () => {
+test('TC-2: HARNESS says an unattended run uses auto mode, and without it a person approves each prompt', () => {
   const text = permissions();
   assert.match(text, /auto mode/i);
   assert.match(text, /person approves (each|every) prompt/i);
@@ -53,13 +53,13 @@ test('TC-2: HARNESS says an unattended run uses auto mode, and without it a pers
   assert.match(text, /git -C/);
 });
 
-test('TC-1: HARNESS, run, PROCESS and the agents tell nobody to write or rely on a permission rule', { skip: 'red-test-TC-1: these files still name an allow-list' }, () => {
+test('TC-1: HARNESS, run, PROCESS and the agents tell nobody to write or rely on a permission rule', () => {
   for (const file of ['plugin/HARNESS.md', 'plugin/skills/run/SKILL.md', 'plugin/PROCESS.md', 'plugin/agents/sdlc-implementer.md', 'plugin/agents/sdlc-reviewer.md']) {
     assert.deepEqual(rulesNamed(read(file)), [], file);
   }
 });
 
-test('TC-1: the bin scripts and the manifest check say bin/ gives every person and version the same command, with no rule named', { skip: 'red-test-TC-1: the headers still say "so an allow rule can name it"' }, () => {
+test('TC-1: the bin scripts and the manifest check say bin/ gives every person and version the same command, with no rule named', () => {
   for (const file of ['plugin/bin/leeway-sdlc-raise', 'plugin/bin/leeway-sdlc-session-tokens', 'plugin/bin/leeway-sdlc-wait-answer', '.github/scripts/check-manifests.mjs']) {
     const text = read(file);
     assert.doesNotMatch(text, /allow[- ]?list|allow[- ]rules?/i, file);
@@ -67,7 +67,7 @@ test('TC-1: the bin scripts and the manifest check say bin/ gives every person a
   }
 });
 
-test('TC-1: PROCESS prints a call verb first without a rule, and the CLI\'s own raise is not said to sit on a list', { skip: 'red-test-TC-1: PROCESS lines 106 and 317 still name a permission rule and the allow-list' }, () => {
+test('TC-1: PROCESS prints a call verb first without a rule, and the CLI\'s own raise is not said to sit on a list', () => {
   const process_ = flat(read('plugin/PROCESS.md'));
   const verb = process_.slice(process_.indexOf('**Verb first.**'), process_.indexOf('- Long bodies go in through'));
   assert.ok(verb.length > 0, 'no "Verb first." bullet');
@@ -80,7 +80,7 @@ test('TC-1: PROCESS prints a call verb first without a rule, and the CLI\'s own 
   assert.doesNotMatch(raise[0], /off run's/);
 });
 
-test('TC-2: run, "Unattended prerequisites", has no allow-list item and names the agent\'s unattended mode', { skip: 'red-test-TC-2: run still opens with "A permission allow-list"' }, () => {
+test('TC-2: run, "Unattended prerequisites", has no allow-list item and names the agent\'s unattended mode', () => {
   const text = prereqs();
   assert.doesNotMatch(text, /A permission allow-list|What the list cannot promise/);
   assert.match(text, /unattended mode/i);
@@ -90,7 +90,7 @@ test('TC-2: run, "Unattended prerequisites", has no allow-list item and names th
   assert.match(text, /held[^.]*rule|rule[^.]*not[^.]*list/i);
 });
 
-test('TC-3: run still requires the pre-push guard, and says --no-verify and core.hooksPath skip it', { skip: 'red-test-TC-3: the guard bullet is still tied to the allow-list' }, () => {
+test('TC-3: run still requires the pre-push guard, and says --no-verify and core.hooksPath skip it', () => {
   const text = prereqs();
   const guard = text.slice(text.indexOf('**A pre-push guard'), text.indexOf('**A per-worktree setup command'));
   assert.ok(guard.length > 0, 'no guard bullet');
@@ -103,7 +103,7 @@ test('TC-3: run still requires the pre-push guard, and says --no-verify and core
   assert.deepEqual(rulesNamed(pre6.slice(0, 300)), []);
 });
 
-test('TC-4: the plan merges on the person\'s word, and no permission prompt is said to hold it', { skip: 'red-test-TC-4: run says the prompt is where the person\'s yes is their word' }, () => {
+test('TC-4: the plan merges on the person\'s word, and no permission prompt is said to hold it', () => {
   assert.match(run, /\*\*The plan merges into `main` on the person's word; no run merges it by itself\.\*\*/);
   const all = prereqs();
   const guardAt = all.indexOf('- **A pre-push guard');
@@ -116,12 +116,12 @@ test('TC-4: the plan merges on the person\'s word, and no permission prompt is s
   assert.deepEqual(promptClaims(run), [], 'a sentence in run ties a merge to a prompt');
 });
 
-test('TC-1: run mentions no allow-list at all, except in a sentence saying the plugin writes no rule', { skip: 'red-test-TC-1: run line 85 still says "`mkdir` is not on the allow-list" and the prerequisites still name the list' }, () => {
+test('TC-1: run mentions no allow-list at all, except in a sentence saying the plugin writes no rule', () => {
   const stray = sentences(run).filter((s) => /allow[- ]?list/i.test(s) && !/\bwrites? no (allow|permission) rules?\b/i.test(s));
   assert.deepEqual(stray, []);
 });
 
-test('negative: the printed call forms stay, in run and in both agents, with the reason for them and no list named', { skip: 'red-test-TC-2: line 33 and the agents still say the order "the allow-list matches"' }, () => {
+test('negative: the printed call forms stay, in run and in both agents, with the reason for them and no list named', () => {
   const line = flat(run.slice(run.indexOf('**Every call is printed verb first**'), run.indexOf('## What the ref is')));
   assert.match(line, /`leeway spend record <ref> 3 --as <alias>\/agent --json`/);
   assert.match(line, /Write each call as it is printed here, `--server` included\./);

@@ -23,8 +23,7 @@ task and story, the sibling tasks, and the earlier rounds of this task:
 ```
 
 Your prompt names the real `<cli>` (`leeway`, or `node <path>/leeway.js` as `.sdlc/leeway.md` says) and the `<server>`.
-Write a read as printed here, verb first and with the server, and git as `git -C <the worktree's absolute path>`: in an
-unattended run those are the forms the allow-list matches. Anything else prompts, `cd <path> && git` included. A git verb
+Write a read as printed here, verb first and with the server, and git as `git -C <the worktree's absolute path>`: one call per verb, in the form a harness that asks about calls reads. Anything else prompts, `cd <path> && git` included. A git verb
 needs at least one argument to match: `git -C <worktree> status --short`, `git -C <worktree> diff HEAD`,
 `git -C <worktree> show HEAD`, `git -C <worktree> log -5`; with nothing after the verb it prompts. A lane runs as
 `cd <worktree> && <lane>`, which is allowed where `cd` with git is not.

@@ -31,7 +31,7 @@ for (const [where, v] of [
   if (v !== plugin.version) problems.push(`${where} version ${JSON.stringify(v)} != plugin.json ${plugin.version}`);
 }
 
-// A bin/ at the root of the Claude Code plugin is how run's allow rules stay the same for every person and version; the
+// A bin/ at the root of the Claude Code plugin is how a call to its scripts is the same command for every person and version; the
 // generated package has none, so its scripts stay at .sdlc/kit/scripts/.
 for (const name of ["wait-answer", "session-tokens", "raise"]) {
   const bin = new URL(`../../plugin/bin/leeway-sdlc-${name}`, import.meta.url);

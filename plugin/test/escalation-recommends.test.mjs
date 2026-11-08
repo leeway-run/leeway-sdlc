@@ -60,7 +60,7 @@ test('c2: every raise is the raise script with a fields file, and no field goes 
 });
 
 // Replaces the check that PROCESS says the CLI's own raise "is off run's allow-list, so it prompts" (LWY-189.1).
-test('TC-1: the CLI\'s own raise, with the fields as flags, is not said to sit off a list', { skip: 'red-test-TC-1: PROCESS still says it "is off run\'s allow-list, so it prompts"' }, () => {
+test('TC-1: the CLI\'s own raise, with the fields as flags, is not said to sit off a list', () => {
   const raise = process_.match(/The CLI's own raise, with the fields as flags[^.]*\./);
   assert.ok(raise, 'no sentence on the CLI\'s own raise');
   const listed = [...raise[0].matchAll(/allow[- ]?list|allow[- ]rules?|permission rules?/gi)].filter(
