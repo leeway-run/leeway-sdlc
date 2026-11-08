@@ -74,7 +74,8 @@ test('each exit of the script has its one meaning', () => {
 
 test('exit 5 is never an end: a wait that blocks nothing answers the question and waits again too', () => {
   const wait = under(skill, 'Wait, then carry on');
-  assert.match(wait, /\(exit 2, 3 or 4\), such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\); on any other exit it does as the table says, exit 5 included\./);
+  assert.match(wait, /Act on how it exits, as the table says\*\*, with one exception: a wait on something that blocks nothing, such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\), carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\)\./);
+  assert.equal((wait.match(/as the table says/g) || []).length, 1, 'step 4 says "as the table says" more than once');
 });
 
 test('PROCESS.md: on a question the orchestrator answers as the raising role, says so once, and waits again', () => {
@@ -85,7 +86,9 @@ test('PROCESS.md: on a question the orchestrator answers as the raising role, sa
   assert.match(loop, /Answer from what you know\*\*, reading the code where that settles it, and the questions already answered on that escalation, so the answer agrees with them: `leeway clarification list <ref> <eN> --json`/);
   assert.match(loop, /An answer that changes the options or the advice says so in its text; the escalation itself is not changed\./);
   assert.match(loop, /`<role>` is `by\.actor\.role` of the escalation's entry in `escalations\[\]` of `leeway issue get <ref> --json`/);
-  assert.match(loop, /leeway clarification answer <ref> <eN> <qN> --as <alias>\/<role> --answer "…"/);
+  assert.match(loop, /leeway clarification answer <ref> <eN> <qN> --as <alias>\/<role> --stdin answer <file>/);
+  assert.doesNotMatch(loop, /--answer "/);
+  assert.match(loop, /The answer goes in from a file, never inline, since an answer drawn from the code can hold a backtick or a `\$` the shell would run/);
   assert.match(loop, /Say once in the session\*\* that qN on eN is answered, and until when the new wait runs/);
   assert.match(loop, /Wait again on the same escalation\*\*, the same command, with 16 hours of its own\./);
   assert.match(loop, /Nothing else is written: no second escalation and no comment for it\. A question is not the answer: do no work that depends on the escalation, and carry on only on exit 0\./);
@@ -94,6 +97,9 @@ test('PROCESS.md: on a question the orchestrator answers as the raising role, sa
 test('PROCESS.md: an answer that is not written ends the loop as exit 3 or 4 does, never in another wait', () => {
   const loop = from(under(process_, 'Questions to the human are escalations'), '**A question asked of the agent is answered', '**Escalations go out in rounds.**');
   assert.match(loop, /If the answer is not written\*\* \(the CLI refuses it, Leeway does not answer, or it asks for `leeway login`\), do not wait again, because the question still open would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3 otherwise, naming the escalation and the question and saying what the CLI said\./);
+  // Only a wait that holds work is met again by a re-invoke; one that blocks nothing carries on (LWY-160.2 c3).
+  assert.match(loop, /Where the wait holds work, that stops the turn, and a re-invoke waits again and meets the question again\. Where it blocks nothing, say once in the session that qN on eN is unanswered, and carry on as on exit 3 or 4\./);
+  assert.doesNotMatch(loop, /otherwise, naming the escalation and the question and saying what the CLI said\. A re-invoke waits again/);
 });
 
 test('HARNESS.md: exit 5 starts the background wait again', () => {
@@ -160,7 +166,7 @@ test('a sub-issue run waits on its debt proposal once the task has landed, and f
   assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **Wait on each debt proposal'), 'the debt wait does not come after the task has landed');
   assert.match(step, /A wait here that ends without an answer \(exit 2, 3 or 4\) does not end the run\*\*: the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume\. Leave the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to step 6\./);
   assert.doesNotMatch(step, STOPS, 'the debt wait stops the run');
-  assert.match(under(skill, 'Wait, then carry on'), /Act on how it exits\.\*\* A wait on something that blocks nothing carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\), such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\); on any other exit it does as the table says, exit 5 included\. Every other wait does as the table says:/);
+  assert.match(under(skill, 'Wait, then carry on'), /Act on how it exits, as the table says\*\*, with one exception: a wait on something that blocks nothing, such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\), carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\)\./);
   assert.match(under(skill, 'What a deferred finding becomes'), /quoting the answer's `label` and `note`/);
   assert.doesNotMatch(under(skill, 'What a deferred finding becomes'), /answer's `option`/);
 });
@@ -194,11 +200,19 @@ test('"stop the turn" is said only where the wait ends without an answer', () =>
   assert.equal(count(flat(skill)), count(allowed), 'run says "stop the turn" outside "Wait, then carry on" and "On a stop"');
 });
 
-test('PROCESS.md: run waits, every other skill stops, and only the answer is one', () => {
+test('PROCESS.md: every skill that raises waits, it names every stop, and only the answer is one', () => {
   const rule = under(process_, 'Questions to the human are escalations');
-  assert.match(rule, /Then, in `run`, wait for the answer\*\*: say once what it waits on and until when, wait on `scripts\/wait-answer\.mjs` \(as `HARNESS\.md`, "Waiting for an answer", says\), and on an answer carry on as a re-invoke would, writing nothing twice/);
-  assert.match(rule, /for a blocker outside Leeway \(such as `leeway login`\), naming the action/);
-  assert.match(rule, /\*\*Every other skill stops the turn\*\*/);
+  assert.match(rule, /Then wait for the answer, in every skill that raises\*\*: `run`, `plan-project`, `shape-project`, `sync-repo`, `sdlc-install` and `sdlc-tune`\. Say once what it waits on and until when, wait on `scripts\/wait-answer\.mjs` \(as `HARNESS\.md`, "Waiting for an answer", says\), act on its exit as run's "Wait, then carry on" does, and on an answer carry on as a re-invoke of that skill would, writing nothing twice/);
+  assert.doesNotMatch(rule, /Every other skill stops the turn/);
+  assert.match(rule, /Where `HARNESS\.md` says `wait: stop`, no wait starts: act at once as for exit 2\./);
+  // Every stop, listed (LWY-160.2 c2): exits 2, 3, 4, 1 and any other, a refused answer write, and an answer that ends the work.
+  const stops = from(rule, 'A wait that holds work stops the turn only when:', 'A wait that blocks nothing');
+  assert.match(stops, /it ends without an answer \(exit 2, about 16 hours; exit 3, Leeway unreachable\), naming the escalation and the issue;/);
+  assert.match(stops, /it ends on a blocker outside Leeway \(exit 4, `leeway login`\), naming the action;/);
+  assert.match(stops, /it ends in a bug \(exit 1\) or never ran \(any other exit\), saying so;/);
+  assert.match(stops, /the answer to a question asked of the agent is not written \(the next point\);/);
+  assert.match(stops, /or the answer ends the work\./);
+  assert.match(rule, /A wait that blocks nothing \(run's debt proposal once its task has landed, "Land the task", step 5\) does not stop the turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and carries on\./);
   assert.match(rule, /a comment, a status change or an edited description is not/);
   assert.match(rule, /raises the escalation from the block, and waits\./);
 });
@@ -211,7 +225,9 @@ test('PROCESS.md: the loop and the round cap wait on their escalation, not stop'
   assert.doesNotMatch(loop, /one escalation, and the work stops/);
 });
 
-test('shape-project and plan-project still stop the turn after their escalations', () => {
-  assert.match(flat(read('skills/shape-project/SKILL.md')), /escalation on the story, and then you stop the turn/);
-  assert.match(flat(read('skills/plan-project/SKILL.md')), /escalation on the story, and then you stop the turn/);
+test('shape-project and plan-project wait after their escalations, no longer stopping the turn', () => {
+  assert.match(flat(read('skills/shape-project/SKILL.md')), /escalation on the story, and then you wait for its answer/);
+  assert.match(flat(read('skills/plan-project/SKILL.md')), /escalation on the story, and then you wait for its answer/);
+  assert.doesNotMatch(flat(read('skills/shape-project/SKILL.md')), /escalation on the story, and then you stop the turn/);
+  assert.doesNotMatch(flat(read('skills/plan-project/SKILL.md')), /escalation on the story, and then you stop the turn/);
 });

@@ -140,9 +140,9 @@ project run. Where a path below says to raise an escalation and wait, do this:
    `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. It only
    reads: it checks about a minute after it starts, then less and less often, never more than 15 minutes apart, and
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
-4. **Act on how it exits.** A wait on something that blocks nothing carries on instead of stopping when it ends
-   without an answer (exit 2, 3 or 4), such as a sub-issue run's debt proposal after its task is `done` ("Land the
-   task", step 5); on any other exit it does as the table says, exit 5 included. Every other wait does as the table says:
+4. **Act on how it exits, as the table says**, with one exception: a wait on something that blocks nothing, such
+   as a sub-issue run's debt proposal after its task is `done` ("Land the task", step 5), carries on instead of
+   stopping when it ends without an answer (exit 2, 3 or 4).
 
    | Exit | It means | So |
    |---|---|---|

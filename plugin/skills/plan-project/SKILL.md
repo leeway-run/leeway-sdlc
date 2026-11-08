@@ -75,17 +75,21 @@ whatever happened.
    and the comments since it, fix what its BLOCKERs name, and gate it again (step 8). Three or more: do not re-plan;
    step 8, "Three RETURNs".
 5. **Where the human is asked.** This repo has a `.sdlc/leeway.md`, so a question for the human is never a
-   terminal question: it is a Leeway escalation on the story, and then you stop the turn; one that stories share goes on their Plan record. Post the context first
+   terminal question: it is a Leeway escalation on the story, and then you wait for its answer; one that stories share goes on their Plan record. Post the context first
    (`comment add <ref> --stdin body`), then `escalation raise <ref> --question "<at most 500 characters>" --options
    '[{"label":"<at most 60>","argument":"<at most 1,000>"}]' --meanwhile "<what continues, or nothing>" --comment cN`:
    2 to 5 options, each with its argument, one open escalation per comment. **The recommended option comes first**,
    its argument opening `Recommended:` and saying why (`PROCESS.md`, "Questions to the human are escalations"). The
    options a step below names are the choices, not their order. Where you truly have no pick, invent none: the first
-   argument opens `No recommendation:` and says why. **On resume**, read the answers with
-   `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first thing not
-   done; an open escalation with no answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and
-   this skill cannot run. **The one exception to stopping is "The developer interview", which waits on its escalations
-   first** and stops the turn where that wait ends with no answer.
+   argument opens `No recommendation:` and says why. **Every escalation this skill raises is waited on**, as "Wait,
+   then read" (under "The developer interview") says, with its exits and the answer to a question asked of you. The
+   interview's questions and step 5's floor and repository questions are waited on where they are raised, since the
+   work after them depends on them, and so are step 8's QUESTIONs and its "Three RETURNs" escalation; step 1's
+   product gaps once the rest of the plan is done, since the stories that pass go on without them. **On an answer, and on resume**, read the
+   answers with `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first
+   thing not done, writing nothing twice: the step that raised it says where its answer leads. An open escalation
+   with no answer means do not proceed. **No answer moves a story out of the shaped step or the plan gate**: those
+   moves are a person's (step 7). With no `.sdlc/leeway.md` there is no binding and this skill cannot run.
 
    **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
    question, merge them into one, or hold the dependent one for the next round. Independent questions go out
@@ -154,8 +158,11 @@ latest such comment first: if the gaps are the same, do not post them again.
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
 has N product gaps: how do we proceed?"*, with the options, your recommended one first, *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
-into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then stop. The answer has to
-reach the body before planning: planning on a comment makes a second source that drifts from the first.
+into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then wait on it, once the rest of
+the plan is done (step 0, "Where the human is asked"). The answer has to reach the body before planning: planning
+on a comment makes a second source that drifts from the first. So whatever the answer, this session does not plan
+the story again: it says the answer in the session and that the story waits at `shape` for the PO, and stops. The
+next `plan-project` takes it from step 0 once the body carries the answer.
 
 **Several stories:** the ones that pass go on; the held ones wait. Name the held ones to the divergence reviewer in
 step 8.
@@ -231,7 +238,8 @@ an earlier answer settles is asked, and an earlier answer is any `escalations[].
 the PO's, a QUESTION's (step 8), or an earlier round's. A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`.
 
 **A product question is not asked here.** What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO.
-Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more, and stop. Nothing can withdraw an
+Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more for the interview, and wait as that
+step says. Nothing can withdraw an
 open escalation, so the gap comment names any still open: step 0 reads one as shaping unfinished on a type with no
 shaped step, and they must be answered too. On a type without `shape` there
 is no PO: decide it with the human by escalation, as step 3 says, in this round, and say in its comment that it is a
@@ -269,8 +277,8 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above |
-| 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from the table above |
+| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above, or, for a wait outside the interview, the step that raised it |
+| 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from step 0 and the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
 | 1 | the call was wrong, or `<ref>` has no `eN` | a bug in this run: stop the turn and say so |
@@ -456,8 +464,8 @@ outside the repo, or a quoted heredoc; one `--stdin` per call. Read each new id 
    rule states; where it states none, one option per surface the rule names (a "yes" for that surface) plus *Not
    on any surface*, so leaving it out is a decision. **All of it is one round:** stories one answer would settle
    together share one comment and one escalation, naming each, on the Plan record, and a story whose question another answer would
-   change is held for the next round; the rest go out together. **Stop**, report the escalation ids,
-   and create no tasks for a story whose question is open or held. A held question goes out on resume, unless an answer settled it, and stops the same way. On resume write each answer into every task of each
+   change is held for the next round; the rest go out together. **Wait** on them (step 0), report the escalation ids,
+   and create no tasks for a story whose question is open or held. A held question goes out once the answer it waits on is in, unless that answer settled it, and is waited on the same way. On an answer, or on resume, write each answer into every task of each
    story it names, under *What to build*. A story that builds nothing a user does, or a repo whose floor asks nothing,
    skips this step; say which.
 
@@ -602,7 +610,8 @@ Say in the session, per story, the report's `cN`, its verdict and what each move
   BLOCKERs name (step 0) and spawns a **fresh** reviewer — never the same one with a note about what changed. The
   next round posts its own report comment.
 
-Raise the QUESTIONs, when the report has any (below), and **stop**.
+Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers; then **stop**, with
+the story where it is. With none, stop now.
 
 ### The QUESTIONs
 
@@ -621,29 +630,36 @@ that reply alone. Every other QUESTION goes out now, together.
 
 **A report's QUESTIONs are the escalations on the comments opening
 `# QUESTION … of c<report>`**; an escalation on no comment, or on the report itself, is not one. Say in the session,
-in this order: answer every QUESTION, run plan-project to apply the answers, then move the story to `ready`. `run`
-refuses the story until they are applied.
+in this order: answer every QUESTION; this session applies the answers as they come (if it has ended, run
+plan-project to apply them); then move the story to `ready`. `run` refuses the story until they are applied.
 
-On resume, raise a held QUESTION (one the report has with no comment yet), unless an answer settled it, and stop
-again. When every one is answered, change what an answer changes in a description or a task, then **reply to
-the report** (`comment add <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line
-per escalation, its answer and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is what makes them
-applied. Say so, and stop again: move nothing, so the story stays where it was, at the plan gate or at `ready`.
+Wait on each QUESTION's escalation in turn (step 0). On an answer, or on resume, raise a held QUESTION (one the
+report has with no comment yet), unless an answer settled it, and wait on it the same way. When every one is
+answered, change what an answer changes in a description or a task, then **reply to the report** (`comment add
+<story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line per escalation, its answer
+and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is
+what makes them applied. Say so, and stop: move nothing, so the story stays where it was, at the plan gate or at
+`ready`.
+
+**Applying a QUESTION's answer is not the gate decision.** It changes a description or a task and posts `# QUESTIONs
+applied`, and it never moves the story, whatever the answer says, even one that reads as a pass. Only a person's move
+takes the story from the plan gate to `ready` or back to the plan step, and this skill makes that move only when the
+person asks for it in the session (step 7).
 
 **A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
 moving.
 
 **Three RETURNs mean the story is wrong, not the plan.** Step 0 counts them, before any re-planning: three or more
 coverage reports in its window. Then stop re-planning. When the type has `shape`, set `--step shape` and post what
-the rounds could not trace as a step 1 comment to the PO, with step 1's ending. When it has no `shape`, **stop and
-raise one escalation on the story**, tied to the latest report with `--comment cN`, asking the person how to go on:
+the rounds could not trace as a step 1 comment to the PO, with step 1's ending. When it has no `shape`, **raise one
+escalation on the story**, tied to the latest report with `--comment cN`, asking the person how to go on:
 *"`<ref>` has three or more coverage reports and none passed: how do we go on?"* The reviewer is tracing a story that
-does not say what anyone means by it. Give two options, each naming what plan-project does next:
-- *Re-plan once more*: the next plan-project re-plans it. The answer starts a fresh window (step 0), so the count
-  starts again.
-- *Stop planning it*: the next plan-project says the story is stopped and stops, writing and raising nothing. To
-  plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again. To drop
-  it, they close it.
+does not say what anyone means by it. Wait on it (step 0). Give two options, each naming what plan-project does next:
+- *Re-plan once more*: plan-project re-plans it, this session on the answer or the next one. The answer starts a
+  fresh window (step 0), so the count starts again.
+- *Stop planning it*: plan-project says the story is stopped and stops, this session on the answer or the next one,
+  writing and raising nothing. To plan it again, the person rewrites the story if they want to, then asks
+  plan-project to plan it again. To drop it, they close it.
 
 The order above is not a pick: put first the one you recommend, or say you have none, as step 0 says.
 

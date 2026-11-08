@@ -187,13 +187,13 @@ exists.
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
    comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
-   and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   waits on them, and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
    QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
    escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
    `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
-   `ready`**, and no skill makes it on its own initiative. With QUESTIONs, the order is: answer them, run
-   `plan-project` to apply the answers (it replies `# QUESTIONs applied` to the report), then move the story to
-   `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   `ready`**, and no skill makes it on its own initiative, nor on a QUESTION's answer. With QUESTIONs, the order is:
+   answer them, let `plan-project` apply the answers (the session waiting on them does, or a re-invoke once it has
+   ended; it replies `# QUESTIONs applied` to the report and moves nothing), then move the story to `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
    at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
@@ -306,16 +306,23 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
   given.
 - **`--meanwhile`** says what continues while the question is open, or that nothing does.
 - **Longer context goes in a comment first**, then `--comment cN` ties the escalation to it.
-- **Then, in `run`, wait for the answer**: say once what it waits on and until when, wait on
-  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), and on an answer carry on
-  as a re-invoke would, writing nothing twice. It stops the turn only when the wait ends without an
-  answer (about 16 hours, or Leeway unreachable), naming the escalation and the issue; for a blocker
-  outside Leeway (such as `leeway login`), naming the action; or when the answer ends the work. An
-  answer that needs a person to act first is put to them as an escalation and waited on too (run's
-  "Wait, then carry on"). `plan-project` waits the same way while its developer interview holds it, on any open
-  escalation of the story, on it or on the Plan record, and stops where that wait ends without an answer; elsewhere its escalations stop the turn. **Every other skill stops the turn**, naming the escalation
-  and the issue. Either way, do not continue the work that depends on the answer, and do not ask again
-  somewhere else. A question asked of the agent while it waits does not end the wait (the next point).
+- **Then wait for the answer, in every skill that raises**: `run`, `plan-project`, `shape-project`, `sync-repo`,
+  `sdlc-install` and `sdlc-tune`. Say once what it waits on and until when, wait on `scripts/wait-answer.mjs` (as
+  `HARNESS.md`, "Waiting for an answer", says), act on its exit as run's "Wait, then carry on" does, and on an answer
+  carry on as a re-invoke of that skill would, writing nothing twice: each skill says where an answer takes it. An
+  answer that needs a person to act first is put to them as an escalation and waited on too (run's "Wait, then carry
+  on"). Where `HARNESS.md` says `wait: stop`, no wait starts: act at once as for exit 2. A wait that holds work stops
+  the turn only when:
+  - it ends without an answer (exit 2, about 16 hours; exit 3, Leeway unreachable), naming the escalation and the issue;
+  - it ends on a blocker outside Leeway (exit 4, `leeway login`), naming the action;
+  - it ends in a bug (exit 1) or never ran (any other exit), saying so;
+  - the answer to a question asked of the agent is not written (the next point);
+  - or the answer ends the work.
+
+  A wait that blocks nothing (run's debt proposal once its task has landed, "Land the task", step 5) does not stop the
+  turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and
+  carries on. Either way, do not continue the work that depends on the answer, and do not ask again somewhere else.
+  A question asked of the agent while it waits does not end the wait (the next point).
 - **A question asked of the agent is answered, then the wait starts again.** A person can ask the agent about an open
   escalation before deciding it, and the wait exits 5 on the question, printing
   `{"clarification":"qN","question":"…","askedAt":<ms>}`. The orchestrator answers it, never a subagent:
@@ -325,10 +332,12 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
      changed.
   2. **Write it as the role that raised the escalation**: `<role>` is `by.actor.role` of the escalation's entry in
      `escalations[]` of `leeway issue get <ref> --json` (the entry whose `ref` is `<ref>` and `number` is N), and
-     `<ref>` and `<eN>` are those of the wait.
+     `<ref>` and `<eN>` are those of the wait. The answer goes in from a file, never inline, since an answer drawn
+     from the code can hold a backtick or a `$` the shell would run: in `run`, a file where run's other bodies go
+     (run, "Where `run`'s own files go"); in any other skill, a file outside the repo, by absolute path.
 
      ```sh
-     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --answer "…"
+     leeway clarification answer <ref> <eN> <qN> --as <alias>/<role> --stdin answer <file>
      ```
 
   3. **Say once in the session** that qN on eN is answered, and until when the new wait runs: "Answered q1 on e2 of
@@ -339,8 +348,9 @@ leeway escalation raise <ref> --as <alias>/<role> --question "…" --options '[{
   that depends on the escalation, and carry on only on exit 0. **If the answer is not written** (the CLI refuses
   it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
   would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3
-  otherwise, naming the escalation and the question and saying what the CLI said. A re-invoke waits again and
-  meets the question again.
+  otherwise, naming the escalation and the question and saying what the CLI said. Where the wait holds work, that
+  stops the turn, and a re-invoke waits again and meets the question again. Where it blocks nothing, say once in the
+  session that qN on eN is unanswered, and carry on as on exit 3 or 4.
 - **On resume**, read the answer on the issue (`leeway issue get <ref> --json`). An open escalation with
   no answer means do not proceed, and only its answer is one: a comment, a status change or an edited
   description is not.

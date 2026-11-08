@@ -42,6 +42,8 @@ on the exit code as run's table says. Exit 5 is a question, not the end: answer 
 way, a new background command (`PROCESS.md`, "Questions to the human are escalations"). If the session ends first, the run has stopped as at the deadline: the
 escalation stays, and re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5).
 `plan-project`'s developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it.
+Every other skill that raises an escalation starts and reads its waits the same way (`PROCESS.md`, "Questions to
+the human are escalations").
 docs/targets/claude.md records the probe.
 
 ## Counting tokens

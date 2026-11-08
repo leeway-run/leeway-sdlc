@@ -64,7 +64,7 @@ test('the re-read before writing stays', () => {
 test('a UI edit found on the re-read is kept, and the step ends', () => {
   const step = section(skill, '## 5. ');
   assert.match(step, /Take the edit into the body instead: rebuild the body on the version just read \(step 4\), keeping the edit, and list in the inference comment what the edit changed and how the body keeps it\./);
-  assert.match(step, /Where the edit contradicts an answer, that is something new unclear: raise it as in step 3 and stop\./);
+  assert.match(step, /Where the edit contradicts an answer, that is something new unclear: raise it as in step 3 and wait\./);
   assert.match(step, /Otherwise the version just read is the baseline now: start this step again\./);
   assert.doesNotMatch(step, /Show the new version and start this step again/);
 });
