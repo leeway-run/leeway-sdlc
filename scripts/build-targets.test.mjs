@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execSync, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -163,5 +163,80 @@ test('opencode: the plugin refuses a governed bash call by throwing', async () =
     governed(repo, 'off')
   } finally {
     rmSync(repo, { recursive: true, force: true })
+  }
+})
+
+// LWY-189.4: each other agent's "Permissions for an unattended run" says what Claude Code's says (plugin/HARNESS.md): the agent's own
+// unattended or auto-approve mode, or a person approving each prompt, marked UNVERIFIED, and no rule written anywhere.
+const generatedHarnesses = () => readdirSync(join(KIT, 'harness')).map((f) => [f, readFileSync(join(KIT, 'harness', f), 'utf8')])
+const permissionsOf = (text) => /^## Permissions for an unattended run\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1]
+// A settings file or a rule key: what a rule would be written into.
+const RULE_PLACE = /settings|\.(json|toml|ya?ml)\b|\.(codex|gemini|cursor|grok|opencode)\/|\.github\/copilot|permissions?\.(allow|bash)|tools\.allowed|--allow(ed)?-tool/i
+const RULE_TALK = /allow[- ]?list|allow[- ]rules?|permission rules?|Say before the yes|question 16/i
+
+test('red-test-TC-1: every generated harness has the permissions section, marked UNVERIFIED as its other unverified sections are', { skip: 'red-test-TC-1: the generated harnesses still say where run\'s allow-list goes, with no UNVERIFIED: about a mode' }, () => {
+  const all = generatedHarnesses()
+  assert.equal(all.length, TARGETS.length)
+  for (const [file, text] of all) {
+    const section = permissionsOf(text)
+    assert.ok(section, `${file}: no "## Permissions for an unattended run" section`)
+    assert.match(section, /UNVERIFIED: /, `${file}: not marked UNVERIFIED`)
+    assert.match(section, /(unattended|auto-approve) mode/i, `${file}: does not say the agent's own mode is used`)
+    assert.match(section, /person approves (each|every) prompt/i, `${file}: does not say a person approves each prompt otherwise`)
+  }
+})
+
+test('red-test-TC-2: no generated harness names a settings file or a rule, or the old question 16 offer', { skip: 'red-test-TC-2: the generated harnesses name a settings file and run\'s allow-list' }, () => {
+  for (const [file, text] of generatedHarnesses()) {
+    const section = permissionsOf(text)
+    assert.ok(section, `${file}: no permissions section`)
+    assert.doesNotMatch(section, RULE_PLACE, `${file}: names a settings file or rule key`)
+    assert.doesNotMatch(section, RULE_TALK, `${file}: talks of a rule or the old offer`)
+    assert.doesNotMatch(text, RULE_TALK, `${file}: says allow-list or Say before the yes outside that section`)
+  }
+})
+
+test('red-test-TC-2: no harness claims a mode was tried', { skip: 'red-test-TC-2: no harness says so today, so this holds only against a claim the code round might add; see the fooling checks' }, () => {
+  for (const [file, text] of generatedHarnesses()) {
+    const section = permissionsOf(text) ?? ''
+    const flat = section.replace(/\s+/g, ' ')
+    // The three words before the claim must hold the negator: "no mode has been tried" is no claim, "auto mode was tried" is one.
+    for (const m of flat.matchAll(/((?:\w+\s+){0,3})(?:was|were|has been|have been|had been)\s+(?:tried|tested|verified|confirmed)\b/gi)) {
+      assert.match(m[1], /\b(no|not|never)\b/i, `${file}: claims a mode was tried: ${m[0]}`)
+    }
+  }
+})
+
+test('red-test-TC-1: a target\'s permissions field names no settings file or rule: a mode name with its docs, or absent', { skip: 'red-test-TC-1: every target\'s permissions field names a settings file' }, () => {
+  for (const t of TARGETS) {
+    if (t.permissions === undefined) continue
+    assert.doesNotMatch(t.permissions, RULE_PLACE, t.id)
+    assert.doesNotMatch(t.permissions, RULE_TALK, t.id)
+    assert.match(t.permissions, /https?:\/\//, `${t.id}: a mode name is cited from the agent's docs, or the field is removed`)
+  }
+})
+
+test('red-test-TC-1: scripts/targets.mjs has no line telling an agent to write a rule', { skip: 'red-test-TC-1: the template and the permissions fields still say allow-list and Say before the yes' }, () => {
+  const lines = readFileSync(join(ROOT, 'scripts', 'targets.mjs'), 'utf8').split('\n')
+  const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => RULE_TALK.test(l))
+  assert.deepEqual(hits, [])
+})
+
+// The generator's own check, on a copy, so a hand edit to targets/ is shown to fail without touching this tree.
+test('build-targets --check fails on a hand edit of a generated harness, and names the file', () => {
+  const copy = mkdtempSync(join(tmpdir(), 'leeway-handedit-'))
+  try {
+    for (const d of ['scripts', 'plugin', 'targets', 'agent-setup']) cpSync(join(ROOT, d), join(copy, d), { recursive: true })
+    const script = join(copy, 'scripts', 'build-targets.mjs')
+    const run = (...a) => spawnSync(process.execPath, [script, ...a], { cwd: copy, encoding: 'utf8' })
+    assert.equal(run().status, 0, 'the copy builds')
+    assert.equal(run('--check').status, 0, 'a fresh build checks clean')
+    const file = join(copy, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'harness', 'cursor.md')
+    writeFileSync(file, readFileSync(file, 'utf8') + '\nhand edit\n')
+    const r = run('--check')
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /harness\/cursor\.md/)
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
   }
 })
