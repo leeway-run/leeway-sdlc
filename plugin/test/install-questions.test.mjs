@@ -41,7 +41,7 @@ test('the conditional questions are asked only on a divergence, and raised as ye
   }
 });
 
-test('question 16 is the pre-push guard, the last conditional question', { skip: 'red-test-TC-3: question 16 is still "The unattended allow-list."' }, () => {
+test('question 16 is the pre-push guard, the last conditional question', () => {
   assert.equal(questions.find((q) => q.n === 16).title, 'The pre-push guard.');
 });
 

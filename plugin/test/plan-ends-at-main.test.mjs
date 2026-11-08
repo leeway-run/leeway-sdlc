@@ -225,7 +225,7 @@ test('the plan merges into main only on the person\'s word, and closes only once
 
 // Replaces the check that sdlc-install says `git push` is "not added until the pre-push guard run names exists" and `gh pr merge`
 // "stays off it always" (LWY-189.2): the install writes no list, so it says neither.
-test('sdlc-install no longer says what stays off or goes on a list: it writes no rule for git push or gh pr merge', { skip: 'red-test-TC-1: sdlc-install still says "`git push` is not added until the pre-push guard run names exists"' }, () => {
+test('sdlc-install no longer says what stays off or goes on a list: it writes no rule for git push or gh pr merge', () => {
   const install = flat(read('skills/sdlc-install/SKILL.md'));
   assert.doesNotMatch(install, /`git push` is not added|`gh pr merge` stays off|stays off it always/);
   assert.doesNotMatch(install, /`gh pr merge`/);

@@ -44,21 +44,21 @@ const closing = flat(skill.slice(endingStart, skill.indexOf('Write each item for
 const PERMISSION_WORDS = [/\bpermissions?\b/gi, /\ballow(?:ed|s)?\b/gi, /settings\.json|Claude settings/gi, /\bentr(?:y|ies)\b/gi];
 const permissionWords = (text) => PERMISSION_WORDS.flatMap((term) => mentions(text.replace(/entry points?/gi, '').replace(/which git allows/g, ''), term));
 
-test('TC-1: the install says nothing of a permission rule or allow-list, in the skill or in detection', { skip: 'red-test-TC-1: SKILL.md and detection.md still tell the install to write an allow-list' }, () => {
+test('TC-1: the install says nothing of a permission rule or allow-list, in the skill or in detection', () => {
   assert.deepEqual(rulesNamed(skill), [], 'SKILL.md');
   assert.deepEqual(rulesNamed(detection), [], 'references/detection.md');
   assert.doesNotMatch(flat(skill), RULE_TALK, 'SKILL.md');
   assert.doesNotMatch(flat(detection), RULE_TALK, 'references/detection.md');
 });
 
-test('TC-1: nothing the install writes in step 6 is a rule: the "16, yes" merge into permissions.allow is gone', { skip: 'red-test-TC-1: step 6 still has "16, yes: merge run\'s allow-list"' }, () => {
+test('TC-1: nothing the install writes in step 6 is a rule: the "16, yes" merge into permissions.allow is gone', () => {
   assert.doesNotMatch(flat(skill), /\*\*16, yes\*\*: merge/);
   const step = guardStep();
   assert.doesNotMatch(step, RULE_TALK);
   assert.deepEqual(rulesNamed(step), []);
 });
 
-test('TC-3: question 16 is "The pre-push guard", asked only when no guard counts, so a guard found means it is not asked', { skip: 'red-test-TC-3: question 16 is still "The unattended allow-list."' }, () => {
+test('TC-3: question 16 is "The pre-push guard", asked only when no guard counts, so a guard found means it is not asked', () => {
   assert.ok(q16, 'no question 16');
   assert.equal(q16.title, 'The pre-push guard.');
   assert.match(q16.body, /Asked in step 5, only when the process read back has a `build` step with `unattended` true and detection \("A pre-push guard"\) (finds|found) no guard that counts/);
@@ -66,18 +66,18 @@ test('TC-3: question 16 is "The pre-push guard", asked only when no guard counts
   assert.doesNotMatch(q16.body, /An existing allow-list/);
 });
 
-test('TC-3: before the yes, question 16 says run needs the guard, what skips it, and that it stays in this clone', { skip: 'red-test-TC-3: question 16 says nothing of this before the yes, only the rules\' warnings' }, () => {
+test('TC-3: before the yes, question 16 says run needs the guard, what skips it, and that it stays in this clone', () => {
   assert.match(q16.body, /`run` needs the guard for an unattended run/);
   assert.match(q16.body, /`--no-verify` and `-c core\.hooksPath` skip it/);
   assert.match(q16.body, /it stays in this clone/);
 });
 
-test('TC-1: question 16 mentions no rule, no warning count and no push rule', { skip: 'red-test-TC-1: question 16 still holds the allow-list question and "Say before the yes"' }, () => {
+test('TC-1: question 16 mentions no rule, no warning count and no push rule', () => {
   assert.deepEqual(rulesNamed(q16.body), []);
   assert.doesNotMatch(q16.body, RULE_TALK);
 });
 
-test('TC-3: the offer keeps today\'s wording, minus the rule sentences', { skip: 'red-test-TC-3: the offer still ends "`git push` then goes on the list" and is a second step of question 16' }, () => {
+test('TC-3: the offer keeps today\'s wording, minus the rule sentences', () => {
   assert.match(q16.body, /ask "Write a pre-push guard to `<the path detection printed>`\? It refuses a push to `<integration branch>` and a force push to any ref, and lets other pushes through, `run`'s `HEAD:<base>` to a plan branch included\."/);
   assert.match(q16.body, /Pre-filled yes\./);
   assert.match(q16.body, /A hook or `core\.hooksPath` in the way:\*\* make no offer\. Never overwrite it and never chain to it silently\./);
@@ -85,7 +85,7 @@ test('TC-3: the offer keeps today\'s wording, minus the rule sentences', { skip:
   assert.match(q16.body, /A `'` in the integration branch's name:\*\* make no offer\. Say why: the script holds the name in single quotes, so a `'` breaks it and it then refuses every push from this clone\./);
 });
 
-test('TC-3: a yes writes the guard to the path detection printed and tries it; the try, the re-check and the refusal case stay', { skip: 'red-test-TC-3: the yes step still says "only then add `git push` to the allow-list" and "the push rule is not added"' }, () => {
+test('TC-3: a yes writes the guard to the path detection printed and tries it; the try, the re-check and the refusal case stay', () => {
   const step = guardStep();
   assert.match(step, /run detection's first and third commands again: if anything is now at that path or `core\.hooksPath` is set, write nothing, and it is the branch "A hook or `core\.hooksPath` in the way"/);
   assert.match(step, /write `scaffold\/hooks\/pre-push\.tmpl` in this skill to that path, with `\{\{INTEGRATION_BRANCH\}\}` filled from the integration branch/);
@@ -96,7 +96,7 @@ test('TC-3: a yes writes the guard to the path detection printed and tries it; t
   assert.doesNotMatch(step, /allow|push rule|`git push`/i);
 });
 
-test('TC-3: "What waits" and the yes/no list have no second offer to number: question 16 is the guard question alone', { skip: 'red-test-TC-3: both still say "question 16\'s offer"' }, () => {
+test('TC-3: "What waits" and the yes/no list have no second offer to number: question 16 is the guard question alone', () => {
   assert.doesNotMatch(skill, /question 16's offer|16's offer/);
   const yesNo = /\*\*Yes\/no questions\*\* \(([^)]*)\)/.exec(skill);
   assert.ok(yesNo, 'no yes/no list');
@@ -105,7 +105,7 @@ test('TC-3: "What waits" and the yes/no list have no second offer to number: que
   assert.equal(q16 && questions.at(-1).n, 16);
 });
 
-test('TC-1: the closing report names the guard outcomes and no allow-list outcome', { skip: 'red-test-TC-1: the ending still reports an allow-list declined, added, out of date, or added without `git push`' }, () => {
+test('TC-1: the closing report names the guard outcomes and no allow-list outcome', () => {
   const start = skill.indexOf('**Then state what this install did not settle**');
   assert.ok(start >= 0, 'no closing paragraph');
   const ending = flat(skill.slice(start));
@@ -116,7 +116,7 @@ test('TC-1: the closing report names the guard outcomes and no allow-list outcom
   assert.match(ending, /a guard the write or `chmod` was refused for \(what the person is to put where\)/);
 });
 
-test('TC-1: detection no longer reads an allow-list, and keeps the guard and whether the install can write one', { skip: 'red-test-TC-1: detection.md still has "An existing allow-list"' }, () => {
+test('TC-1: detection no longer reads an allow-list, and keeps the guard and whether the install can write one', () => {
   const text = flat(detection);
   assert.ok(!text.includes('**An existing allow-list.**'));
   assert.ok(text.includes('**A pre-push guard.**'));
@@ -125,7 +125,7 @@ test('TC-1: detection no longer reads an allow-list, and keeps the guard and whe
   assert.match(text, /Report what you found, and why a hook you found does not count\. Question 16 tells the person the truth by it\./);
 });
 
-test('TC-1: question 16, its yes step, the ending and detection use no permission vocabulary, however it is reworded', { skip: 'red-test-TC-1: question 16, step 6, the ending and detection still say permission, allow, entry, settings.json and `git push`' }, () => {
+test('TC-1: question 16, its yes step, the ending and detection use no permission vocabulary, however it is reworded', () => {
   assert.deepEqual(permissionWords(q16.body), [], 'question 16');
   assert.deepEqual(permissionWords(guardBullets().join(' ')), [], 'the "16, yes" bullet');
   assert.deepEqual(permissionWords(closing), [], 'the ending');
@@ -133,7 +133,7 @@ test('TC-1: question 16, its yes step, the ending and detection use no permissio
   assert.deepEqual(mentions(q16.body, /`git push`/g), [], 'a `git push` in question 16');
 });
 
-test('TC-3: question 16 offers only on the three branches of today\'s offer, and a no is "no guard: an unattended run cannot start"', { skip: 'red-test-TC-3: question 16 has the guard-found bullet and a second step, and its no does not say the run cannot start' }, () => {
+test('TC-3: question 16 offers only on the three branches of today\'s offer, and a no is "no guard: an unattended run cannot start"', () => {
   const bullets = [...(' ' + q16.body).matchAll(/ - \*\*([^*]+)\*\*/g)].map((m) => m[1]);
   assert.deepEqual(bullets, [
     'Nothing in the way:',
@@ -146,7 +146,7 @@ test('TC-3: question 16 offers only on the three branches of today\'s offer, and
   assert.match(q16.body, /no guard[^.]*an unattended run cannot start/i);
 });
 
-test('TC-3: the ending keeps "no guard: an unattended run cannot start"', { skip: 'red-test-TC-3: the ending does not say that no guard means an unattended run cannot start' }, () => {
+test('TC-3: the ending keeps "no guard: an unattended run cannot start"', () => {
   assert.match(closing, /no guard[^.]*an unattended run cannot start/i);
 });
 
