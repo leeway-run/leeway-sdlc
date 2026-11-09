@@ -53,25 +53,25 @@ const selfCheck = at < 0 ? '' : norm(beforeDelegate.slice(beforeDelegate.toLower
 const sentences = splitSentences(selfCheck);
 
 // Pin 1 (LWY-202 AC-1, TC-1): "Trace it yourself first" sits in step 8, ahead of the "Delegate to the divergence reviewer" heading.
-test('red-test-TC-1 pin 1: step 8 has "Trace it yourself first" before the delegation heading', { skip: 'red-test-TC-1: step 8 has no self-check part yet' }, () => {
+test('red-test-TC-1 pin 1: step 8 has "Trace it yourself first" before the delegation heading', () => {
   assert.ok(step8.includes(DELEGATE), 'step 8 still has the delegation heading');
   assert.ok(at >= 0, 'step 8 holds "Trace it yourself first" before the delegation heading');
 });
 
 // Pin 2 (AC-1, TC-1): "fails without it" - each AC and TC clause maps to a task and a named test.
-test('red-test-AC-1 pin 2: the self-check maps every AC and TC clause to a task and a named test that fails without it', { skip: 'red-test-AC-1: no clause-to-test map in step 8' }, () => {
+test('red-test-AC-1 pin 2: the self-check maps every AC and TC clause to a task and a named test that fails without it', () => {
   assert.ok(sentences.some((s) => s.includes('clause') && s.includes('task') && s.includes('named test') && /fails? without it/.test(s)),
     'a sentence maps clause, task and "named test ... fails without it"');
 });
 
 // Pin 3 (AC-1, TC-1): "the task that builds it" - each field or capability one task uses.
-test('red-test-AC-1 pin 3: the self-check maps every field or capability one task uses to the task that builds it', { skip: 'red-test-AC-1: no field-to-builder map in step 8' }, () => {
+test('red-test-AC-1 pin 3: the self-check maps every field or capability one task uses to the task that builds it', () => {
   assert.ok(sentences.some((s) => s.includes('field or capability') && s.includes('the task that builds it')),
     'a sentence maps "field or capability" to "the task that builds it"');
 });
 
 // Pin 4 (AC-1, TC-1): gaps are fixed in the task descriptions and the hazard register, before delegating.
-test('red-test-AC-1 pin 4: gaps are fixed in the task descriptions and the hazard register before delegating', { skip: 'red-test-AC-1: no fix-first rule in step 8' }, () => {
+test('red-test-AC-1 pin 4: gaps are fixed in the task descriptions and the hazard register before delegating', () => {
   assert.ok(sentences.some((s) => s.includes('gap') && s.includes('fix') && s.includes('task descriptions') &&
     s.includes('hazard register') && s.includes('before')),
     'a sentence says a gap is fixed in the task descriptions and the hazard register before delegating');
@@ -79,7 +79,7 @@ test('red-test-AC-1 pin 4: gaps are fixed in the task descriptions and the hazar
 
 // Pin 5 (AC-2, TC-2): "written nowhere" - not posted, not in the design doc, not in the reviewer's prompt;
 // and no sentence about the mapping tells the planner to post, store or pass it.
-test('red-test-AC-2 pin 5: the mapping is written nowhere, and nothing says to post, store or pass it', { skip: 'red-test-AC-2: step 8 does not say the mapping is written nowhere' }, () => {
+test('red-test-AC-2 pin 5: the mapping is written nowhere, and nothing says to post, store or pass it', () => {
   assert.ok(sentences.some((s) => s.includes('written nowhere')), 'the self-check says the mapping is "written nowhere"');
   assert.ok(selfCheck.includes('design doc') && selfCheck.includes("reviewer's prompt") && /\b(post|posted|comment)\b/.test(selfCheck),
     'it names the design doc, the reviewer\'s prompt and a posted comment as places it is not');
