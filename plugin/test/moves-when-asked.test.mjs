@@ -40,7 +40,7 @@ const outOfGate = (u) => ROW_SOURCE.test(u) || SOURCE.test(u);
 // step with no shaping escalation open, and to `ready` on a PASS, or on PASS WITH DECISIONS once `# QUESTIONs applied` is posted.
 const AUTOMATIC = [
   /^\| the shaped step, with no shaping escalation open \| .*--step <the plan step's id>.*`# Planning started`/,
-  /^On a PASS(?! WITH)\b.*--status ready.*`# Moved to ready`/,
+  /^On a PASS,\s.*--status ready.*`# Moved to ready`/,
   /^On PASS WITH DECISIONS, once every QUESTION is answered and the `# QUESTIONs applied` reply is posted\b.*--status ready.*`# Moved to ready`/,
 ];
 const automatic = (u) => AUTOMATIC.some((re) => re.test(u));
@@ -155,4 +155,17 @@ test('PROCESS.md says any skill makes the move the person asks for, and only pla
 test('after a move the person asked for, plan-project restarts at step 0 only from the plan step, and otherwise stops', () => {
   const plan = skills.find(([name]) => name === 'plan-project')[1].replace(/\s+/g, ' ');
   assert.match(plan, /as `<alias>\/agent` and say which move you made \(`PROCESS\.md`, "The cast"\)\. When that move put the story at the plan step, read the story again and start again at step 0\. After any other move, say where the story now is and stop: make no further move of your own\./);
+});
+
+test('step 8 says a RETURN, and PASS WITH DECISIONS with a QUESTION open or unapplied, is "not moved", in those words', () => {
+  const step8 = skills.find(([name]) => name === 'plan-project')[1].split(/\n(?=## )/).find((s) => s.startsWith('## 8. ')).replace(/\s+/g, ' ');
+  assert.match(step8, /A RETURN is not moved to `ready`: the story stays at the plan gate/);
+  assert.match(step8, /with a QUESTION still open, the story is not moved: it stays at the plan gate while it waits/);
+  assert.match(step8, /no `# QUESTIONs applied` reply, the story is not moved: it stays at the plan gate until the reply is posted/);
+});
+
+test('the install question says plan-project moves a shaped story and a PASS, and only a RETURN or an open QUESTION waits', () => {
+  const install = read('skills/sdlc-install/SKILL.md').replace(/\s+/g, ' ');
+  assert.doesNotMatch(install, /waits at shaped and at planned for a person to move it on/);
+  assert.match(install, /running plan-project on a shaped story moves it to planning, and a PASS moves it to ready; a RETURN or an open QUESTION waits at planned for a person/);
 });
