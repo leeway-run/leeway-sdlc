@@ -588,12 +588,25 @@ however it returns. Pass:
 - The refs of any stories **held at step 1**, named as held, so it lists them rather than tracing them.
 - The **path to the design doc**, or that there is none.
 - The **doc map** from `.sdlc/CONFIG.md`, with each doc's `real` / `stub` / `absent` state.
+- Per story, that story's previous report `cN` and the mode: `re-review` or `full`. A story with no earlier report
+  gets `full` and no `cN`. Reports are one comment per story, so the `cN` is that story's own.
 - Whether it can read Leeway, and how: the real `<cli>`, `--server <server>`, read verbs only. **If it cannot,
   paste the verbatim description of every project, story and task, and the latest `# Technical criteria` comment
   of every story whose body points to one.**
 
 **Never your summary.** Not which task covers which criterion, not why the plan is right, not what you were
 worried about: the critical input is the items as written, and your account of them is the thing being checked.
+The previous report is not your account: it is the reviewer's own output, so it is passed by `cN`. Your replies to
+it (`# QUESTIONs applied`, `# BLOCKERs fixed`) are your account, and the reviewer never reads them.
+
+**Choose the mode, per story.** The mode is `full` when a thread `step` into `shape` follows the previous report (the
+story went back through shaping). The mode is also `full` when the person asks in the session for a full review. It is
+`full` when the previous report has no `Fingerprint` column (it was written before the column existed). Otherwise the
+mode is `re-review`.
+
+A TC change alone is a re-review.
+
+An item missing from the previous read log counts as changed, and the reviewer reads it in full.
 
 ### Gate the reply
 
@@ -622,8 +635,8 @@ Say in the session, per story, the report's `cN`, its verdict and what each move
 - **Passing the gate** is a person moving the story from the plan gate to `ready`. No step: `run` sets the build
   step when it starts, so a story is never `in_progress` with nobody on it. **No task starts before that move.**
 - **Returning it** is a person moving it back to the plan step. The next `plan-project` fixes the items the
-  BLOCKERs name (step 0) and spawns a **fresh** reviewer — never the same one with a note about what changed. The
-  next round posts its own report comment.
+  BLOCKERs name (step 0) and spawns a **fresh** reviewer — never the same one with a note about what changed. It is
+  still a fresh agent, given the previous report's `cN` and the mode. The next round posts its own report comment.
 
 Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers. Then, with QUESTIONs
 or none, wait on the held stories' gaps ("The last wait", below), and **stop**, with the story where it is.
