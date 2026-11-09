@@ -153,7 +153,7 @@ Read the description and every comment, the intent doc, and the surfaces the sto
 | **open** | any `OPEN:` line |
 | **no negative** | a story the checklist's *What must not happen* applies to — data scope, roles, permissions or isolation; or data it moves, copies, deletes or replaces — without the rule it requires |
 | **stale** | a criterion that contradicts the intent doc, or what the code does today. If the Status line has a date, `git log --since=<date>` on the intent doc shows what changed since shaping |
-| **hidden scope** | a capability the story assumes and the code shows is not there, **when it needs a scope decision**: build it here, a fallback, or out of scope. One the criterion obviously needs and you just build is a task, not a gap |
+| **hidden scope** | a capability the story assumes and the code shows is not there, **when it needs a scope decision**: build it here, a fallback, or out of scope. One the criterion obviously needs and you just build is a task, not a gap. Also an entry point to a removed or replaced capability that the body does not name, in a criterion or under *Out of scope* |
 | **too big** | the story should be two. Name the split you would suggest; the PO decides it |
 
 A checklist row the story leaves open is **missing** only when it applies, by its *Applies when*. **Not gaps:**
@@ -255,6 +255,12 @@ escalations (`escalation list <KEY> --projectId <id>`) and the answers on its ot
 of its comments. It has no cap: a story left unread is how one decision gets two answers. Nothing the code, the docs, the body, a comment or
 an earlier answer settles is asked, and an earlier answer is any `escalations[].answer` on this story, the Plan record or a sibling story:
 the PO's, a QUESTION's (step 8), or an earlier round's. A sibling's open question that binds this story is not asked again: this story's comment holds on it, with `Held on <ref> eN`.
+
+The call, per story, with the filter that keeps only its own `escalations[]`, each entry whole (the filter reads the ref from the input's `issue.ref`, takes no argument, and has no `"` in its body):
+
+```
+<cli> --server <server> issue get <ref> --json | node -e "const d=JSON.parse(require('fs').readFileSync(0,'utf8'));console.log(JSON.stringify(d.escalations.filter(e=>e.ref===d.issue.ref)))"
+```
 
 **A product question is not asked here.** What the user gets, an `AC-n`, a scope call: it stays a product gap for the PO.
 Go to step 1, "Gaps → back to the PO", even with a round open, raise nothing more for the interview, and wait as that

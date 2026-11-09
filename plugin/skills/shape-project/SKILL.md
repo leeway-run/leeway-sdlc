@@ -114,6 +114,8 @@ cleanup that deletes. Each is a product question for the PO — *"today import o
 document import is switched on; should this follow the same switch?"* — because a story that is
 silent about a rule the code enforces either breaks it or inherits it without anyone deciding.
 
+**Look for every way in to what the story takes away.** When a story removes or replaces a capability, search the code for every caller and entry point to it: a function or component's callers, the routes, the UI controls that open it, the commands, the links. Each entry point the story does not already cover goes into the round as a choice: cover it in a criterion, or leave it under *Out of scope*. Raise it in step 3's round as the hidden scope it is, merged with any question one answer would settle (the round rule there). A story that only changes how something behaves, removing or replacing nothing, is shaped as today: this search does not run.
+
 You change nothing in the repo. This session writes only to Leeway.
 
 ## 3. Walk the gaps with the PO
