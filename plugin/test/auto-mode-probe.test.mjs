@@ -8,9 +8,19 @@
 //   - **Auto mode started:** yes | no
 //   - **How auto mode was started:** <text; with "no", what was tried and why it could not be started>
 //   and, with "yes", a table with exactly the columns `call | command | result | output`, one row per call below, where
-//   `result` is ran, prompted or refused and `output` is what the call printed (a refusal's text, for refused).
+//   `result` is ran, prompted or refused and `output` is what the call printed: real text, never `-`, `n/a` or empty,
+//   and a refusal's text (more than one word) for refused. A `|` inside a cell is written `\|`. The fsmonitor row's command
+//   contains `core.fsmonitor` and the `git push main` row's contains `main`. Each call has one bucket: a call a classifier
+//   blocked and then allowed, or one that timed out, goes in the bucket it ended in, with the nuance in `output`.
 //   Optional bullets that back c1's two claims: `- **Protected paths:** ...` (.git and .claude in a worktree) and
 //   `- **Session start directory:** ...` (what an edit under .worktrees/ is judged against).
+//
+// HARNESS fails closed. A sentence naming (backticked) a call the record marks prompted or refused must say prompt or
+// refus, name no call the record marks ran, and carry no run verb (runs, ran, goes through, allowed, approved, automatic,
+// on its own, without a prompt, ...): so each limit gets its own sentence, and an "except" or "every other call ran" goes in
+// another. A backticked call-like span (git, gh, node, leeway-sdlc-...) in such a sentence is a call of the record, so
+// HARNESS claims nothing the probe did not show. c1's two claims (the .git and .claude protection, the session start
+// directory) are backed by their bullet or hedged ("not known", "not shown", ...) in the same sentence as the claim.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
@@ -49,7 +59,7 @@ function record() {
   assert.ok(existsSync(join(root, 'docs/targets/claude.md')), 'docs/targets/claude.md does not exist');
   const section = rawUnder(read('docs/targets/claude.md'), HEADING);
   const started = bullet(section, 'Auto mode started');
-  const rows = section.split('\n').filter((l) => l.startsWith('|')).map((l) => l.replace(/^\||\|\s*$/g, '').split('|').map(cell));
+  const rows = section.split('\n').filter((l) => l.startsWith('|')).map((l) => l.replace(/^\||(?<!\\)\|\s*$/g, '').split(/(?<!\\)\|/).map((c) => cell(c.replace(/\\\|/g, '|'))));
   return { section, started, rows };
 }
 
@@ -65,6 +75,9 @@ function calls(rec) {
   }
   return out;
 }
+
+const PLACEHOLDER = /^(-+|—|–|n\/?a|)$/i;
+const RUN = /\b(runs|ran|running)\b|\b(can|will|may|does|do|would|to|not|just|simply) run\b|goes? through|went through|allowed|allows?\b|approved|automatic(ally)?|on its own|on their own|without (a |any )?(permission )?prompt|no (permission )?prompt|unprompted|never prompts?|(does not|doesn't) prompt|without asking|permitted|passes|succeeds|proceeds/i;
 
 const permissions = () => rawUnder(read('plugin/HARNESS.md'), 'Permissions for an unattended run');
 
@@ -84,8 +97,11 @@ test('TC-6: with auto mode started, the record has one row per listed call, each
   for (const [call, r] of got) {
     assert.ok(RESULTS.includes(r.result), `${call}: result "${r.result}" is not ran, prompted or refused`);
     assert.ok(r.command.length > 0, `${call}: no command`);
-    assert.ok(r.output.length > 0, `${call}: no output${r.result === 'refused' ? ' (a refusal\'s text)' : ''}`);
+    assert.ok(!PLACEHOLDER.test(r.output), `${call}: no output (a placeholder is not what the call printed${r.result === 'refused' ? '; a refusal\'s text' : ''})`);
+    if (r.result === 'refused') assert.ok(r.output.split(/\s+/).length > 1, `${call}: a refused row's output is the refusal's text, not one word: ${r.output}`);
   }
+  assert.ok(got.get('git -c core.fsmonitor status')?.command.includes('core.fsmonitor'), 'the fsmonitor row\'s command contains core.fsmonitor');
+  assert.ok(got.get('git push main')?.command.includes('main'), 'the `git push main` row\'s command contains main');
 });
 
 test('TC-6: HARNESS cites the section, and keeps UNVERIFIED about auto mode only if the record says it could not be started', { skip: RED + 'HARNESS does not cite "Unattended in auto mode" and still carries UNVERIFIED about auto mode' }, () => {
@@ -102,15 +118,26 @@ test('TC-6: HARNESS names each call the record marks prompted or refused as a li
   if (/^no$/i.test(rec.started ?? '')) return;
   const text = permissions();
   const all = sentences(text);
-  const unprompted = /without (a |any )?(permission )?prompt|no (permission )?prompt|unprompted|never prompts?|doesn't prompt|does not prompt|without asking/i;
-  for (const [call, r] of calls(rec)) {
-    const named = all.filter((s) => s.includes('`' + call + '`'));
+  const got = calls(rec);
+  const names = (s, call) => s.includes('`' + call + '`');
+  const ranCalls = [...got].filter(([, r]) => r.result === 'ran').map(([c]) => c);
+  for (const [call, r] of got) {
     if (r.result === 'ran') continue;
+    const named = all.filter((s) => names(s, call));
     assert.ok(named.length > 0, `HARNESS does not name \`${call}\` as a limit, and the record says it ${r.result}`);
     assert.ok(named.some((s) => new RegExp(r.result === 'refused' ? 'refus' : 'prompt', 'i').test(s)), `no sentence says \`${call}\` ${r.result}`);
-    for (const s of named) assert.doesNotMatch(s, unprompted, `HARNESS says \`${call}\` runs without a prompt, and the record says it ${r.result}`);
   }
-  const anyLimit = [...calls(rec).values()].some((r) => r.result !== 'ran');
+  const limitCalls = [...got].filter(([, r]) => r.result !== 'ran').map(([c]) => c);
+  for (const s of all) {
+    const spans = (s.match(/`[^`]+`/g) ?? []).map((x) => x.slice(1, -1)).filter((c) => /^(git|gh|node|leeway-sdlc-)/.test(c));
+    if (limitCalls.some((c) => names(s, c)) || (/prompt|refus/i.test(s) && spans.length)) for (const call of spans) assert.ok(got.has(call), `HARNESS says \`${call}\` prompts or is refused, and the record has no such call: ${s}`);
+    if (!limitCalls.some((c) => names(s, c))) continue;
+    assert.match(s, /prompt|refus/i, `a sentence names a limit and says neither prompt nor refus: ${s}`);
+    assert.doesNotMatch(s, RUN, `a sentence names a call the record marks prompted or refused and says it runs: ${s}`);
+    const withRan = ranCalls.find((c) => names(s, c));
+    assert.ok(!withRan, `a limit shares a sentence with \`${withRan}\`, which the record marks ran (each limit gets its own sentence): ${s}`);
+  }
+  const anyLimit = limitCalls.length > 0;
   if (anyLimit) for (const s of all) assert.doesNotMatch(s, /\b(every|all|each) (call|verb)s?\b[^.]*\b(runs?|ran)\b|\bno (call|verb) (prompts?|is refused|asks)|\bnothing (prompts?|asks)/i, 'a blanket "no call prompts" claim, with a prompted or refused call on record');
 });
 
@@ -121,9 +148,9 @@ test('TC-6: c1, the .git/.claude protection and the session-start claims are bac
   const hedged = (s) => /\bnot (known|shown|verified|tried|seen)\b|\bunknown\b/i.test(s) || (/^no$/i.test(rec.started ?? '') && /UNVERIFIED/.test(s));
   const backed = (label) => (bullet(rec.section, label) ?? '').length > 10;
   // c27: Claude Code's own protection of writes in .git or .claude inside a worktree.
-  const paragraphs = text.split(/\n\s*\n/).filter((p) => /\.git\b/.test(p) && /\.claude\b/.test(p) && /protection/i.test(p));
-  for (const p of paragraphs) assert.ok(backed('Protected paths') || hedged(flat(p)), 'the .git/.claude protection claim has no "Protected paths" record and no hedge');
+  const protection = sentences(text).filter((s) => /\.git\b/.test(s) && /\.claude\b/.test(s));
+  for (const s of protection) assert.ok(backed('Protected paths') || hedged(s), `the .git/.claude claim has no "Protected paths" record and no hedge in its sentence: ${s}`);
   // c28: edits under .worktrees/ are judged against the directory the session started in.
-  const claims = sentences(text).filter((s) => /\.worktrees\//.test(s) && /started|session start/i.test(s));
+  const claims = sentences(text).filter((s) => /\.worktrees\b/.test(s) && /\bsession\b/i.test(s) && /\b(start|started|starts|began|begin|begins|launch|launched|cwd|directory)\b/i.test(s));
   for (const s of claims) assert.ok(backed('Session start directory') || hedged(s), `the session-start claim has no "Session start directory" record and no hedge: ${s}`);
 });
