@@ -81,7 +81,7 @@ const RUN = /\b(runs|ran|running)\b|\b(can|will|may|does|do|would|to|not|just|si
 
 const permissions = () => rawUnder(read('plugin/HARNESS.md'), 'Permissions for an unattended run');
 
-test('TC-6: claude.md has "Unattended in auto mode" with the version, the date and how auto mode was started', { skip: RED + 'docs/targets/claude.md has no "Unattended in auto mode" section yet (LWY-189.6 records the probe there)' }, () => {
+test('TC-6: claude.md has "Unattended in auto mode" with the version, the date and how auto mode was started', () => {
   const { started, section } = record();
   assert.match(bullet(section, 'Claude Code version') ?? '', /\d+\.\d+\.\d+/);
   assert.match(bullet(section, 'Date') ?? '', /^\d{4}-\d{2}-\d{2}$/);
@@ -89,7 +89,7 @@ test('TC-6: claude.md has "Unattended in auto mode" with the version, the date a
   assert.ok((bullet(section, 'How auto mode was started') ?? '').length > 10, 'no "How auto mode was started" text');
 });
 
-test('TC-6: with auto mode started, the record has one row per listed call, each ran, prompted or refused, with its output', { skip: RED + 'no per-call table in docs/targets/claude.md yet' }, () => {
+test('TC-6: with auto mode started, the record has one row per listed call, each ran, prompted or refused, with its output', () => {
   const rec = record();
   if (/^no$/i.test(rec.started ?? '')) return;
   const got = calls(rec);
@@ -104,7 +104,7 @@ test('TC-6: with auto mode started, the record has one row per listed call, each
   assert.ok(got.get('git push main')?.command.includes('main'), 'the `git push main` row\'s command contains main');
 });
 
-test('TC-6: HARNESS cites the section, and keeps UNVERIFIED about auto mode only if the record says it could not be started', { skip: RED + 'HARNESS does not cite "Unattended in auto mode" and still carries UNVERIFIED about auto mode' }, () => {
+test('TC-6: HARNESS cites the section, and keeps UNVERIFIED about auto mode only if the record says it could not be started', () => {
   const rec = record();
   const text = permissions();
   assert.match(flat(text), /docs\/targets\/claude\.md/);
@@ -113,7 +113,7 @@ test('TC-6: HARNESS cites the section, and keeps UNVERIFIED about auto mode only
   else assert.doesNotMatch(text, /UNVERIFIED/, 'auto mode was probed, so HARNESS carries no UNVERIFIED about it');
 });
 
-test('TC-6: HARNESS names each call the record marks prompted or refused as a limit, and says no call or run unprompted', { skip: RED + 'HARNESS names no limits of an unattended run, since no record exists' }, () => {
+test('TC-6: HARNESS names each call the record marks prompted or refused as a limit, and says no call or run unprompted', () => {
   const rec = record();
   if (/^no$/i.test(rec.started ?? '')) return;
   const text = permissions();
@@ -141,7 +141,7 @@ test('TC-6: HARNESS names each call the record marks prompted or refused as a li
   if (anyLimit) for (const s of all) assert.doesNotMatch(s, /\b(every|all|each) (call|verb)s?\b[^.]*\b(runs?|ran)\b|\bno (call|verb) (prompts?|is refused|asks)|\bnothing (prompts?|asks)/i, 'a blanket "no call prompts" claim, with a prompted or refused call on record');
 });
 
-test('TC-6: c1, the .git/.claude protection and the session-start claims are backed by the record or hedged', { skip: RED + 'HARNESS says edits under .worktrees/ are judged against the session\'s start directory with no record and no hedge' }, () => {
+test('TC-6: c1, the .git/.claude protection and the session-start claims are backed by the record or hedged', () => {
   const hasSection = existsSync(join(root, 'docs/targets/claude.md')) && read('docs/targets/claude.md').includes(`\n## ${HEADING}\n`);
   const rec = hasSection ? record() : { section: '', started: undefined };
   const text = permissions();
