@@ -182,7 +182,8 @@ For a type that has a plan gate (a `gate` step after `plan`), planned work passe
 exists.
 
 1. The divergence reviewer gets the **refs and the doc map, never the planner's summary**, and reads the
-   plan, the stories and the tasks itself.
+   plan, the stories and the tasks itself. A re-review also gets the previous report (its `cN`): that is the reviewer's own
+   output, so it is not the planner's summary, and the planner's replies to a report are never passed.
 2. It returns a coverage table, findings tagged BLOCKER / QUESTION / NOTE, and a recommended verdict:
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
