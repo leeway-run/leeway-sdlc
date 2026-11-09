@@ -34,8 +34,8 @@ The test is whether `.sdlc/leeway.md` exists in the repo you run in.
   with `<raise> --server <server> --as <alias>/agent <ref> <fields file> -- <cli>` (`<raise>` as `HARNESS.md`,
   "Running the plugin's scripts", names it) and **note the id it returns** (`escalation.escalation`:
   `e1`, `e2`, ...); an issue can hold several, and an earlier yes is not this one. Then **wait on it**, as `run`
-  does (`run`, "Wait, then carry on", with this skill in place of `run`), answering a question asked of you and
-  waiting again (exit 5); wait even with the person at the terminal, since only the escalation's answer is one. On
+  does: start one background wait per open escalation of the round, all together (`run`, "Wait, then carry on", with this
+  skill in place of `run`), answering a question asked of you and waiting again on that escalation only (exit 5); wait even with the person at the terminal, since only the escalation's answer is one. On
   its answer, or on resume, read `<cli> issue get <ref> --json`, find the entry of `escalations[]` whose `number`
   is the noted id without its `e` (`e3`: `number` 3), and read **that entry's** `answer.label`. Write only when it
   is the yes option, and go on from the step that asked. No answer there, or an answer only on another escalation,

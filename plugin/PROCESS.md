@@ -364,9 +364,9 @@ opening the report behind it:
   escalation was not raised because the server at `<server>` has no escalation type, context, trade-off or advice
   yet, and needs a Leeway with LWY-159.
 - **Then wait for the answer, in every skill that raises**: `run`, `plan-project`, `shape-project`, `sync-repo`,
-  `sdlc-install` and `sdlc-tune`. Say once what it waits on and until when, wait on `scripts/wait-answer.mjs` (as
-  `HARNESS.md`, "Waiting for an answer", says), act on its exit as run's "Wait, then carry on" does, and on an answer
-  carry on as a re-invoke of that skill would, writing nothing twice: each skill says where an answer takes it. An
+  `sdlc-install` and `sdlc-tune`. Say once what it waits on and until when, start one background wait per open escalation of the round, all together, on
+  `scripts/wait-answer.mjs` (as `HARNESS.md`, "Waiting for an answer", says), act on each exit as run's "Wait, then carry on"
+  does, and on an answer, once every escalation of the round is answered, carry on as a re-invoke of that skill would, writing nothing twice: each skill says where an answer takes it. An
   answer that needs a person to act first is put to them as an escalation and waited on too (run's "Wait, then carry
   on"). Where `HARNESS.md` says `wait: stop`, no wait starts: act at once as for exit 2. A wait that holds work stops
   the turn only when:
@@ -388,7 +388,7 @@ opening the report behind it:
      characters. An answer that changes the options or the advice says so in its text; the escalation itself is not
      changed.
   2. **Write it as the role that raised the escalation**: `<role>` is `by.actor.role` of the escalation's entry in
-     `escalations[]` of `leeway issue get <ref> --json` (the entry whose `ref` is `<ref>` and `number` is N), and
+     `escalations[]` of `leeway issue get <ref> --json` (the entry whose `ref` is `<ref>` and `number` is N; a null `by.actor.role` is answered as `<alias>/agent`), and
      `<ref>` and `<eN>` are those of the wait. The answer goes in from a file, never inline, since an answer drawn
      from the code can hold a backtick or a `$` the shell would run: in `run`, a file where run's other bodies go
      (run, "Where `run`'s own files go"); in any other skill, a file outside the repo, by absolute path.
@@ -402,8 +402,9 @@ opening the report behind it:
   4. **Wait again on the same escalation**, the same command, with 16 hours of its own.
 
   Nothing else is written: no second escalation and no comment for it. A question is not the answer: do no work
-  that depends on the escalation, and carry on only on exit 0. **If the answer is not written** (the CLI refuses
-  it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
+  that depends on the escalation, and carry on only on exit 0. A CLI refusal is not at once an outage: a refusal with `invalid_clarification_answer`
+  (an answer over 1,000 characters) is shortened and written once more, not treated as an outage; an empty answer refused the same way is written again with its text. **If the answer is not
+  written** (the CLI refuses it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
   would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3
   otherwise, naming the escalation and the question and saying what the CLI said. Where the wait holds work, that
   stops the turn, and a re-invoke waits again and meets the question again. Where it blocks nothing, say once in the

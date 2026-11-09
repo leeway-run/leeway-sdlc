@@ -35,7 +35,8 @@ marker.
 
 wait: background
 
-Start `wait-answer.mjs` (run, "Wait, then carry on") with the Bash tool and `run_in_background: true`, as it is,
+Where a round has several open escalations, start one background wait per open escalation of the round, all together.
+Start each `wait-answer.mjs` (run, "Wait, then carry on") with the Bash tool and `run_in_background: true`, as it is,
 with nothing appended: an `; echo` after it would become the exit code the harness reports. The harness runs it
 detached and wakes the session when it exits, naming its exit code and its output file, so no turn is spent per
 check. Do not poll the output file or sleep while it runs. When the notification comes, read the output file and act
