@@ -88,16 +88,27 @@ An unattended run uses Claude Code's auto mode, which the person starts: the run
 writes no allow rule and no permission setting for it. Without auto mode, a person approves each prompt, and the run is
 attended; `run` ("Unattended prerequisites") says what else an unattended run needs.
 
-**UNVERIFIED:** what auto mode asks for and what it lets through. Not known: whether it prompts for a `git push`, for
-`gh pr merge`, for a write outside the working directory, or for a write in `.git` or `.claude` inside a worktree, which
-Claude Code's own protection asks about without auto mode; whether a subagent follows the session's mode; whether `claude -p` accepts it. LWY-189.6 replaces this paragraph with what was tried.
+**What a probe of auto mode showed** (`docs/targets/claude.md`, "Unattended in auto mode"): in Claude Code 2.1.319,
+started as `claude -p --permission-mode auto` in a scratch repo with nothing in any settings file it read that allows or
+denies a call, 13 of the 14 calls of a run round went through in one session, with no prompt and no refusal in the
+transcript. Its pushes went to a local bare remote only. The limits of an unattended run, one per sentence:
+
+- Auto mode's classifier refuses `git -c core.fsmonitor status`, a git status with a `core.fsmonitor` script set, with
+  "denied by the Claude Code auto mode classifier", and the script did not execute.
+- The probe ran with `-p`, where nobody can answer a prompt, so a call that would prompt in a terminal may look like that
+  refusal, and the record does not show which it would be.
+- Not shown: a push to a real remote or to a protected `main`, `gh pr merge`, a subagent following the session's mode,
+  and the same calls with auto mode off.
+- A write under `.claude/` in a worktree and one under `.git/worktrees/` in the main repo went through in auto mode;
+  whether Claude Code's own protection of `.git` and `.claude` asks about those writes without auto mode was not tried.
 
 **How calls are written.** Every call is printed verb first, with `--server` on a Leeway call and `git -C <path>` for git, one
 call per verb. Write each as it is printed: `cd <path> && git` is not the same call, and a harness that asks about calls
 may stop at it, at a flag placed before the verb or at a call with no `--server`. A git verb takes at least one argument:
 `git -C <path> status --short`, `git -C <path> diff HEAD`, `git -C <path> show HEAD`, `git -C <path> fetch origin` and
-`git -C <path> log -5` are the forms. Start the session at the repo root: edits under `.worktrees/` are judged against the
-directory the session started in, and `run` ("Where `run`'s own files go") relies on that. A lane runs in a worktree as
+`git -C <path> log -5` are the forms. Start the session at the repo root, as the probe did: whether edits under `.worktrees/`
+are judged against the directory the session started in is not shown, and `run` ("Where `run`'s own files go") relies
+on the session starting there. A lane runs in a worktree as
 `cd <worktree> && <lane>`. A compound lane is run part by part when a harness asks about each part, and a lane that
 needs a leading variable (`FOO=1 npm test`) goes in a script.
 
