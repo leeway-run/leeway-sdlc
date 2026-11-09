@@ -97,6 +97,25 @@ test('step 8 "Post the full report": a QUESTION still open stops the loop at the
     /\b[Aa] QUESTION still open\b/, /\bstops? the loop\b/, /\bplan gate\b/, AFFIRMED);
 });
 
+// --- the re-review, and the answered QUESTIONs applied before it ------------------------------------------------
+
+test('step 8 "Post the full report": each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, given the previous report\'s `cN` and the mode `re-review`', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+  found(report, 'saying each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, passed the previous report\'s `cN` and the mode `re-review`',
+    /\b(?:[Ee]ach|[Ee]very) automatic round\b/, /\bre-review\b/, /\bfresh sdlc-divergence-reviewer\b/, /\bprevious report's `cN`/, /\bmode `re-review`/, /^(?!.*\b(?:not|never|no|without)\b)/);
+});
+
+test('step 8 "Post the full report": each automatic round applies the answered QUESTIONs before the re-review', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+  found(report, 'saying each automatic round applies the answered QUESTIONs before it delegates the re-review',
+    /\b(?:[Ee]ach|[Ee]very) automatic round\b/, /\bapplies the answered QUESTIONs\b/, /\bbefore (?:it delegates )?the re-review\b/, AFFIRMED);
+});
+
+// --- per story ------------------------------------------------------------------------------------------------
+
+test('step 8 "Post the full report": the loop runs per story; one story\'s loop never holds or moves another story', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+  found(report, 'saying the loop runs per story, and one story\'s loop never holds or moves another story',
+    /\bThe loop runs per story\b/, /\bone story's loop\b/, /\bnever (?:holds or moves|moves or holds) another story\b/);
+});
+
 // --- a PASS from any round ------------------------------------------------------------------------------
 
 test('step 8 "Post the full report": a PASS from any automatic round moves the story to `ready` with the same `# Moved to ready` comment', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
