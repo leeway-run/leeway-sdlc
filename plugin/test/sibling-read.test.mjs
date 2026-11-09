@@ -28,17 +28,17 @@ const filterBody = () => {
 const run = (body, input) => JSON.parse(execFileSync(process.execPath, ['-e', body], { input, encoding: 'utf8' }));
 const mine = fixture.escalations.filter((e) => e.ref === fixture.issue.ref);
 
-test('TC-1: What is asked gives the whole sibling-read command line, issue get --json piped to node -e', { skip: 'red-test-TC-1: SKILL.md has no the sibling-read command line in "What is asked" yet' }, () => {
+test('TC-1: What is asked gives the whole sibling-read command line, issue get --json piped to node -e', () => {
   assert.ok(filterBody().length > 0);
 });
 
-test('TC-2: the filter returns only the story\'s escalations, each whole, answer included', { skip: 'red-test-TC-2: the filter is not written into SKILL.md yet' }, () => {
+test('TC-2: the filter returns only the story\'s escalations, each whole, answer included', () => {
   assert.equal(mine.length, 2);
   assert.ok(mine.some((e) => e.answer) && mine.some((e) => !e.answer), 'fixture needs an answered and an open one');
   assert.deepEqual(run(filterBody(), fixtureText), mine);
 });
 
-test('TC-2 negative: a sub-issue\'s escalation with the same number does not survive, and nothing else of the issue does', { skip: 'red-test-TC-2: the filter is not written into SKILL.md yet' }, () => {
+test('TC-2 negative: a sub-issue\'s escalation with the same number does not survive, and nothing else of the issue does', () => {
   const out = run(filterBody(), fixtureText);
   assert.ok(Array.isArray(out), 'the output is the escalations array only');
   assert.ok(fixture.escalations.some((e) => e.ref !== fixture.issue.ref && mine.some((m) => m.number === e.number)), 'fixture must collide on number');
