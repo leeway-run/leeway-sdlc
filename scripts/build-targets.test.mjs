@@ -182,7 +182,7 @@ UNVERIFIED: no mode has been tried here for ${name}, and none is named.`
 // Done-when grep of the task: neither wording survives anywhere, the permissions section included.
 const BANNED = /allow-list|allow rule|Say before the yes|question 16/i
 
-test('red-test-TC-1: every generated harness has exactly the pinned permissions section', { skip: 'red-test-TC-1: the generated harnesses still say where run\'s allow-list goes' }, () => {
+test('red-test-TC-1: every generated harness has exactly the pinned permissions section', () => {
   const all = generatedHarnesses()
   assert.equal(all.length, TARGETS.length)
   for (const t of TARGETS) {
@@ -192,7 +192,7 @@ test('red-test-TC-1: every generated harness has exactly the pinned permissions 
   }
 })
 
-test('red-test-TC-1: no target keeps a permissions field: no mode is pinned, because none has been run', { skip: 'red-test-TC-1: every target still has a permissions field naming a settings file' }, () => {
+test('red-test-TC-1: no target keeps a permissions field: no mode is pinned, because none has been run', () => {
   for (const t of TARGETS) assert.equal(t.permissions, undefined, t.id)
 })
 
@@ -200,7 +200,7 @@ test('TC-2 guard: no generated harness says allow-list, allow rule, Say before t
   for (const [file, text] of generatedHarnesses()) assert.doesNotMatch(outsideSection(text), BANNED, file)
 })
 
-test('red-test-TC-1: scripts/targets.mjs has no line telling an agent to write a rule', { skip: 'red-test-TC-1: the template and the permissions fields still say allow-list and Say before the yes' }, () => {
+test('red-test-TC-1: scripts/targets.mjs has no line telling an agent to write a rule', () => {
   const lines = readFileSync(join(ROOT, 'scripts', 'targets.mjs'), 'utf8').split('\n')
   const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => BANNED.test(l))
   assert.deepEqual(hits, [])
