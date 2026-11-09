@@ -86,7 +86,7 @@ test('step 0: a story at the shaped step with a shaping escalation open is not m
 // Pinned in `plugin/skills/plan-project/SKILL.md`, step 8 (every subsection), one sentence per condition.
 test('step 8: a PASS moves the story to `ready` with a comment naming the report cN and the verdict', { skip: 'red-test-AC-3: step 8 stops at the plan gate on a PASS' }, () => {
   found(step8, 'on a PASS that moves the story to `ready` with a `# Moved to ready` comment naming `cN` and the verdict',
-    /^On a PASS\b/, MOVE_READY, /\(no step\)/, /`# Moved to ready`/, /report's `cN`/, /verdict/, /^(?!.*\bperson\b)/);
+    /^On a PASS(?! WITH)/, MOVE_READY, /\(no step\)/, /`# Moved to ready`/, /report's `cN`/, /verdict/, /^(?!.*\bperson\b)/);
 });
 
 test('step 8: PASS WITH DECISIONS moves the story to `ready` after `# QUESTIONs applied`, with the same comment', { skip: 'red-test-AC-3: step 8 moves nothing after `# QUESTIONs applied`' }, () => {
@@ -119,8 +119,36 @@ test('the moves are per story: one story of a plan moves to `ready` while anothe
 test('step 7: plan-project makes the two moves itself and no longer says they are a person\'s', { skip: 'red-test-TC-1: step 7 still says the moves are a person\'s' }, () => {
   const text = flat(step7);
   assert.doesNotMatch(text, /are a person's\*\*: this skill never makes them on its own initiative/);
-  found(step7, 'saying this skill moves a story out of the shaped step and out of the plan gate itself',
-    /\*\*[^*]*shaped step[^*]*plan gate[^*]*\bthis skill makes\b[^*]*\*\*|\bthis skill makes\b/, /shaped step/, /plan gate/, /on its own/);
+  found(step7, 'saying, affirmatively, that this skill makes the moves out of the shaped step and out of the plan gate on its own',
+    /\bthis skill makes\b/, /shaped step/, /plan gate/, /on its own/, /^(?!.*\b(?:never|no|not|nothing|without)\b)/);
+});
+
+// Pinned in `plugin/skills/plan-project/SKILL.md`, step 0, the item "With no `.sdlc/leeway.md`..." that says "No answer moves
+// a story out of the shaped step or the plan gate".
+test('step 0: an answer still moves no story, and the old sentence saying the moves are a person\'s is gone', { skip: 'red-test-TC-1: step 0 still says those moves are a person\'s (step 7)' }, () => {
+  const text = flat(start0);
+  assert.doesNotMatch(text, /those moves are a person's \(step 7\)/);
+  found(start0, 'saying no answer moves a story and that the moves are this skill\'s own, made as step 0 and step 8 say',
+    /\bNo answer moves a story\b/, /\bstep 8\b/, /\bthis skill\b/, /^(?!.*\ba person's\b)/);
+});
+
+// Pinned in `plugin/skills/plan-project/SKILL.md`, step 8, "The QUESTIONs": the paragraph "Applying a QUESTION's answer is not
+// the gate decision" and the sentence before it, "Say so, and move nothing".
+test('step 8 "The QUESTIONs": applying an answer is not the move, and the person-only claims are gone', { skip: 'red-test-TC-1: The QUESTIONs still says applying moves nothing and only a person moves the story to `ready`' }, () => {
+  const part = flat(section(planProject, '### The QUESTIONs'));
+  assert.doesNotMatch(part, /Say so, and move nothing, so the story stays where it was/);
+  assert.doesNotMatch(part, /it never moves the story, whatever the answer says/);
+  assert.doesNotMatch(part, /Only a person's move takes the story from the plan gate to `ready`/);
+  assert.doesNotMatch(part, /this skill makes that move only when the person asks for it/);
+  found(section(planProject, '### The QUESTIONs'), 'saying the move to `ready` follows `# QUESTIONs applied` (it is step 8\'s, not the answer\'s)',
+    /`# QUESTIONs applied`/, /`ready`/, /\bmoves?\b/, /^(?!.*\bnever moves\b)/, /^(?!.*\bperson asks\b)/);
+});
+
+// Pinned in `plugin/skills/plan-project/SKILL.md`, step 8, "Post the full report, then stop at the gate".
+test('step 8 "Post the full report": it no longer says the decision and passing the gate are a person\'s move', { skip: 'red-test-TC-1: the report subsection still says the decision is the person\'s move and passing the gate is a person moving it' }, () => {
+  const part = flat(section(planProject, '### Post the full report, then stop at the gate'));
+  assert.doesNotMatch(part, /the decision is the person's move/);
+  assert.doesNotMatch(part, /\*\*Passing the gate\*\* is a person moving the story from the plan gate to `ready`/);
 });
 
 // --- PROCESS.md: TC-1 -----------------------------------------------------------------------------------
@@ -150,6 +178,13 @@ test('PROCESS.md "The plan gate": plan-project moves a passing story to `ready`;
     /\bplan-project\b/, /\bPASS\b/, /`ready`/, /`# Moved to ready`/);
   found(gate, 'saying a RETURN stays at the plan gate', /\bRETURN\b/, /plan gate/, /stays|stops|not moved/);
   found(gate, 'saying PASS WITH DECISIONS moves after `# QUESTIONs applied`', /\bPASS WITH DECISIONS\b/, /`# QUESTIONs applied`/, /`ready`/);
+});
+
+// Pinned in `plugin/PROCESS.md`: "The process, read at runtime" ("A person passes the plan gate by moving the issue to `ready`")
+// and "The plan gate" (the QUESTIONs order: "it replies `# QUESTIONs applied` to the report and moves nothing").
+test('PROCESS.md "The process, read at runtime" and "The plan gate" no longer say a person passes the gate or that applying moves nothing', { skip: 'red-test-TC-1: both sections still say the person passes the gate and applying moves nothing' }, () => {
+  assert.doesNotMatch(flat(section(contract, '## The process, read at runtime')), /A person passes the plan gate by moving the issue to `ready`/);
+  assert.doesNotMatch(flat(section(contract, '## The plan gate')), /to the report and moves nothing\)/);
 });
 
 test('PROCESS.md "Records": the plan gate row records `# Planning started` and `# Moved to ready`', { skip: 'red-test-TC-2: the Records table has no mention of either record' }, () => {
