@@ -76,16 +76,16 @@ for (const [name, [s, lead, until]] of Object.entries(sites)) {
 // A raise the sites above do not cover is one of these: raised in a round whose wait a site pins, or not a raise of
 // this skill at all. Each names the text that says so.
 const inRound = [
-  ['plan-project', 'a session ended between the two calls: raise it now', 'Then wait on the first open escalation'],
-  ['plan-project', 'then raise it with `<raise>` as step 0 says, `"type": "clarification"`, on `<ref>`', 'Then wait on the first open escalation'],
-  ['plan-project', 'Then raise its escalation with `"comment"` set to that QUESTION', 'Wait on each QUESTION\'s escalation in turn'],
+  ['plan-project', 'a session ended between the two calls: raise it now', 'Then wait on the round as `run` does: start one background wait per open escalation of the round, all together'],
+  ['plan-project', 'then raise it with `<raise>` as step 0 says, `"type": "clarification"`, on `<ref>`', 'Then wait on the round as `run` does: start one background wait per open escalation of the round, all together'],
+  ['plan-project', 'Then raise its escalation with `"comment"` set to that QUESTION', 'Wait on every QUESTION\'s escalation at once'],
   ['plan-project', 'three more reports raise a new one on the latest report', 'Wait on it (step 0)'], // the same "Three RETURNs" escalation, raised again
-  ['sdlc-install', 'raise the next round, the questions that waited', 'wait on each open one in turn'],
-  ['sdlc-install', 'raise one escalation per ambiguous mapping', 'wait on each open one in turn'],
-  ['sdlc-install', 'and raise one escalation on it with `"comment"` its `cN`', 'wait on each open one in turn'],
-  ['sync-repo', 'then raise an escalation on `<issue>`, `"type": "clarification"`', 'then wait on each open one in turn'],
-  ['sync-repo', 'None → raise it, with the others', 'then wait on each open one in turn'],
-  ['sync-repo', 'raise one follow-up escalation for that copy', 'then wait on each open one in turn'],
+  ['sdlc-install', 'raise the next round, the questions that waited', 'wait on them as `run` does: start one background wait per open escalation of the round, all together'],
+  ['sdlc-install', 'raise one escalation per ambiguous mapping', 'wait on them as `run` does: start one background wait per open escalation of the round, all together'],
+  ['sdlc-install', 'and raise one escalation on it with `"comment"` its `cN`', 'wait on them as `run` does: start one background wait per open escalation of the round, all together'],
+  ['sync-repo', 'then raise an escalation on `<issue>`, `"type": "clarification"`', 'then wait on them as `run` does: start one background wait per open escalation of the round, all together'],
+  ['sync-repo', 'None → raise it, with the others', 'then wait on them as `run` does: start one background wait per open escalation of the round, all together'],
+  ['sync-repo', 'raise one follow-up escalation for that copy', 'then wait on them as `run` does: start one background wait per open escalation of the round, all together'],
 ];
 const notRaises = [
   ['shape-project', 'and they raise it with the developer'], // the PO raises it, not this skill
@@ -157,7 +157,7 @@ test('a plan with no gate waits on the held stories\' gaps once, after every sto
 test('a held story\'s interview escalations are named and left open, not waited on', () => {
   const text = skill('plan-project');
   assert.match(text, /A held story's interview escalations still open, where a product question held it in the middle of its interview \("The developer interview", "What is asked"\), are not waited on in this session: they hold no work in it/);
-  assert.match(text, /Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on each open gap escalation in turn/);
+  assert.match(text, /Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on every open gap escalation at once as "Wait, then read" says/);
   assert.match(text, /and a held story's interview escalation is not waited on at all \("The last wait"\)/);
 });
 
@@ -218,7 +218,7 @@ test('no answer moves a story out of the shaped step or the plan gate', () => {
   const questions = skill('plan-project');
   assert.match(questions, /\*\*Applying a QUESTION's answer is not the gate decision\.\*\* It changes a description or a task and posts `# QUESTIONs applied`, and it never moves the story, whatever the answer says, even one that reads as a pass\./);
   assert.match(questions, /Say so, and move nothing, so the story stays where it was, at the plan gate or at `ready`\. Then wait on the held stories' gaps/);
-  assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and waits on the next gap escalation still open, or, with none, stops\./);
+  assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops\./);
 });
 
 // Where an agent cannot wait (`wait: stop`), the skill stops, and a person's question to the agent goes unheard.
