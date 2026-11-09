@@ -25,7 +25,24 @@ function section(text, heading) {
   return lines.slice(start, end).join('\n');
 }
 
-const norm = (s) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/`/g, '').replace(/\s+/g, ' ');
+// "e.g." and "i.e." are folded to "eg" and "ie" so a sentence is not cut after them.
+const norm = (s) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/`/g, '').replace(/\be\.g\./g, 'eg').replace(/\bi\.e\./g, 'ie').replace(/\s+/g, ' ');
+const splitSentences = (text) => text.split(/(?<=[.!?;])\s+/);
+
+// Sentences that tell the planner to give the mapping to somewhere. A sentence names the mapping (mapping, self-check,
+// the trace, the check/map) and either has a giving verb or names a place it could go (reviewer, prompt, design doc, comment,
+// posted). "nowhere" clears it anywhere in the sentence; never/not/no/without/don't clear it only before the first
+// verb or place, so "Post the mapping, not the tasks" is flagged.
+const NAMES_MAPPING = /\b(mapping|self-check|the trace|the check|the map|your map)\b/;
+const GIVES = /\b(post|stor|sav|pass|send|sent|past|put|add|includ|writ|wrote|written|hand|giv|gave|attach|shar|record|forward|log|deliver|provid|leav|keep|kept|cop|mention|list|show|tell|submit|publish|upload|embed|append)\w*|\b(reviewer|prompt|design doc|comment)/;
+const NEGATES = /\b(never|not|no|without|don't|do not)\b/;
+function instructsToPassOn(sentenceList) {
+  return sentenceList.filter((s) => {
+    if (!NAMES_MAPPING.test(s) || /\bnowhere\b/.test(s)) return false;
+    const first = GIVES.exec(s);
+    return first !== null && !NEGATES.test(s.slice(0, first.index));
+  });
+}
 
 const step8 = section(skill, '## 8. The plan gate');
 const DELEGATE = '### Delegate to the divergence reviewer with ids, not a story';
@@ -33,7 +50,7 @@ const beforeDelegate = step8.includes(DELEGATE) ? step8.slice(0, step8.indexOf(D
 // The self-check: from the phrase "Trace it yourself first" to the delegation heading; '' when it is absent.
 const at = norm(beforeDelegate).indexOf('trace it yourself first');
 const selfCheck = at < 0 ? '' : norm(beforeDelegate.slice(beforeDelegate.toLowerCase().indexOf('trace it yourself first')));
-const sentences = selfCheck.split(/(?<=[.!?;])\s+/);
+const sentences = splitSentences(selfCheck);
 
 // Pin 1 (LWY-202 AC-1, TC-1): "Trace it yourself first" sits in step 8, ahead of the "Delegate to the divergence reviewer" heading.
 test('red-test-TC-1 pin 1: step 8 has "Trace it yourself first" before the delegation heading', { skip: 'red-test-TC-1: step 8 has no self-check part yet' }, () => {
@@ -43,7 +60,7 @@ test('red-test-TC-1 pin 1: step 8 has "Trace it yourself first" before the deleg
 
 // Pin 2 (AC-1, TC-1): "fails without it" - each AC and TC clause maps to a task and a named test.
 test('red-test-AC-1 pin 2: the self-check maps every AC and TC clause to a task and a named test that fails without it', { skip: 'red-test-AC-1: no clause-to-test map in step 8' }, () => {
-  assert.ok(sentences.some((s) => s.includes('clause') && s.includes('task') && s.includes('named test') && s.includes('fails without it')),
+  assert.ok(sentences.some((s) => s.includes('clause') && s.includes('task') && s.includes('named test') && /fails? without it/.test(s)),
     'a sentence maps clause, task and "named test ... fails without it"');
 });
 
@@ -64,11 +81,32 @@ test('red-test-AC-1 pin 4: gaps are fixed in the task descriptions and the hazar
 // and no sentence about the mapping tells the planner to post, store or pass it.
 test('red-test-AC-2 pin 5: the mapping is written nowhere, and nothing says to post, store or pass it', { skip: 'red-test-AC-2: step 8 does not say the mapping is written nowhere' }, () => {
   assert.ok(sentences.some((s) => s.includes('written nowhere')), 'the self-check says the mapping is "written nowhere"');
-  assert.ok(selfCheck.includes('design doc') && selfCheck.includes("reviewer's prompt") && selfCheck.includes('posted'),
+  assert.ok(selfCheck.includes('design doc') && selfCheck.includes("reviewer's prompt") && /\b(post|posted|comment)\b/.test(selfCheck),
     'it names the design doc, the reviewer\'s prompt and a posted comment as places it is not');
-  const instructing = sentences.filter((s) => /\b(mapping|map|maps)\b/.test(s) && /\b(post|store|save|pass|send|paste|put|add|include|write)\b/.test(s) &&
-    !/\b(nowhere|not|never|no)\b/.test(s));
-  assert.deepEqual(instructing, [], 'no sentence tells the planner to post, store or pass the mapping');
+  assert.deepEqual(instructsToPassOn(sentences), [], 'no sentence tells the planner to post, store or pass the mapping');
+});
+
+// The pin 5 checker against inline strings (not SKILL.md): known-bad sentences are flagged, known-good ones are not.
+test('pin 5 checker (guard): flags text that hands the mapping on, passes text that says it is written nowhere', () => {
+  const bad = [
+    'Hand the mapping to the reviewer in the delegation.',
+    'Post the mapping, not the tasks.',
+    'Give the reviewer the mapping.',
+    'Attach the mapping to the design doc.',
+    'The self-check goes in the reviewer\'s prompt.',
+    'Record the trace in a comment.',
+    'Share the mapping with the reviewer before it reads the plan.',
+  ];
+  const good = [
+    'The mapping is written nowhere: not posted, not in the design doc and not in the reviewer\'s prompt.',
+    'Never post the mapping, in the design doc or a comment.',
+    'The mapping is posted nowhere.',
+    'Do not put the mapping in the reviewer\'s prompt.',
+    'Fix every gap in the task descriptions and the hazard register, then delegate.',
+  ];
+  for (const text of bad) assert.equal(instructsToPassOn(splitSentences(norm(text))).length, 1, `flagged: ${text}`);
+  for (const text of good) assert.deepEqual(instructsToPassOn(splitSentences(norm(text))), [], `accepted: ${text}`);
+  assert.equal(splitSentences(norm('Map each clause, e.g. an AC bullet, to a task. Then fix gaps.')).length, 2, 'e.g. does not split a sentence');
 });
 
 // Pin 6 (AC-2, TC-2): a guard on existing text, not a red test: "Never your summary." stays in step 8.
