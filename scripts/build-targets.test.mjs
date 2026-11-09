@@ -166,124 +166,43 @@ test('opencode: the plugin refuses a governed bash call by throwing', async () =
   }
 })
 
-// LWY-189.4: each other agent's "Permissions for an unattended run" says what Claude Code's says (plugin/HARNESS.md): the agent's own
-// unattended or auto-approve mode, or a person approving each prompt, marked UNVERIFIED, and no rule written anywhere.
+// LWY-189.4: each other agent's "Permissions for an unattended run" says what Claude Code's says (plugin/HARNESS.md), with no mode
+// named and no rule written: the text is pinned exactly, so a code round that words it differently changes this test on purpose.
 const generatedHarnesses = () => readdirSync(join(KIT, 'harness')).map((f) => [f, readFileSync(join(KIT, 'harness', f), 'utf8')])
-const permissionsOf = (text) => /^## Permissions for an unattended run\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(text)?.[1]
-// Docs citations (URLs) are dropped before the text is read: their paths may hold /settings/ or .json and are not a place to write to.
-const URL_RE = /https?:\/\/\S+/g
-// A file or key a rule would be written into.
-const RULE_PLACE = /\.(json|toml|ya?ml)\b|\.(codex|gemini|cursor|grok|opencode)\/|\.github\/copilot|permissions?\.(allow|bash)|tools\.allowed|\b(settings|config(uration)?) file|\brules? (folder|dir(ectory)?|file)/i
-// Banned wherever they appear, negated or not: the Done-when grep of the task.
-const GREP_BANNED = /allow[- ]?list|Say before the yes/i
-const OLD_OFFER = /question 16/i
-const NEGATOR = /\b(no|not|never|none|nothing|nobody|neither|nor|cannot|without|unknown|unconfirmed|unverified|untested|unproven)\b|n't/i
-const PERSON = /\b(person|human|user|you|someone|operator)\b/i
-// One clause at a time, so a negation in one ("writes no rule") does not cover a claim in the next ("and sets a policy").
-const clausesOf = (text) =>
-  text.replace(URL_RE, '').replace(/\s+/g, ' ').split(/[.;:!?](?:\s|$)|,\s|\s(?:and|but|then)\s/i).filter(Boolean)
-const WRITE_VERB = /\b(writes?|written|adds?|puts?|sets?|edits?|creates?|appends?|inserts?|configures?|places?|saves?|touch(?:es)?|changes?|modif(?:y|ies))\b/i
-const WRITE_OBJECT = /\b(rules?|permissions?|polic(?:y|ies)|settings?|entry|entries|verbs?|allow-?lists?|allowed-?tools?|config(?:uration)?|sandbox|approvals?)\b/i
-const MODE_VERB = /\b(enables?|switch(?:es)?|pass(?:es)?|turns?|starts?|launch(?:es)?)\b/i
-const MODE_OBJECT = /\b(modes?|sandbox|approvals?)\b/i
-// A clause that writes a rule, permission, policy or setting with no negator before its object: "set the approval policy to never" counts, "writes no rule" does not.
-// A clause that turns a mode on counts unless a person does it.
-const writesARule = (text) =>
-  clausesOf(text).filter((c) => {
-    const v = WRITE_VERB.exec(c)
-    const o = v && WRITE_OBJECT.exec(c.slice(v.index + v[0].length))
-    if (o && !NEGATOR.test(c.slice(0, v.index + v[0].length + o.index + o[0].length))) return true
-    const m = MODE_VERB.exec(c)
-    return Boolean(m && MODE_OBJECT.test(c.slice(m.index + m[0].length)) && !NEGATOR.test(c) && !PERSON.test(c))
-  })
-// A clause that blesses every tool or trusts the workspace, unless a person does it: "Allow every tool", "approve all tools", "Trust the workspace".
-const BLANKET = /\b(allow|approve|permit|grant|enable)s?\b.*\b(every|all|any)\b.*\b(tools?|commands?|actions?|prompts?|calls?)\b|\btrusts?\b.*\b(workspace|folder|director(?:y|ies)|repo(?:sitory)?|project)\b/i
-const blanketApproval = (text) => clausesOf(text).filter((c) => BLANKET.test(c) && !NEGATOR.test(c) && !PERSON.test(c))
-// A rule named in passing: "an allow rule", "a permission rule", unless negated in its clause ("writes no allow rule").
-const mentionsARule = (text) => clausesOf(text).filter((c) => /allow[- ]rules?|permission rules?/i.test(c) && !NEGATOR.test(c))
-// Shapes no plain sentence has: a --flag, key = value, a snake_case or camelCase identifier, Name(...), and a backticked span with no docs URL in its sentence.
-const IDENTIFIER_SHAPES = {
-  flag: /(?:^|\s)--?[a-z]/i,
-  assignment: /\w\s*=\s*\S|:\s*["'{[]/,
-  snake_case: /\b[a-z0-9]+(?:_[a-z0-9]+)+\b/i,
-  camelCase: /\b[a-z]+[A-Z][a-z]\w*/,
-  call: /\w\([^)]*\)|\(\*\)/,
-}
-const structuralHits = (raw) => {
-  const bare = raw.replace(URL_RE, '').replace(/UNVERIFIED:/g, '')
-  const hits = Object.entries(IDENTIFIER_SHAPES).filter(([, re]) => re.test(bare)).map(([name]) => name)
-  for (const sentence of raw.split(/(?<=[.!?])\s+|\n+/)) if (sentence.includes('`') && !/https?:\/\//.test(sentence)) hits.push(`backticks with no citation: ${sentence}`)
-  return hits
-}
-// A clause that says a mode was tried, worked or ran, with no negator in it: "We tried it", "the mode works", "was run here", "confirmed to work".
-// "what was tried" is a heading for later work, not a claim; "working out" is the work itself.
-const TRIED = /\b(tried|tested|verified|confirmed|worked|works|ran|succe(?:ss|ssfully|eded)|succeeds|(?:was|were|been|is|are) run|exercised|validated|proven|demonstrated|checked|holds|passes|passed)\b/i
-const ELLIPSIS = /\b(was|were|is|are|did|does|has|have)\s*$/i
-const CONTRAST = /\b(but|however|yet|except|although|though)\b/i
-const claimsTried = (text) => {
-  const bare = text.replace(URL_RE, '').replace(/UNVERIFIED:?/g, '').replace(/\bwhat (?:was|has been|is) (?:tried|tested|run|checked)\b/gi, '')
-  const clauses = clausesOf(bare).filter((c) => (TRIED.test(c) || ELLIPSIS.test(c)) && !NEGATOR.test(c))
-  const contrasted = bare.split(/(?<=[.!?])\s+/).filter((s) => CONTRAST.test(s) && TRIED.test(s))
-  return [...clauses, ...contrasted]
-}
-// The positive pin: some clause says a mode was not tried, or is unknown, unconfirmed or untested.
-const saysNoneTried = (text) =>
-  clausesOf(text.replace(/UNVERIFIED:?/g, '')).some((c) => (TRIED.test(c) && NEGATOR.test(c)) || /\b(unknown|unconfirmed|unverified|untested)\b/i.test(c))
-// The positive pin: some clause says the plugin writes or edits nothing, with a negator.
-const saysItWritesNothing = (text) => clausesOf(text).some((c) => WRITE_VERB.test(c) && NEGATOR.test(c))
-const alsoTalksOfRules = (bare) => [...writesARule(bare), ...mentionsARule(bare), ...blanketApproval(bare)]
+const HEADING = '## Permissions for an unattended run'
+const sectionOf = (text) => new RegExp(`^${HEADING}\\n[\\s\\S]*?(?=^## |(?![\\s\\S]))`, 'm').exec(text)?.[0]
+const outsideSection = (text) => text.replace(sectionOf(text) ?? '', '')
+const expectedSection = (name) => `${HEADING}
 
-test('red-test-TC-1: every generated harness has the permissions section, marked UNVERIFIED as its other unverified sections are', { skip: 'red-test-TC-1: the generated harnesses still say where run\'s allow-list goes, with no UNVERIFIED: about a mode' }, () => {
+An unattended run uses ${name}'s own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
+
+UNVERIFIED: no mode has been tried here for ${name}, and none is named.`
+// Done-when grep of the task: neither wording survives anywhere, the permissions section included.
+const BANNED = /allow-list|allow rule|Say before the yes|question 16/i
+
+test('red-test-TC-1: every generated harness has exactly the pinned permissions section', { skip: 'red-test-TC-1: the generated harnesses still say where run\'s allow-list goes' }, () => {
   const all = generatedHarnesses()
   assert.equal(all.length, TARGETS.length)
-  for (const [file, text] of all) {
-    const section = permissionsOf(text)
-    assert.ok(section, `${file}: no "## Permissions for an unattended run" section`)
-    assert.match(section, /UNVERIFIED: /, `${file}: not marked UNVERIFIED`)
-    assert.match(section, /\b(unattended|auto(-approve)?) mode/i, `${file}: does not say the agent's own mode is used`)
-    assert.match(section, /person (approves|confirms) (each|every) ((tool|permission) )?(prompt|call)/i, `${file}: does not say a person approves each prompt otherwise`)
-  }
-})
-
-test('red-test-TC-2: no generated harness names a settings file or a rule, or the old question 16 offer, and says the plugin writes none', { skip: 'red-test-TC-2: the generated harnesses name a settings file and run\'s allow-list' }, () => {
-  for (const [file, text] of generatedHarnesses()) {
-    const section = permissionsOf(text)
-    assert.ok(section, `${file}: no permissions section`)
-    const bare = section.replace(URL_RE, '')
-    assert.doesNotMatch(bare, RULE_PLACE, `${file}: names a settings file or rule key`)
-    assert.doesNotMatch(bare, OLD_OFFER, `${file}: talks of the old offer`)
-    assert.doesNotMatch(text, GREP_BANNED, `${file}: says allow-list or Say before the yes`)
-    assert.deepEqual(alsoTalksOfRules(section), [], `${file}: tells the reader to write a rule, permission, policy or setting, or blesses every tool`)
-    assert.deepEqual(structuralHits(section), [], `${file}: has a flag, key = value, identifier or an uncited backtick: a mode is named only with its docs`)
-    assert.ok(saysItWritesNothing(section), `${file}: does not say the plugin writes no rule or setting`)
-  }
-})
-
-// A guard, not a red test: it holds on today's text (which says no form has been tried) and stays live, so a claim the code round adds fails it.
-test('TC-2 guard: no harness claims a mode was tried or works, and each says none has been', () => {
-  for (const [file, text] of generatedHarnesses()) {
-    const section = permissionsOf(text) ?? ''
-    assert.deepEqual(claimsTried(section), [], `${file}: claims a mode was tried or works`)
-    assert.ok(saysNoneTried(section), `${file}: does not say that no mode has been tried here`)
-  }
-})
-
-test('red-test-TC-1: a target\'s permissions field names no settings file or rule: a mode name with its docs, or absent', { skip: 'red-test-TC-1: every target\'s permissions field names a settings file' }, () => {
   for (const t of TARGETS) {
-    if (t.permissions === undefined) continue
-    const bare = t.permissions.replace(URL_RE, '')
-    assert.doesNotMatch(bare, RULE_PLACE, t.id)
-    assert.doesNotMatch(bare, GREP_BANNED, t.id)
-    assert.doesNotMatch(bare, OLD_OFFER, t.id)
-    assert.deepEqual(alsoTalksOfRules(t.permissions), [], t.id)
-    assert.deepEqual(structuralHits(t.permissions), [], t.id)
-    assert.match(t.permissions, /https?:\/\//, `${t.id}: a mode name is cited from the agent's docs, or the field is removed`)
+    const text = all.find(([f]) => f === `${t.id}.md`)?.[1]
+    assert.ok(text, `${t.id}: no generated harness`)
+    assert.equal(sectionOf(text)?.trimEnd(), expectedSection(t.name), t.id)
   }
+})
+
+test('red-test-TC-1: no target keeps a permissions field: no mode is pinned, because none has been run', { skip: 'red-test-TC-1: every target still has a permissions field naming a settings file' }, () => {
+  for (const t of TARGETS) assert.equal(t.permissions, undefined, t.id)
+})
+
+test('TC-2 guard: no generated harness says allow-list, allow rule, Say before the yes or question 16 outside the permissions section', () => {
+  for (const [file, text] of generatedHarnesses()) assert.doesNotMatch(outsideSection(text), BANNED, file)
 })
 
 test('red-test-TC-1: scripts/targets.mjs has no line telling an agent to write a rule', { skip: 'red-test-TC-1: the template and the permissions fields still say allow-list and Say before the yes' }, () => {
   const lines = readFileSync(join(ROOT, 'scripts', 'targets.mjs'), 'utf8').split('\n')
-  const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => GREP_BANNED.test(l))
+  const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => BANNED.test(l))
   assert.deepEqual(hits, [])
 })
 
