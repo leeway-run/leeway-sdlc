@@ -48,12 +48,12 @@ const NO_OTHER_BOUND = /^(?!.*\b[Aa]t most (?!2\b))/;
 // --- the bound: at most 2 automatic rounds -------------------------------------------------------------------
 
 // Pinned in `plugin/skills/plan-project/SKILL.md`, step 8, "Post the full report, then stop at the gate".
-test('step 8 "Post the full report": at most 2 automatic rounds follow the gate\'s first report', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": at most 2 automatic rounds follow the gate\'s first report', () => {
   found(report, 'saying at most 2 automatic rounds follow the first report, and no other bound',
     AT_MOST_2, NO_OTHER_BOUND, /\bautomatic rounds?\b/, /\bfirst report\b/, /^(?!.*\b(?:never|no)\b)/);
 });
 
-test('step 8 "Post the full report": a third automatic round never starts, and the story stops at the plan gate with the latest report', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": a third automatic round never starts, and the story stops at the plan gate with the latest report', () => {
   found(report, 'saying a third automatic round never starts',
     /\bthird\b/, /\bautomatic round\b/, /\b(?:never starts?|does not start|is never started)\b/);
   found(report, 'saying that after the 2 automatic rounds the story stops at the plan gate with the latest report',
@@ -62,7 +62,7 @@ test('step 8 "Post the full report": a third automatic round never starts, and t
 
 // --- each round's report is posted before the next fix ----------------------------------------------------
 
-test('step 8 "Post the full report": each automatic round\'s report is posted `--as <alias>/reviewer` through this section before the next fix', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": each automatic round\'s report is posted `--as <alias>/reviewer` through this section before the next fix', () => {
   found(report, 'saying each automatic round returns through "Post the full report", its report posted `--as <alias>/reviewer`, before any item is fixed',
     /\b(?:[Ee]ach|[Ee]very) automatic round\b/, /"Post the full report"/, /`--as <alias>\/reviewer`/,
     /\bposted\b.*\bbefore\b.*\b(?:fix|fixes|fixed|edit|edits)\b/, /^(?!.*\b(?:not|never|no)\b)/);
@@ -70,55 +70,55 @@ test('step 8 "Post the full report": each automatic round\'s report is posted `-
 
 // --- the reply: `# BLOCKERs fixed`, in the form of `# QUESTIONs applied` ----------------------------------
 
-test('step 8 "Post the full report": the reply `# BLOCKERs fixed` is a reply to the report, one line per BLOCKER with its number, item and change', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": the reply `# BLOCKERs fixed` is a reply to the report, one line per BLOCKER with its number, item and change', () => {
   found(report, 'saying the planner replies to the report (`comment add <story> --parent cN --stdin body`) with a body opening `# BLOCKERs fixed`, one line per BLOCKER: number, item, change',
     /--parent cN --stdin body/, /\bbody opening `# BLOCKERs fixed`/, /\bone line per BLOCKER\b/, /\bnumber\b/, /\bitem\b/, /\bchange\b/);
 });
 
 // --- what a wording fix is, and what stops the loop -----------------------------------------------------
 
-test('step 8 "Post the full report": the loop starts only when every BLOCKER is a fix to existing items that opens no decision', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": the loop starts only when every BLOCKER is a fix to existing items that opens no decision', () => {
   found(report, 'saying plan-project judges the BLOCKERs and starts only when every one is a fix to existing items that opens no decision',
     /\bjudge/i, /\bevery (?:one|BLOCKER)\b/, /\bexisting items\b/, /\bopens? no decision\b/, /\bonly when\b/);
 });
 
-test('step 8 "Post the full report": a wording fix edits existing items only: a description, a test, a blocking relation between existing tasks or a hazard owner', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": a wording fix edits existing items only: a description, a test, a blocking relation between existing tasks or a hazard owner', () => {
   found(report, 'listing what a wording fix edits: existing items only, a description, a test, a blocking relation between existing tasks, a hazard owner',
     /\bwording fix\b/, /\bexisting items only\b/, /\ba description\b/, /\ba test\b/, /\ba blocking relation between existing tasks\b/, /\ba hazard owner\b/);
 });
 
-test('step 8 "Post the full report": a BLOCKER that needs a new task or a decision is never in a `# BLOCKERs fixed` reply, and the story stops at the plan gate', { skip: 'red-test-TC-4: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": a BLOCKER that needs a new task or a decision is never in a `# BLOCKERs fixed` reply, and the story stops at the plan gate', () => {
   found(report, 'saying a BLOCKER that needs a new task or a decision is never listed in a `# BLOCKERs fixed` reply and the story stops at the plan gate',
     /\bBLOCKER that needs a new task or a decision\b/, /\b(?:never|not)\b[^:]*`# BLOCKERs fixed` reply/, /\bstops? at the plan gate\b/, /^(?!.*\bnever stops\b)/);
 });
 
-test('step 8 "Post the full report": a QUESTION still open stops the loop at the plan gate', { skip: 'red-test-TC-4: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": a QUESTION still open stops the loop at the plan gate', () => {
   found(report, 'saying a QUESTION still open stops the loop and the story stays at the plan gate',
     /\b[Aa] QUESTION still open\b/, /\bstops? the loop\b/, /\bplan gate\b/, AFFIRMED);
 });
 
 // --- the re-review, and the answered QUESTIONs applied before it ------------------------------------------------
 
-test('step 8 "Post the full report": each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, given the previous report\'s `cN` and the mode `re-review`', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, given the previous report\'s `cN` and the mode `re-review`', () => {
   found(report, 'saying each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, passed the previous report\'s `cN` and the mode `re-review`',
     /\b(?:[Ee]ach|[Ee]very) automatic round\b/, /\bre-review\b/, /\bfresh sdlc-divergence-reviewer\b/, /\bprevious report's `cN`/, /\bmode `re-review`/, /^(?!.*\b(?:not|never|no|without)\b)/);
 });
 
-test('step 8 "Post the full report": each automatic round applies the answered QUESTIONs before the re-review', { skip: 'red-test-AC-2: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": each automatic round applies the answered QUESTIONs before the re-review', () => {
   found(report, 'saying each automatic round applies the answered QUESTIONs before it delegates the re-review',
     /\b(?:[Ee]ach|[Ee]very) automatic round\b/, /\bapplies the answered QUESTIONs\b/, /\bbefore (?:it delegates )?the re-review\b/, AFFIRMED);
 });
 
 // --- per story ------------------------------------------------------------------------------------------------
 
-test('step 8 "Post the full report": the loop runs per story; one story\'s loop never holds or moves another story', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": the loop runs per story; one story\'s loop never holds or moves another story', () => {
   found(report, 'saying the loop runs per story, and one story\'s loop never holds or moves another story',
     /\bThe loop runs per story\b/, /\bone story's loop\b/, /\bnever (?:holds or moves|moves or holds) another story\b/);
 });
 
 // --- a PASS from any round ------------------------------------------------------------------------------
 
-test('step 8 "Post the full report": a PASS from any automatic round moves the story to `ready` with the same `# Moved to ready` comment', { skip: 'red-test-TC-3: the loop is not written yet' }, () => {
+test('step 8 "Post the full report": a PASS from any automatic round moves the story to `ready` with the same `# Moved to ready` comment', () => {
   found(report, 'saying a PASS from any automatic round moves the story to `ready` like a first-report PASS, with the same `# Moved to ready` comment naming that report\'s `cN`',
     /^A PASS(?! WITH)\b/, /\bany automatic round\b/, /\bmoves the story to `ready`/, /\bsame `# Moved to ready` comment\b/, /`cN`/, AFFIRMED);
 });
@@ -127,7 +127,7 @@ test('step 8 "Post the full report": a PASS from any automatic round moves the s
 
 // Pinned in `plugin/skills/plan-project/SKILL.md`, step 0, the paragraph that starts "Count its coverage reports" and ends
 // at "Three or more: do not re-plan".
-test('step 0: a coverage report with a `# BLOCKERs fixed` reply is not counted, and one without it is', { skip: 'red-test-TC-3: the window does not exclude it yet' }, () => {
+test('step 0: a coverage report with a `# BLOCKERs fixed` reply is not counted, and one without it is', () => {
   const from = step0.indexOf('Count its coverage reports');
   const to = step0.indexOf('Three or more: do not re-plan');
   assert.ok(from >= 0 && to > from, 'step 0 has no window paragraph from "Count its coverage reports" to "Three or more: do not re-plan"');
@@ -140,7 +140,7 @@ test('step 0: a coverage report with a `# BLOCKERs fixed` reply is not counted, 
 
 // --- PROCESS.md "The plan gate" ----------------------------------------------------------------------------
 
-test('PROCESS.md "The plan gate": a RETURN whose every BLOCKER is a wording fix is fixed and re-reviewed at most 2 times before the gate', { skip: 'red-test-TC-3: the gate does not say it yet' }, () => {
+test('PROCESS.md "The plan gate": a RETURN whose every BLOCKER is a wording fix is fixed and re-reviewed at most 2 times before the gate', () => {
   found(gate, 'saying that on a RETURN where every BLOCKER is a fix to existing items, plan-project fixes it, replies `# BLOCKERs fixed` and runs a re-review at most 2 times before the story stops at the plan gate',
     /\bRETURN\b/, /\bevery BLOCKER\b/, /\bexisting items\b/, /`# BLOCKERs fixed`/, AT_MOST_2, NO_OTHER_BOUND, /\bre-review\b/, /\bplan gate\b/);
 });
