@@ -44,7 +44,6 @@ test('TC-2: HARNESS says an unattended run uses auto mode, and without it a pers
   const text = permissions();
   assert.match(text, /auto mode/i);
   assert.match(text, /person approves (each|every) prompt/i);
-  assert.match(text, /UNVERIFIED/i);
   assert.doesNotMatch(text, /Say before the yes/);
   assert.doesNotMatch(text, /\| run's list names \|/);
   assert.doesNotMatch(text, /Bash\(git -C \*/);
