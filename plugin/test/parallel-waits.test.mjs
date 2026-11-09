@@ -62,7 +62,12 @@ test('HARNESS.md, "Waiting for an answer", starts one background wait per open e
   assert.ok(wait.includes(AT_ONCE), `no "${AT_ONCE}" in "Waiting for an answer"`);
 });
 
-// Pin 2 (TC-1): none of the old phrases, in run, plan-project, shape-project, sdlc-install, sync-repo, sdlc-tune, PROCESS.md, HARNESS.md.
+// Also catches a waiting site worded "wait on ... in turn" or "wait ... one after another" within one sentence (shape-project's
+// "wait on each open escalation of the round in turn" among them). Not run's or PROCESS.md's "one after another" about a project's
+// issues, PROCESS.md's "through it in turn" or sdlc-tune's "written in turn": none follows "wait" in its sentence.
+const WAIT_SERIAL = /\bwait(?:ed)? on[^.]{0,80}\bin turn\b|\bwait(?:ed)?\b[^.]{0,120}\bone after another\b/gi;
+
+// Pin 2 (TC-1): none of the old phrases, nor a WAIT_SERIAL match, in run, plan-project, shape-project, sdlc-install, sync-repo, sdlc-tune, PROCESS.md, HARNESS.md.
 test('none of the old waiting phrases is left in a waiting site', { skip: `${RED}TC-1: the old "in turn" / "one after another" waiting phrases are still present` }, () => {
   const old = [
     'waited on one after another',
@@ -76,20 +81,21 @@ test('none of the old waiting phrases is left in a waiting site', { skip: `${RED
   for (const file of [...SITES, 'PROCESS.md', 'HARNESS.md']) {
     const text = flat(read(file));
     for (const phrase of old) assert.ok(!text.includes(phrase), `${file} still says "${phrase}"`);
+    for (const m of text.matchAll(WAIT_SERIAL)) assert.fail(`${file} still says "${m[0]}", which matches ${WAIT_SERIAL}`);
   }
 });
 
 // Pins 3 to 5 (TC-2): run, "Wait, then carry on".
 test('run: exit 0 carries on only when every escalation of the round is answered', { skip: `${RED}TC-2: run lacks "Exit 0 carries on only when every escalation of the round is answered"` }, () => {
-  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes('Exit 0 carries on only when every escalation of the round is answered'));
+  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes('Exit 0 carries on only when every escalation of the round is answered'), `lacks ${JSON.stringify('Exit 0 carries on only when every escalation of the round is answered')}`);
 });
 
 test("run: exit 5 answers the question and restarts that escalation's wait only", { skip: `${RED}TC-2: run lacks "Exit 5 answers the question and restarts that escalation's wait only"` }, () => {
-  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes("Exit 5 answers the question and restarts that escalation's wait only"));
+  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes("Exit 5 answers the question and restarts that escalation's wait only"), `lacks ${JSON.stringify("Exit 5 answers the question and restarts that escalation's wait only")}`);
 });
 
 test('run: a stop exit acts as it does today for that exit and leaves the other waits running', { skip: `${RED}TC-2: run lacks "A stop exit (2, 3, 4, 1 or any other) acts as it does today for that exit and leaves the other waits running"` }, () => {
-  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes('A stop exit (2, 3, 4, 1 or any other) acts as it does today for that exit and leaves the other waits running'));
+  assert.ok(under(read('skills/run/SKILL.md'), 'Wait, then carry on').includes('A stop exit (2, 3, 4, 1 or any other) acts as it does today for that exit and leaves the other waits running'), `lacks ${JSON.stringify('A stop exit (2, 3, 4, 1 or any other) acts as it does today for that exit and leaves the other waits running')}`);
 });
 
 // Pins 6 and 7 (TC-4): PROCESS.md, "A question asked of the agent is answered, then the wait starts again."
@@ -99,9 +105,9 @@ const asked = () => {
 };
 
 test('PROCESS.md: a null by.actor.role is answered as <alias>/agent', { skip: `${RED}TC-4: PROCESS.md lacks "a null \`by.actor.role\` is answered as \`<alias>/agent\`"` }, () => {
-  assert.ok(asked().includes('a null `by.actor.role` is answered as `<alias>/agent`'));
+  assert.ok(asked().includes('a null `by.actor.role` is answered as `<alias>/agent`'), `lacks ${JSON.stringify('a null `by.actor.role` is answered as `<alias>/agent`')}`);
 });
 
 test('PROCESS.md: an answer refused with invalid_clarification_answer is shortened and written once more', { skip: `${RED}TC-4: PROCESS.md lacks the invalid_clarification_answer retry` }, () => {
-  assert.ok(asked().includes('a refusal with `invalid_clarification_answer` (an answer over 1,000 characters) is shortened and written once more, not treated as an outage'));
+  assert.ok(asked().includes('a refusal with `invalid_clarification_answer` (an answer over 1,000 characters) is shortened and written once more, not treated as an outage'), `lacks ${JSON.stringify('a refusal with `invalid_clarification_answer` (an answer over 1,000 characters) is shortened and written once more, not treated as an outage')}`);
 });
