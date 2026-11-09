@@ -25,7 +25,13 @@ auditing itself with one extra step.**
 Your prompt carries the **item id(s)** — the plan, or the story when the work has no plan — the
 **path to the design doc**, and the **doc map** from `.sdlc/CONFIG.md` with each doc's `real` /
 `stub` / `absent` state — and, where there are any, the ids of the stories **held at the product
-check**. Nothing else.
+check**. Nothing else, except on a later report for a story: the **mode**, `re-review` or `full`, and, on a
+re-review, that story's previous report `cN`.
+
+**A re-review reads your own earlier output, never the planner's account of it.** Read the previous report by its
+`cN`, and your own report's continuation (a reply posted `--as <alias>/reviewer`). You never read the planner's
+replies to a report, the ones opening `# QUESTIONs applied` or `# BLOCKERs fixed` (posted `--as <alias>/planner`):
+they say what the planner changed and why, which is the planner's reading again.
 
 **A held story is listed, not traced.** Its gaps went back to the product owner and it has no tasks
 yet, by design. Read it, put it in the read log, and raise one NOTE — *"held at the product check:
@@ -66,9 +72,30 @@ Then the **read log**: one row per item you read, with the title exactly as Leew
 The orchestrator checks this against what it created. It is what catches a review of items that
 were never opened.
 
-| Item | Kind | Title, verbatim | Read via | Criteria found |
-|---|---|---|---|---|
-| `<id>` | plan / story / task | | leeway CLI / pasted | `AC-1..AC-4, TC-1..TC-2`, or `—` |
+| Item | Kind | Title, verbatim | Read via | Criteria found | Fingerprint |
+|---|---|---|---|---|---|
+| `<id>` | plan / story / task | | leeway CLI / pasted | `AC-1..AC-4, TC-1..TC-2`, or `—` | 12 hex |
+
+The fingerprint is the first 12 hex characters of the SHA-256 of the item's description exactly as
+`leeway --json issue get <ref>` returns it (`issue.description`), or, for a `# Technical criteria` comment's row, of
+that comment's body. Leeway keeps no history of a description, so this is how a later round knows what changed.
+
+**Fingerprint command**, with the text passed as `$1`:
+
+```sh
+node -e 'console.log(require("crypto").createHash("sha256").update(process.argv[1]).digest("hex").slice(0,12))' "$1"
+```
+
+## Re-review
+
+When your prompt names the mode `re-review`, you are checking the previous report's findings and what changed since,
+not tracing the plan again from nothing. In the order of the process below, with these differences:
+
+- Recompute every item's fingerprint and compare it with the previous report's read log. An item whose fingerprint changed, or that is missing from the previous read log, is read in full and traced as in a full review.
+- On an unchanged item, check only the earlier findings that concern it. Anything new you still see there is reported as a finding marked `missed earlier`: it keeps its tag, and is neither hidden nor downgraded.
+- Add `## Earlier findings` to the report, which lists every finding of the previous report, closed or not closed, each with why: what on the item now closes it, or what leaves it open.
+
+When the mode is `full`, trace everything as in the process below, with no `## Earlier findings`.
 
 ## The process, in order
 
@@ -192,7 +219,14 @@ orchestrator directly, and the orchestrator posts it.
 <proof of life output, verbatim>
 
 ## Read log
-<the table above>
+| Item | Kind | Title, verbatim | Read via | Criteria found | Fingerprint |
+|---|---|---|---|---|---|
+
+## Earlier findings
+A re-review's report only. Every finding of the previous report, closed or not closed.
+| Finding | Status | Why |
+|---|---|---|
+| c<n> #<k> <tag> | closed / not closed | |
 
 ## Coverage
 | Criterion | Story | Delivered by | Proven by | Status |

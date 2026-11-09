@@ -61,7 +61,7 @@ const gateItem1 = gate.slice(gate.indexOf('\n1. '), gate.indexOf('\n2. '));
 const FIXED_INPUT = 'Line one\n\nline  two — é\n';
 const FIXED_FINGERPRINT = '7f0c0d4d9ecb';
 
-test('pin 1: the read log has a Fingerprint column, and the named node -e command gives the fixed value', { skip: 'red-test-TC-1: reviewer read log lacks the Fingerprint column and its command' }, () => {
+test('pin 1: the read log has a Fingerprint column, and the named node -e command gives the fixed value', () => {
   const header = reviewer.split('\n').find((line) => line.startsWith('| Item | Kind |'));
   assert.ok(header, 'the read log table header is missing');
   assert.ok(header.includes('| Fingerprint |'), `the read log has no Fingerprint column: ${header}`);
@@ -82,7 +82,7 @@ test('pin 1: the read log has a Fingerprint column, and the named node -e comman
   assert.notEqual(other.stdout.trim(), FIXED_FINGERPRINT);
 });
 
-test('pin 2: a changed fingerprint, or an item missing from the previous read log, is read in full and traced', { skip: 'red-test-AC-1 / TC-2: reviewer has no Re-review section' }, () => {
+test('pin 2: a changed fingerprint, or an item missing from the previous read log, is read in full and traced', () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
     blockWith(reReview,
@@ -93,7 +93,7 @@ test('pin 2: a changed fingerprint, or an item missing from the previous read lo
   );
 });
 
-test('pin 3: ## Earlier findings lists every finding of the previous report, closed or not closed', { skip: 'red-test-AC-1 / TC-3: reviewer has no Earlier findings section' }, () => {
+test('pin 3: ## Earlier findings lists every finding of the previous report, closed or not closed', () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
     blockWith(reReview,
@@ -105,7 +105,7 @@ test('pin 3: ## Earlier findings lists every finding of the previous report, clo
   assert.ok(reportTemplate.split('\n').includes('## Earlier findings'), 'the fenced report template has no "## Earlier findings" heading line');
 });
 
-test('pin 4: a new finding on an unchanged item is marked missed earlier and keeps its tag', { skip: 'red-test-AC-2 / TC-3: reviewer has no missed earlier rule' }, () => {
+test('pin 4: a new finding on an unchanged item is marked missed earlier and keeps its tag', () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
     blockWith(reReview, 'unchanged', '`missed earlier`', ['keeps its tag', 'keeps the tag', 'keeps its own tag', 'keeps its severity tag']),
@@ -113,7 +113,7 @@ test('pin 4: a new finding on an unchanged item is marked missed earlier and kee
   );
 });
 
-test('pin 5: the reviewer never reads the planner replies, and reads its own continuation reply', { skip: 'red-test-TC-2: reviewer text does not exclude the planner replies' }, () => {
+test('pin 5: the reviewer never reads the planner replies, and reads its own continuation reply', () => {
   assert.ok(
     blockWith(receive, '# QUESTIONs applied', '# BLOCKERs fixed', '<alias>/planner', 'never read'),
     '"What you receive" does not say to never read the planner replies `# QUESTIONs applied` and `# BLOCKERs fixed` (posted `--as <alias>/planner`)',
@@ -125,7 +125,7 @@ test('pin 5: the reviewer never reads the planner replies, and reads its own con
   assert.ok(blockWith(receive, ["never the planner's summary", "never receive the planner's summary"]), "the planner's-summary rule is gone");
 });
 
-test('pin 6: plan-project step 8 passes, per story, that story\'s previous report cN and the mode', { skip: 'red-test-TC-2: step 8 passes no previous report or mode' }, () => {
+test('pin 6: plan-project step 8 passes, per story, that story\'s previous report cN and the mode', () => {
   assert.ok(
     blockWith(delegate,
       ['per story', 'for each story', "each story's", 'for every story'],
@@ -141,7 +141,7 @@ test('pin 6: plan-project step 8 passes, per story, that story\'s previous repor
   );
 });
 
-test('pin 7: step 8 makes it full when a thread step into shape follows the previous report', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule after reshaping' }, () => {
+test('pin 7: step 8 makes it full when a thread step into shape follows the previous report', () => {
   assert.ok(
     blockWithout(step8,
       ['`step` into `shape`', ['after the previous report', 'follows the previous report', 'following the previous report', 'since the previous report'], 'full'],
@@ -150,7 +150,7 @@ test('pin 7: step 8 makes it full when a thread step into shape follows the prev
   );
 });
 
-test('pin 8: step 8 makes it full when the person asks in the session', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule when asked' }, () => {
+test('pin 8: step 8 makes it full when the person asks in the session', () => {
   assert.ok(
     blockWithout(step8,
       [['asks in the session', 'asks for one in the session', 'asks for a full review in the session', 'asks for a full one in the session'], 'full'],
@@ -159,7 +159,7 @@ test('pin 8: step 8 makes it full when the person asks in the session', { skip: 
   );
 });
 
-test('pin 9: step 8 makes it full when the previous report has no Fingerprint column', { skip: 'red-test-TC-4: step 8 has no full rule for an old report' }, () => {
+test('pin 9: step 8 makes it full when the previous report has no Fingerprint column', () => {
   assert.ok(
     blockWithout(step8,
       [['previous report has no `fingerprint` column', 'previous report lacks a `fingerprint` column', 'previous report without a `fingerprint` column', 'previous report has no fingerprint column'], 'full'],
@@ -168,7 +168,7 @@ test('pin 9: step 8 makes it full when the previous report has no Fingerprint co
   );
 });
 
-test('pin 10: step 8 treats a TC change alone as a re-review', { skip: 'red-test-AC-3 / TC-4: step 8 has no TC-change rule' }, () => {
+test('pin 10: step 8 treats a TC change alone as a re-review', () => {
   assert.ok(
     blocks(step8).some((b) => sentences(b).some((x) =>
       has(x, ['tc change', ['alone', 'included'], ['is a re-review', 'otherwise a re-review', 'does not make it full', 'does not make a review full', 'does not make the review full', 'not full']]) &&
@@ -177,7 +177,7 @@ test('pin 10: step 8 treats a TC change alone as a re-review', { skip: 'red-test
   );
 });
 
-test('PROCESS.md, the plan gate item 1: a re-review also gets the previous report', { skip: 'red-test-TC-2: PROCESS.md plan gate item 1 does not mention the previous report' }, () => {
+test('PROCESS.md, the plan gate item 1: a re-review also gets the previous report', () => {
   assert.ok(
     blockWith(gateItem1, 're-review', 'previous report'),
     'PROCESS.md "The plan gate" item 1 does not say a re-review also gets the previous report',
