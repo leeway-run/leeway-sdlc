@@ -79,7 +79,9 @@ were never opened.
 
 The fingerprint is the first 12 hex characters of the SHA-256 of the item's description exactly as
 `leeway --json issue get <ref>` returns it (`issue.description`), or, for a `# Technical criteria` comment's row, of
-that comment's body. Leeway keeps no history of a description, so this is how a later round knows what changed.
+that comment's body. A plan's row is read with `leeway --server <server> project get <KEY> <project> --json`, and its
+text is `project.description`. Leeway keeps no history of a description, so this is how a later round knows what changed.
+The design doc is a file and has no row or fingerprint: see "Re-review".
 
 **Fingerprint command**, with the text passed as `$1`:
 
@@ -87,12 +89,18 @@ that comment's body. Leeway keeps no history of a description, so this is how a 
 node -e 'console.log(require("crypto").createHash("sha256").update(process.argv[1]).digest("hex").slice(0,12))' "$1"
 ```
 
+What is hashed is the exact string, with no added newline. Do not paste a description into a shell string or a heredoc:
+that can add a trailing newline or lose characters, and the hash then differs. Read it from the CLI's JSON instead,
+by piping `leeway --server <server> issue get <ref> --json` through a `node -e` that reads `.issue.description` and
+hashes it, with the same `createHash` call as above.
+
 ## Re-review
 
 When your prompt names the mode `re-review`, you are checking the previous report's findings and what changed since,
 not tracing the plan again from nothing. In the order of the process below, with these differences:
 
 - Recompute every item's fingerprint and compare it with the previous report's read log. An item whose fingerprint changed, or that is missing from the previous read log, is read in full and traced as in a full review.
+- The design doc carries no fingerprint, so it is always reread in full and traced, hazard register included, whatever the previous round says of it.
 - On an unchanged item, check only the earlier findings that concern it. Anything new you still see there is reported as a finding marked `missed earlier`: it keeps its tag, and is neither hidden nor downgraded.
 - Add `## Earlier findings` to the report, which lists every finding of the previous report, closed or not closed, each with why: what on the item now closes it, or what leaves it open.
 
