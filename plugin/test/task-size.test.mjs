@@ -33,22 +33,32 @@ function row(tag) {
 // Anything that talks about a task's size.
 const SIZE_TALK = /too big|too large|oversiz|task size|\bbig(ger)?\b|\blarge\b|\bsize\b/i;
 
+// The sentences of a flattened text.
+const sentences = (text) => text.split(/(?<=[.!?])\s+/);
+
+// The reviewer's bullet that starts with `lead`, up to the next bullet, blank line or heading.
+function bullet(text, lead) {
+  const start = text.indexOf(lead);
+  assert.ok(start >= 0, `no "${lead}" bullet`);
+  return flat(text.slice(start).split(/\n(?=- \*\*|\n|#)/)[0]);
+}
+
 function files(dir) {
   return readdirSync(join(plugin, dir)).flatMap((name) => {
     const path = join(dir, name);
-    return statSync(join(plugin, path)).isDirectory() ? files(path) : [path];
+    return statSync(join(plugin, path)).isDirectory() ? files(path) : [path.replace(/\\/g, '/')];
   });
 }
 
 test('AC-1 / TC-1: task-size.md gives the default slice, the one-field example and the test', { skip: 'red-test-AC-1: task-size.md does not exist yet' }, () => {
   const text = flat(read(GUIDANCE));
-  assert.match(text, /thin slice of one behaviour/);
-  assert.match(text, /database field/);
+  assert.match(text, /thin slice of one behaviour/i);
+  assert.match(text, /database field/i);
   assert.match(text, /one task/);
   assert.match(text, /one reviewer/);
   assert.match(text, /one review round/);
   assert.match(text, /examples?, not a (closed|complete) list|not a (closed|complete) list/);
-  assert.match(text, /guidance[^.]*not a rule|not a rule/);
+  assert.match(text, /\bnot a rule\b/i);
 });
 
 test('AC-1 / TC-1: task-size.md names the four split points, backticked', { skip: 'red-test-TC-1: task-size.md does not exist yet' }, () => {
@@ -57,7 +67,13 @@ test('AC-1 / TC-1: task-size.md names the four split points, backticked', { skip
 });
 
 test('AC-1 / Negative: task-size.md says layers do not decide size', { skip: 'red-test-AC-1: task-size.md does not exist yet' }, () => {
-  assert.match(read(GUIDANCE), /\blayers?\b/i);
+  const text = flat(read(GUIDANCE));
+  assert.match(
+    text,
+    /(layers?|how many layers)[^.;]*\b(do(es)? not|don't|never)\s+(decide|determine|set)|\bnot (by )?how many layers/i,
+    'no sentence says layers do not decide size',
+  );
+  assert.match(text, /\b(no|not|never|without)\b[^.]*\bline[- ](count|estimate)/i, 'no sentence disclaims a line-count estimate');
 });
 
 test('TC-2 / AC-2: the reviewer\'s QUESTION and BLOCKER rows say nothing about task size', { skip: 'red-test-TC-2: the QUESTION row still has "a task you judge too big"' }, () => {
@@ -66,13 +82,15 @@ test('TC-2 / AC-2: the reviewer\'s QUESTION and BLOCKER rows say nothing about t
 
 test('TC-2 / AC-2: the reviewer\'s NOTE row names the task-size guidance and the point it strains', { skip: 'red-test-AC-2: the NOTE row has no size entry' }, () => {
   const note = row('NOTE');
-  assert.match(note, /task[- ]size guidance/i);
+  assert.match(note, /task[- ]size|the guidance/i);
+  assert.match(note, /split/i);
   assert.match(note, /point/i);
 });
 
 test('TC-2: the reviewer judges against the guidance in its prompt, not a count of its own', { skip: 'red-test-TC-2: "What you receive" does not mention the guidance' }, () => {
   const text = flat(read(REVIEWER));
   assert.match(text, /task[- ]size guidance/i);
+  assert.match(bullet(read(REVIEWER), '- **Tasks too big for one review round'), /task[- ]size|the guidance/i, 'the too-big bullet does not judge against the guidance');
   const received = flat(raw(read(REVIEWER), '## What you receive'));
   assert.match(received, /task[- ]size guidance/i);
 });
@@ -84,9 +102,10 @@ test('TC-2: with no guidance in its prompt the reviewer raises no size finding',
 test('TC-4 / AC-1: "many hundreds of lines" and "stays in one layer" appear in none of the three files', { skip: 'red-test-TC-4: the reviewer still says "many hundreds of lines", and task-size.md does not exist' }, () => {
   for (const path of [REVIEWER, PLAN, GUIDANCE]) {
     const text = flat(read(path));
-    assert.doesNotMatch(text, /many hundreds of lines/, `${path}: many hundreds of lines`);
-    assert.doesNotMatch(text, /stays in one layer/, `${path}: stays in one layer`);
+    assert.doesNotMatch(text, /many hundreds of lines/i, `${path}: many hundreds of lines`);
+    assert.doesNotMatch(text, /stays? (in|within) one layer/i, `${path}: stays in one layer`);
   }
+  assert.doesNotMatch(flat(read(REVIEWER)), /more than one layer|several surfaces/i, 'the reviewer still counts layers or surfaces');
 });
 
 test('TC-1: each point name is in no file under skills/ or agents/ other than task-size.md', { skip: 'red-test-TC-1: task-size.md does not exist yet, so the one copy is missing' }, () => {
@@ -108,14 +127,26 @@ test('TC-1 / TC-3: plan-project pastes the effective guidance into the reviewer 
   assert.match(text, /`off`/);
   assert.match(text, /`added`/);
   assert.match(text, /as written/);
-  assert.match(text, /(unknown|does not have|no such)[^.]*point|point[^.]*(unknown|does not have)/i);
-  assert.match(text, /in the session/);
+  const unknown = sentences(text).find((s) => /(unknown|does not have|do not have|lacks?|no such)/i.test(s) && /\bpoint\b/i.test(s) && /in the session/i.test(s));
+  assert.ok(unknown, 'no one sentence says a row naming an unknown point is reported in the session');
+  assert.match(unknown, /ignor/i);
+  assert.doesNotMatch(unknown, /\b(never|not|don't)\s+(be\s+)?(report|reported|say|said|says|mention)/i, 'the sentence negates the report');
+  assert.match(text, /`off`[^.]*remov|remov[^.]*`off`/i);
+  assert.match(text, /`added`[^.]*append|append[^.]*`added`/i);
+  const absent = sentences(text).find((s) => /as written/i.test(s) && (/\bno\b[^.]*\bsection\b/i.test(s) || /empty table|absent section|missing section/i.test(s)));
+  assert.ok(absent, 'no one sentence says an absent section or empty table means the file as written');
 });
 
 test('TC-3: CONFIG.md.tmpl has a Task size section with an empty table', { skip: 'red-test-TC-3: the template has no Task size section' }, () => {
   const text = read(TEMPLATE);
   const section = raw(text, '## Task size');
-  assert.ok(section.includes('| Point | Off or added | Text |'));
+  const lines = section.split('\n');
+  assert.ok(lines.includes('| Point | Off or added | Text |'), 'no header row');
+  const table = lines.filter((line) => line.startsWith('|'));
+  assert.equal(table.length, 2, 'the table has rows besides the header and its separator');
+  assert.match(table[1], /^\|[-\s|:]+\|$/);
+  const prose = lines.slice(1).filter((line) => line.trim() && !line.startsWith('|'));
+  assert.ok(prose.some((line) => /\brows?\b/i.test(line)), 'no line says what a row does');
 });
 
 test('TC-3: the template header comment names Task size', { skip: 'red-test-TC-3: the header comment does not name the section' }, () => {
