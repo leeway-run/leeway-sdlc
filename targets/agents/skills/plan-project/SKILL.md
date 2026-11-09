@@ -79,7 +79,7 @@ whatever happened.
    - the latest comment opening `# Re-plan requested`, posted when a person asks to plan a stopped story again
      (step 8): count only the reports after it.
 
-   With no mark, count all of them. None in the window: plan it afresh; the latest report before the window, if
+   With no mark, count all of them. A coverage report with a `# BLOCKERs fixed` reply is not counted. A report without a `# BLOCKERs fixed` reply is counted. None in the window: plan it afresh; the latest report before the window, if
    there is one, says what the last plan missed. One or two: it was returned from the gate. Read the latest report
    and the comments since it, fix what its BLOCKERs name, and gate it again (step 8). Three or more: do not re-plan;
    step 8, "Three RETURNs".
@@ -657,6 +657,11 @@ A RETURN is not moved to `ready`: the story stays at the plan gate with its repo
 plan step to return it to planning. The next `plan-project` fixes the items the BLOCKERs name (step 0) and spawns a
 **fresh** reviewer — never the same one with a note about what changed. It is still a fresh agent, given the
 previous report's `cN` and the mode. The next round posts its own report comment.
+
+**A RETURN stops at the gate unless the loop below applies.** The loop is the wording loop: on a RETURN whose BLOCKERs are
+all small fixes, you fix them and have the plan reviewed again, without a person moving the story back first. At most 2 automatic rounds follow the gate's first report. A third automatic round never starts. After the 2 automatic rounds, the story stops at the plan gate with the latest report. Each automatic round returns through "Post the full report": its report is posted `--as <alias>/reviewer` before any item is fixed. You judge each BLOCKER, and a round starts only when every BLOCKER is a fix to existing items that opens no decision. A wording fix edits existing items only: a description, a test, a blocking relation between existing tasks or a hazard owner. A BLOCKER that needs a new task or a decision is never listed in a `# BLOCKERs fixed` reply, and the story stops at the plan gate. A QUESTION still open stops the loop, and the story stays at the plan gate.
+
+For each round, edit the items, then reply to the report (`comment add <story> --parent cN --stdin body`) with a body opening `# BLOCKERs fixed`, one line per BLOCKER: number, item, change. Each automatic round applies the answered QUESTIONs before the re-review. Each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, passed the previous report's `cN` and the mode `re-review`. A PASS from any automatic round moves the story to `ready` like a first-report PASS, with the same `# Moved to ready` comment naming that report's `cN`. The loop runs per story: one story's loop never holds or moves another story.
 
 Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers. Then, with QUESTIONs
 or none, wait on the held stories' gaps ("The last wait", below), and **stop**, each story at `ready` or at the plan gate.

@@ -194,6 +194,7 @@ exists.
    escalation asks for the gate decision: **the verdict decides, and `plan-project` makes the move, per story.**
    `plan-project` moves the story from the plan gate to `ready` on a PASS, with a `# Moved to ready` comment naming the
    report's `cN` and its verdict. A RETURN stays at the plan gate: moving it back to the plan step returns it to planning.
+   On a RETURN where every BLOCKER is a fix to existing items, plan-project fixes it, replies `# BLOCKERs fixed` and runs a re-review at most 2 times before the story stops at the plan gate.
    **No task starts before the move to `ready`**, and an answer to a QUESTION is not that move. With QUESTIONs, the order
    is: answer them, and `plan-project` applies the answers (the session waiting on them does, or a re-invoke once it has
    ended; it replies `# QUESTIONs applied` to the report) and then moves the story to `ready` on PASS WITH DECISIONS,
