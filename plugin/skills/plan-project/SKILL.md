@@ -55,7 +55,7 @@ whatever happened.
    | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
    | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it unless the person asks (step 7) |
    | the plan gate, or `ready` with no step, with the latest report's QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and move nothing unless the person asks (step 7) |
-   | the plan gate, or `ready` with no step, with a QUESTION of the latest report open (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": wait on each open one in turn, raise a held one as it says, and apply them once every one is answered. Move nothing unless the person asks (step 7) |
+   | the plan gate, or `ready` with no step, with a QUESTION of the latest report open (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": wait on every open one at once ("Wait, then read"), raise a held one as it says, and apply them once every one is answered. Move nothing unless the person asks (step 7) |
    | the plan gate | **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing, and do not move it unless the person asks (step 7) |
    | anywhere else (`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
 
@@ -281,8 +281,8 @@ step 3.
 
 ### Wait, then read
 
-Say once what you wait on and until when. Then wait on the first open escalation, as `run` does (`run`, "Wait, then
-carry on"), started as `HARNESS.md`, "Waiting for an answer", says, polling nothing and doing no other work of this
+Say once what you wait on and until when. Then wait on the round as `run` does: start one background wait per open escalation of the round, all together (`run`, "Wait, then
+carry on"), each started as `HARNESS.md`, "Waiting for an answer", says, polling nothing and doing no other work of this
 plan. `<ref>` is the entry's own `ref`, the story, the Plan record or a sibling story:
 
 ```sh
@@ -291,7 +291,7 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read every story this session plans again. Another still open: wait on that one, with its `ref` and 16 hours of its own. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview, and a held story's interview escalation is not waited on at all ("The last wait") |
+| 0 | answered | read every story this session plans again. Another still open: its wait keeps running, with its `ref` and 16 hours of its own, and this carries on only when every escalation of the round is answered. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview, and a held story's interview escalation is not waited on at all ("The last wait") |
 | 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from step 0 and the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
@@ -649,7 +649,7 @@ that reply alone. Every other QUESTION goes out now, together.
 in this order: answer every QUESTION; this session applies the answers as they come (if it has ended, run
 plan-project to apply them); then move the story to `ready`. `run` refuses the story until they are applied.
 
-Wait on each QUESTION's escalation in turn (step 0). On an answer, or on resume, raise a held QUESTION (one the
+Wait on every QUESTION's escalation at once (step 0, "Wait, then read"). On an answer, or on resume, raise a held QUESTION (one the
 report has with no comment yet), unless an answer settled it, and wait on it the same way. When every one is
 answered, change what an answer changes in a description or a task, then **reply to the report** (`comment add
 <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line per escalation, its answer
@@ -694,8 +694,8 @@ nothing else is planned. A gap escalation is waited on nowhere else, since the s
 A held story's interview escalations still open, where a product question held it in the middle of its interview
 ("The developer interview", "What is asked"), are not waited on in this session: they hold no work in it,
 since the story gets no tasks, and they stay open until a person answers them, as its gap comment says.
-Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on each open gap escalation in turn as "Wait, then read" says, answering a question
-asked of you. On an answer, say it as step 1 says, and wait on the next. With none still open, stop. Its answer goes
+Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on every open gap escalation at once as "Wait, then read" says, answering a question
+asked of you. On an answer, say it as step 1 says; the other waits keep running. With none still open, stop. Its answer goes
 to the PO, not to this plan, so the wait holds no work here: where it ends without an answer (exit 2, 3 or 4, or
 `wait: stop`), say once which escalations stay open and that the PO answers them with `shape-project`, and stop. A
 re-invoke does not wait on them again: step 0 stops on a story at `shape`.

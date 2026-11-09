@@ -69,8 +69,8 @@ today in that area and what is unclear, never only "see cN". **No pick:** no `"a
 answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and this skill cannot run: stop and
 say so.
 
-**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on each open
-escalation of the round in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`):
+**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on the round
+as `run` does: start one background wait per open escalation of the round, all together (`run`, "Wait, then carry on", with this skill in place of `run`):
 say once what you wait on and until when, start the wait as `HARNESS.md`, "Waiting for an answer", says, answer a
 question the PO asks of you and wait again (exit 5), and write nothing while one is open. On any exit but 0 and 5,
 or where `HARNESS.md` says `wait: stop`, stop the turn as run's table says, naming the story and its open

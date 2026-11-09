@@ -162,7 +162,7 @@ test('a sub-issue run waits on its debt proposal once the task has landed, and f
   const land = under(skill, 'Land the task');
   const step = from(land, '5. **Wait on each debt proposal', '6. **Friction');
   assert.match(step, /only when `run` was invoked on the sub-issue itself\*\* \(an issue run has already waited on it, as its stop 4\)/);
-  assert.match(step, /wait on it \("Wait, then carry on"\), one after another\. On a yes, file the issue as that row says; on a no, the finding stays a nit\./);
+  assert.match(step, /start its wait \("Wait, then carry on"\), all together with the others\. On a yes, file the issue as that row says; on a no, the finding stays a nit\./);
   assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **Wait on each debt proposal'), 'the debt wait does not come after the task has landed');
   assert.match(step, /A wait here that ends without an answer \(exit 2, 3 or 4\) does not end the run\*\*: the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume\. Leave the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to step 6\./);
   assert.doesNotMatch(step, STOPS, 'the debt wait stops the run');
@@ -183,7 +183,7 @@ test('time spent in a wait does not count toward the wall-clock budget', () => {
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {
   const stop = under(skill, 'On a stop');
-  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), one after another\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
+  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
   assert.match(stop, /Only when a wait ends without an answer, or an answer ends the work, stop the turn/);
   assert.match(stop, /Stop 10 has no escalation to wait on/);
   assert.match(under(skill, 'Hard stop conditions'), /Its wait is step 7 of "On a stop", after the status comment, not a second one before it/);
@@ -202,7 +202,7 @@ test('"stop the turn" is said only where the wait ends without an answer', () =>
 
 test('PROCESS.md: every skill that raises waits, it names every stop, and only the answer is one', () => {
   const rule = under(process_, 'Questions to the human are escalations');
-  assert.match(rule, /Then wait for the answer, in every skill that raises\*\*: `run`, `plan-project`, `shape-project`, `sync-repo`, `sdlc-install` and `sdlc-tune`\. Say once what it waits on and until when, wait on `scripts\/wait-answer\.mjs` \(as `HARNESS\.md`, "Waiting for an answer", says\), act on its exit as run's "Wait, then carry on" does, and on an answer carry on as a re-invoke of that skill would, writing nothing twice/);
+  assert.match(rule, /Then wait for the answer, in every skill that raises\*\*: `run`, `plan-project`, `shape-project`, `sync-repo`, `sdlc-install` and `sdlc-tune`\. Say once what it waits on and until when, start one background wait per open escalation of the round, all together, on `scripts\/wait-answer\.mjs` \(as `HARNESS\.md`, "Waiting for an answer", says\), act on each exit as run's "Wait, then carry on" does, and on an answer, once every escalation of the round is answered, carry on as a re-invoke of that skill would, writing nothing twice/);
   assert.doesNotMatch(rule, /Every other skill stops the turn/);
   assert.match(rule, /Where `HARNESS\.md` says `wait: stop`, no wait starts: act at once as for exit 2\./);
   // Every stop, listed (LWY-160.2 c2): exits 2, 3, 4, 1 and any other, a refused answer write, and an answer that ends the work.

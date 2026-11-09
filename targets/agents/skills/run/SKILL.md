@@ -155,22 +155,27 @@ project run. Where a path below says to raise an escalation and wait, do this:
 2. **Say once in the session** what you wait on and until when: "Waiting for the answer to e2 on DRY-2.1, until
    <the time 16 hours from now>." Once, not per check.
 3. **Wait on `wait-answer.mjs`**, by the command `HARNESS.md`, "Running the plugin's scripts", names (`<wait-answer>`
-   below), started as `HARNESS.md`, "Waiting for an answer", says:
+   below): start one background wait per open escalation of the round, all together, each started as `HARNESS.md`,
+   "Waiting for an answer", says:
 
    ```sh
    <wait-answer> --server <server> <ref> <eN> -- <cli>
    ```
 
-   `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. It only
+   `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. Each only
    reads: it checks about a minute after it starts, then less and less often, never more than 15 minutes apart, and
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
 4. **Act on how it exits, as the table says**, with one exception: a wait on something that blocks nothing, such
    as a sub-issue run's debt proposal after its task is `done` ("Land the task", step 5), carries on instead of
    stopping when it ends without an answer (exit 2, 3 or 4).
+   With several waits running, each exit is handled for its own escalation, not for the round. Exit 0 carries on only
+   when every escalation of the round is answered: read the issue, and where another is still open, its wait keeps
+   running. Exit 5 answers the question and restarts that escalation's wait only. A stop exit (2, 3, 4, 1 or any other)
+   acts as it does today for that exit and leaves the other waits running: a re-invoke of `run` reads what they found.
 
    | Exit | It means | So |
    |---|---|---|
-   | 0 | answered; `{"label","note","by"}` on stdout | carry on (step 5) |
+   | 0 | answered; `{"label","note","by"}` on stdout | read the issue, and carry on (step 5) when every escalation of the round is answered |
    | 2 | no answer by the deadline | stop the turn: the escalation and any `# Run status` comment stay, and re-invoking `run` resumes (for a wait in "The plan's end", `run` on the project) |
    | 4 | the CLI asked for `leeway login` | a blocker outside Leeway: stop the turn, and name the action, `leeway login --server <server>`, after which re-invoking `run` resumes |
    | 3 | Leeway did not answer | stop the turn and say so, as stop 10 ("Hard stop conditions") does |
@@ -197,7 +202,7 @@ fresh.
 
 **Check the round before raising more than one** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change
 another question, merge them into one, or hold the dependent one for the next round. Independent ones are raised
-together, not rationed behind a wait, and waited on one after another. **Work held on a round carries on only when every escalation of the round is
+together, not rationed behind a wait, and waited on all together ("Wait, then carry on"). **Work held on a round carries on only when every escalation of the round is
 answered, with all the answers reaching it**: one answer of two is not yet step 5's answer, except one that ends the
 work, which is followed at once. A later round drops what an answer settled.
 
@@ -592,8 +597,7 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
 4. Set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears).
-5. **Wait.** Report each escalation id and the issue, and wait on it ("Wait, then carry on"), on each in turn when
-   there are two. Do not delegate to the
+5. **Wait.** Report each escalation id and the issue, and start one background wait per open escalation of the round, all together ("Wait, then carry on"). Do not delegate to the
    reviewer.
 
 On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
@@ -677,7 +681,7 @@ sufficient: the verdict exists nowhere else.
    review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
    them all in this round; a second block on one finding gets a comment of its own, naming the finding, and its
    escalation is tied to that, since a comment holds one open escalation. Report each escalation id and the issue, wait
-   on each in turn, and do not go to
+   on every one at once ("Wait, then carry on"), and do not go to
    PASS or FAIL handling until every one is answered. Leave the sub-issue `in_review`, in round 0 too.
 
 #### What a deferred finding becomes
@@ -741,7 +745,7 @@ On a PASS of a code round.
    waited on it, as its stop 4). Step 6's friction proposal depends on no answer here, so where there is a wait to
    do, do step 6's collecting and raise its proposal first, in the same round, and do not raise it again at step 6.
    For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
-   of this task, wait on it ("Wait, then carry on"), one after another. On a yes, file the issue as that row says; on
+   of this task, start its wait ("Wait, then carry on"), all together with the others. On a yes, file the issue as that row says; on
    a no, the finding stays a nit. **A wait here that ends without an answer (exit 2, 3 or 4) does not end the run**:
    the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume. Leave
    the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to
@@ -1137,7 +1141,7 @@ Do these, in this order, and nothing else:
    real choices as options (2 to 5, each with its argument) and `"meanwhile"` saying what stays blocked and what does not.
    Where the sub-issue run raised it or them, add each id to the status comment, and raise no other.
 6. **Tell the user the same thing** in the session, with the comment's `cN` and each escalation id.
-7. **Wait on each of the stop's escalations** ("Wait, then carry on"), one after another. Once every one is answered the run carries on from where step 1
+7. **Wait on each of the stop's escalations** ("Wait, then carry on"), all together. Once every one is answered the run carries on from where step 1
    left it, the condition overridden by those answers, and writes none of steps 4 and 5 again. Only when a wait ends
    without an answer, or an answer ends the work, stop the turn. Stop 10 has no escalation to wait on: stop the
    turn.
