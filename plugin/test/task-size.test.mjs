@@ -50,7 +50,7 @@ function files(dir) {
   });
 }
 
-test('AC-1 / TC-1: task-size.md gives the default slice, the one-field example and the test', { skip: 'red-test-AC-1: task-size.md does not exist yet' }, () => {
+test('AC-1 / TC-1: task-size.md gives the default slice, the one-field example and the test', () => {
   const text = flat(read(GUIDANCE));
   assert.match(text, /thin slice of one behaviour/i);
   assert.match(text, /database field/i);
@@ -61,12 +61,12 @@ test('AC-1 / TC-1: task-size.md gives the default slice, the one-field example a
   assert.match(text, /\bnot a rule\b/i);
 });
 
-test('AC-1 / TC-1: task-size.md names the four split points, backticked', { skip: 'red-test-TC-1: task-size.md does not exist yet' }, () => {
+test('AC-1 / TC-1: task-size.md names the four split points, backticked', () => {
   const text = read(GUIDANCE);
   for (const point of POINTS) assert.ok(text.includes(`\`${point}\``), `no \`${point}\``);
 });
 
-test('AC-1 / Negative: task-size.md says layers do not decide size', { skip: 'red-test-AC-1: task-size.md does not exist yet' }, () => {
+test('AC-1 / Negative: task-size.md says layers do not decide size', () => {
   const text = flat(read(GUIDANCE));
   assert.match(
     text,
@@ -76,18 +76,18 @@ test('AC-1 / Negative: task-size.md says layers do not decide size', { skip: 're
   assert.match(text, /\b(no|not|never|without)\b[^.]*\bline[- ](count|estimate)/i, 'no sentence disclaims a line-count estimate');
 });
 
-test('TC-2 / AC-2: the reviewer\'s QUESTION and BLOCKER rows say nothing about task size', { skip: 'red-test-TC-2: the QUESTION row still has "a task you judge too big"' }, () => {
+test('TC-2 / AC-2: the reviewer\'s QUESTION and BLOCKER rows say nothing about task size', () => {
   for (const tag of ['QUESTION', 'BLOCKER']) assert.doesNotMatch(row(tag), SIZE_TALK, `${tag} row talks about size`);
 });
 
-test('TC-2 / AC-2: the reviewer\'s NOTE row names the task-size guidance and the point it strains', { skip: 'red-test-AC-2: the NOTE row has no size entry' }, () => {
+test('TC-2 / AC-2: the reviewer\'s NOTE row names the task-size guidance and the point it strains', () => {
   const note = row('NOTE');
   assert.match(note, /task[- ]size|the guidance/i);
   assert.match(note, /split/i);
   assert.match(note, /point/i);
 });
 
-test('TC-2: the reviewer judges against the guidance in its prompt, not a count of its own', { skip: 'red-test-TC-2: "What you receive" does not mention the guidance' }, () => {
+test('TC-2: the reviewer judges against the guidance in its prompt, not a count of its own', () => {
   const text = flat(read(REVIEWER));
   assert.match(text, /task[- ]size guidance/i);
   assert.match(bullet(read(REVIEWER), '- **Tasks too big for one review round'), /task[- ]size|the guidance/i, 'the too-big bullet does not judge against the guidance');
@@ -95,11 +95,11 @@ test('TC-2: the reviewer judges against the guidance in its prompt, not a count 
   assert.match(received, /task[- ]size guidance/i);
 });
 
-test('TC-2: with no guidance in its prompt the reviewer raises no size finding', { skip: 'red-test-TC-2: the reviewer says nothing of a missing guidance' }, () => {
+test('TC-2: with no guidance in its prompt the reviewer raises no size finding', () => {
   assert.match(flat(read(REVIEWER)), /no size finding/i);
 });
 
-test('TC-4 / AC-1: "many hundreds of lines" and "stays in one layer" appear in none of the three files', { skip: 'red-test-TC-4: the reviewer still says "many hundreds of lines", and task-size.md does not exist' }, () => {
+test('TC-4 / AC-1: "many hundreds of lines" and "stays in one layer" appear in none of the three files', () => {
   for (const path of [REVIEWER, PLAN, GUIDANCE]) {
     const text = flat(read(path));
     assert.doesNotMatch(text, /many hundreds of lines/i, `${path}: many hundreds of lines`);
@@ -108,7 +108,7 @@ test('TC-4 / AC-1: "many hundreds of lines" and "stays in one layer" appear in n
   assert.doesNotMatch(flat(read(REVIEWER)), /more than one layer|several surfaces/i, 'the reviewer still counts layers or surfaces');
 });
 
-test('TC-1: each point name is in no file under skills/ or agents/ other than task-size.md', { skip: 'red-test-TC-1: task-size.md does not exist yet, so the one copy is missing' }, () => {
+test('TC-1: each point name is in no file under skills/ or agents/ other than task-size.md', () => {
   const all = [...files('skills'), ...files('agents')].filter((p) => p !== GUIDANCE);
   assert.ok(read(GUIDANCE).length > 0);
   for (const path of all) {
@@ -117,11 +117,11 @@ test('TC-1: each point name is in no file under skills/ or agents/ other than ta
   }
 });
 
-test('TC-1: plan-project step 4 reads references/task-size.md before cutting tasks', { skip: 'red-test-TC-1: step 4 does not name the guidance' }, () => {
+test('TC-1: plan-project step 4 reads references/task-size.md before cutting tasks', () => {
   assert.match(flat(raw(read(PLAN), '## 4. ')), /references\/task-size\.md/);
 });
 
-test('TC-1 / TC-3: plan-project pastes the effective guidance into the reviewer prompt', { skip: 'red-test-TC-3: the delegation section has no guidance bullet' }, () => {
+test('TC-1 / TC-3: plan-project pastes the effective guidance into the reviewer prompt', () => {
   const text = flat(raw(read(PLAN), '### Delegate to the divergence reviewer'));
   assert.match(text, /task-size\.md/);
   assert.match(text, /`off`/);
@@ -137,7 +137,7 @@ test('TC-1 / TC-3: plan-project pastes the effective guidance into the reviewer 
   assert.ok(absent, 'no one sentence says an absent section or empty table means the file as written');
 });
 
-test('TC-3: CONFIG.md.tmpl has a Task size section with an empty table', { skip: 'red-test-TC-3: the template has no Task size section' }, () => {
+test('TC-3: CONFIG.md.tmpl has a Task size section with an empty table', () => {
   const text = read(TEMPLATE);
   const section = raw(text, '## Task size');
   const lines = section.split('\n');
@@ -149,7 +149,7 @@ test('TC-3: CONFIG.md.tmpl has a Task size section with an empty table', { skip:
   assert.ok(prose.some((line) => /\brows?\b/i.test(line)), 'no line says what a row does');
 });
 
-test('TC-3: the template header comment names Task size', { skip: 'red-test-TC-3: the header comment does not name the section' }, () => {
+test('TC-3: the template header comment names Task size', () => {
   const text = read(TEMPLATE);
   const comment = text.slice(0, text.indexOf('## Doc map')).match(/<!--[\s\S]*?-->/);
   assert.ok(comment, 'no header comment');
