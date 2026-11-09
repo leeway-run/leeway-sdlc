@@ -67,8 +67,8 @@ role.
 status the issue is at: `issue update <ref> --step <id>` or `--status <status>`, as `<alias>/agent`, and then says
 which move it made, from where to where, and what it leaves unmet (an open or unapplied QUESTION, no coverage
 report, no tasks). No skill tells the person to make a move in the UI because the skill may
-not. What no skill does is move a story out of the shaped step or the plan gate on its own initiative: those moves
-are a person's, made by them or by a skill they asked.
+not. Only `plan-project` moves a story out of the shaped step or the plan gate on its own, on the conditions "Before the
+plan: shaping" and "The plan gate" give, and no other skill does: any other skill moves it only when a person asks.
 
 **Two invariants make it work.**
 
@@ -136,8 +136,8 @@ nothing else:
 **Statuses and steps are set, never inferred.** The plugin moves an issue only with an explicit
 `issue update <ref> --step <id>` or `--status <status>`. Setting a step also sets its status in the same
 write. No iteration, escalation or comment moves an issue; a lasting state is something a person or the
-orchestrator chose. A person passes the plan gate by moving the issue to `ready`; on a type without one,
-`plan-project` sets `--status ready`. `run` sets the build step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
+orchestrator chose. `plan-project` moves a story from the plan gate to `ready` when its report passes; on a type without
+a plan gate, it sets `--status ready`. `run` sets the build step when it starts, so an issue is never `in_progress` with nobody on it. Each sub-issue has two steps of
 its own, `red-tests` and `implementing`, and is `in_review` while the reviewer has it.
 
 ## Before the plan: shaping
@@ -155,16 +155,17 @@ it with the body.
 **Shaping ends at the shaped step**, the type's first `gate` step after `shape` with no `plan` step between them
 (`shaped` in the presets). Once every question is answered and no answer leaves something new unclear,
 `shape-project` writes the body, posts one comment of what it inferred beyond the answers, sets that step and
-stops. No escalation asks whether to write the body: the product owner's answers are the approval, and the story
-waits at the shaped step for them to move it on. Two stories keep an approval escalation before the write: one
+stops. No escalation asks whether to write the body: the product owner's answers are the shaping, and the story
+waits at the shaped step until `plan-project` runs on it. Two stories keep an approval escalation before the write: one
 already planned, whose tasks were built against its criteria, and one whose type has no shaped step.
 
-**Planning starts at the plan step.** The product owner moving the story from the shaped step to the plan step is
-their approval of the body. `plan-project` starts only there, or where shaping ends on a type with no shaped step:
-from `shape` or from no step at `backlog`, setting the plan step itself, since the approval escalation was the
-approval. A type with no `shape` starts from no step at `backlog` the same way. On a story still at the shaped step
-it says the story waits on the product owner and stops, writing nothing. A story it sends gaps back on goes back
-to `shape`.
+**Planning starts at the plan step.** Running `plan-project` on a story at the shaped step, with no shaping escalation
+open, is the approval of the body: it moves the story to the plan step itself and posts `# Planning started`, saying
+the run was the approval. Where shaping ends on a type with no shaped step, it starts from `shape` or from no step at
+`backlog`, setting the plan step itself, since the approval escalation was the approval. A type with no `shape` starts
+from no step at `backlog` the same way. On a type with a shaped step, a story at `shape`, or one at the shaped step
+with a shaping escalation open, is not moved: `plan-project` says shaping is not finished and stops, writing nothing.
+A story it sends gaps back on goes back to `shape`.
 
 | Part of the story | Owner | Written through |
 |---|---|---|
@@ -188,21 +189,24 @@ exists.
    PASS, PASS WITH DECISIONS, or RETURN. The orchestrator gates the reply like any other.
 3. The orchestrator posts the **full** report as a comment on the story, posts each QUESTION as its own top-level
    comment opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment) with one escalation on it,
-   waits on them, and stops with the story at the plan gate. A report's QUESTIONs are the escalations on those comments. A
+   and waits on them. A report's QUESTIONs are the escalations on those comments. A
    QUESTION held for the next round goes out then, or never where an answer settled it (`plan-project`, "The QUESTIONs"). No
-   escalation asks for the gate decision: **the decision is a person's move.** Moving the story from the plan gate to
-   `ready` passes it; moving it back to the plan step returns it to planning. **No task starts before that move to
-   `ready`**, and no skill makes it on its own initiative, nor on a QUESTION's answer. With QUESTIONs, the order is:
-   answer them, let `plan-project` apply the answers (the session waiting on them does, or a re-invoke once it has
-   ended; it replies `# QUESTIONs applied` to the report and moves nothing), then move the story to `ready`. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
+   escalation asks for the gate decision: **the verdict decides, and `plan-project` makes the move, per story.**
+   `plan-project` moves the story from the plan gate to `ready` on a PASS, with a `# Moved to ready` comment naming the
+   report's `cN` and its verdict. A RETURN stays at the plan gate: moving it back to the plan step returns it to planning.
+   On a RETURN where every BLOCKER is a fix to existing items, plan-project fixes it, replies `# BLOCKERs fixed` and runs a re-review at most 2 times before the story stops at the plan gate.
+   **No task starts before the move to `ready`**, and an answer to a QUESTION is not that move. With QUESTIONs, the order
+   is: answer them, and `plan-project` applies the answers (the session waiting on them does, or a re-invoke once it has
+   ended; it replies `# QUESTIONs applied` to the report) and then moves the story to `ready` on PASS WITH DECISIONS,
+   with the same comment. `run` reads the gate from the step and the record: it refuses a story with no coverage report, one still
    at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied.
 
 **Why.** An artifact cannot audit itself. The planner reads its own breakdown with the story it had in
 mind, not the story as written, and fills every gap from memory without seeing one. A fresh context with
 no memory of the decisions reads only what is on the items, which is all an implementer will ever see.
 The gap it finds costs one edit to a description; the same gap found in diff review costs a round, and
-found after release costs a story. The decision stays with a human because the reviewer only measures
-divergence: whether a divergence is a defect or a choice is a judgement about intent. **What is lost:**
+found after release costs a story. A decision stays with a human because the reviewer only measures
+divergence: whether a divergence is a defect or a choice is a judgement about intent, so a QUESTION or a BLOCKER that needs one goes to a person, and the story does not move until it is answered. **What is lost:**
 it checks the plan against the story, not the story against what anyone wanted. A criterion never
 written down cannot be found missing.
 
@@ -443,7 +447,8 @@ saying what the issue is and why, in plain words. An issue a skill adopts with a
 | spend outside a round | `spend record <ref> <minutes> [--tokens N] --note "…"`: a round's review, its orchestration, or a round that records no iteration, on its sub-issue, and the run's own time (the baseline, landing a task, the story gate) on the story; totals are read back from `issue get <ref>` (`totals`), never from a comment |
 | brief / finding / verdict | `comment add --stdin body --as <impl>/implementer` (opens `# Handoff brief — <ref> · round <N>`) / `comment add --anchor '{"iteration":N,"path":…,"start":s,"end":e}' --as <rev>/reviewer` / `comment add --kind review --iteration N --settles … --disputes … --raises … --as <rev>/reviewer` (opens `# Review verdict: PASS — <ref> · round <N>` or `# Review verdict: FAIL — <ref> · round <N>`) |
 | dispute needing a human; a hard stop of `run` on an issue | an escalation, raised by `<raise>` from a file of its fields: `type`, `question`, `context`, `tradeoff`, `advice`, `options`, `meanwhile` (Needs you is the one interrupt) |
-| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it |
+| plan gate | the coverage report as a comment per story by `<div>/reviewer` (`<div>` is the divergence reviewer's alias); each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` (`c<report>` the report's first comment), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, then `--status ready` by `plan-project` on a PASS (on PASS WITH DECISIONS after `# QUESTIONs applied`), with a comment opening `# Moved to ready` that names the report's `cN` and its verdict; a RETURN stays at the plan gate, and moving it back to the plan step returns it |
+| shaped step to plan step | `plan-project`'s move of the story from the shaped step to the plan step, with a comment opening `# Planning started` saying running it was the approval of the body |
 | technical criteria a story body points to | the comment opening `# Technical criteria`, latest wins |
 | nits / friction | comments on the project's nit collector / one issue of type chore per item in the product's friction project (`friction-project:` in `.sdlc/leeway.md`) |
 | status | always `issue update --step` or `--status`; never by iteration or escalation; a move the person asks for as `<alias>/agent`, named in the session ("The cast") |

@@ -133,7 +133,8 @@ asked in step 5, once the process they compare with has been read.
 2. **What are we building here?**
    - (a) a quick MVP or prototype: speed first, light review, no red tests (`--preset mvp`);
    - (b) a maintained system people depend on: a feature goes shaping → shaped → planning → planned →
-     building → verify on dev, and waits at shaped and at planned for a person to move it on; red tests,
+     building → verify on dev, and running plan-project on a shaped story moves it to planning, and a PASS
+     moves it to ready; a RETURN or an open QUESTION waits at planned for a person; red tests,
      adversarial review (`--preset maintained`);
    - (c) start from (b) and relax it per type (`maintained`, then the adjustments below).
 
