@@ -66,9 +66,10 @@ can hold it in a round. Nothing in it is big or risky on its own.
 | Hazard | Owning task | The check that proves it closed | Rung |
 |---|---|---|---|
 | The reviewer still raises size as a QUESTION from a line the rewrite missed (the check list, the Findings table, the verdict rules) | LWY-203.1 | test: no QUESTION or BLOCKER row of the reviewer mentions task size; the NOTE row does | R1 |
-| A second copy of the split points drifts (restated in the reviewer or in step 4) | LWY-203.1 | test: the point names appear in `task-size.md` and nowhere else in `plugin/` | R1 |
+| A second copy of the split points drifts (restated in the reviewer or in step 4) | LWY-203.1 | test: each backticked point name, searched under `plugin/skills/` and `plugin/agents/`, is only in `task-size.md`; the test file is not searched | R1 |
+| The reviewer gets no guidance (an older caller) and invents a size test | LWY-203.1 | test: the reviewer text says no guidance means no size finding | R1 |
 | A repo without the `## Task size` section gets no guidance, or an error | LWY-203.1 | test: plan-project's text says an absent section or empty table means the plugin's guidance as written | R1 |
-| The strict rules or the line estimate survive somewhere | LWY-203.1 | test: no "many hundreds of lines" and no "one layer" rule in the reviewer, plan-project or `task-size.md` | R1 |
+| The strict rules or the line estimate survive somewhere | LWY-203.1 | test: "many hundreds of lines" and "stays in one layer" absent from the reviewer, plan-project and `task-size.md` | R1 |
 | `targets/` not regenerated | LWY-203.1 | `node scripts/build-targets.mjs --check` | R1 |
 
 ## Sequencing

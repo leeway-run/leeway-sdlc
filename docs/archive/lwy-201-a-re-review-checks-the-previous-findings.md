@@ -25,3 +25,7 @@ One task, LWY-201.1: the reviewer's text and plan-project's delegation, one beha
 | Fingerprints differ for the same text (whitespace, trailing newline, a different field) | LWY-201.1 | the one-liner named in the text, run on a known string in the test, matches a fixed expected value | R1 |
 | A full review never happens after reshaping | LWY-201.1 | pin: the thread `step` into `shape` after the report makes it full | R1 |
 | An earlier finding silently disappears | LWY-201.1 | pin: `## Earlier findings` lists every finding of the previous report | R1 |
+| A late catch is hidden or downgraded | LWY-201.1 | pin: `missed earlier`, tag kept | R1 |
+| A TC edit makes every review full, or a request for a full one is ignored | LWY-201.1 | pins: a TC change alone is a re-review; the person asking makes it full | R1 |
+| A changed item is not reread | LWY-201.1 | pin: a changed fingerprint or a missing row means read in full | R1 |
+| The reviewer skips its own report's continuation reply | LWY-201.1 | pin: it reads replies by the reviewer, never the planner's | R1 |

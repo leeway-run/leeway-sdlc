@@ -12,7 +12,7 @@ Harnesses with `wait: stop` are unchanged: they do not wait. `wait-answer.mjs` i
 
 Sites, all "in turn" or "one after another": `run` ("Wait, then carry on" and its round paragraph, the stop's escalations, the debt-proposal rows), `plan-project` (step 0's table row, "Wait, then read", "The QUESTIONs", "The last wait"), `shape-project`, `sdlc-install`, `sync-repo`, `sdlc-tune`, `PROCESS.md` ("Then wait for the answer") and `HARNESS.md` ("Waiting for an answer").
 
-**The two nits.** An escalation whose `by.actor.role` is null is answered as `<alias>/agent` (PROCESS.md, "A question asked of the agent", item 2). An answer the CLI refuses as over 1,000 characters is shortened and written once more, not treated as an outage.
+**The two nits.** An escalation whose `by.actor.role` is null is answered as `<alias>/agent` (PROCESS.md, "A question asked of the agent", item 2). An answer the CLI refuses with `invalid_clarification_answer` (over 1,000 characters) is shortened and written once more, not treated as an outage.
 
 ## Breakdown
 One task, LWY-183.1: text in the skills, PROCESS and HARNESS.
@@ -24,3 +24,5 @@ One task, LWY-183.1: text in the skills, PROCESS and HARNESS.
 | A skill carries on after one answer of several | LWY-183.1 | pin: the "every escalation of the round is answered" rule kept | R1 |
 | `wait: stop` harnesses start waits | LWY-183.1 | `build-targets --check`; the harness template's `wait: stop` text unchanged | R1 |
 | The script is changed after all | LWY-183.1 | `plugin/scripts/wait-answer.mjs` has no diff | R1 |
+| Exit 5 or a stop exit is handled for the whole round instead of one wait | LWY-183.1 | pins 4 and 5 on run's "Wait, then carry on" | R1 |
+| The two nits stay unfixed | LWY-183.1 | pins 6 and 7 on PROCESS.md (`<alias>/agent`; `invalid_clarification_answer` shortened and retried once) | R1 |

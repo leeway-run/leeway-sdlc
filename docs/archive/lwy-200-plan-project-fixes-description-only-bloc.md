@@ -23,9 +23,10 @@ Story: LWY-200. Shaping answers: e1 (running plan-project approves a shaped body
 ## Hazard register
 | Hazard | Owning task | The check that proves it closed | Rung |
 |---|---|---|---|
-| An old "a person's move" sentence survives in one of the files and contradicts the new rule | LWY-200.1 | pins on the rewritten sentences in each file named above; `moves-when-asked.test.mjs` rewritten, not deleted | R1 |
-| plan-project moves a story whose shaping is unfinished | LWY-200.1 | pin: the step 0 row still refuses `shape` and an open shaping escalation | R1 |
-| A RETURN, or an open QUESTION, moves to ready | LWY-200.1 | pin: the move is only on PASS, or after `# QUESTIONs applied` | R1 |
+| An old "a person's move" sentence survives in one of the files and contradicts the new rule | LWY-200.1 | pins on the rewritten sentences, and an absent-phrase pin over `plan-project/SKILL.md` and `PROCESS.md` (frontmatter, Done when, step 0's QUESTIONs rows and the Records table included) | R1 |
+| plan-project moves a story whose shaping is unfinished | LWY-200.1 | two pins: `shape` is not moved; an open shaping escalation is not moved | R1 |
+| A RETURN, an open QUESTION or unapplied answers move to ready | LWY-200.1 | three pins, one per condition | R1 |
+| An automatic round fixes without posting its report | LWY-200.2 | pin: each round goes through "Post the full report" as reviewer | R1 |
 | The loop runs forever or past 2 rounds | LWY-200.2 | pin: "at most 2" and the stop at the gate after them | R1 |
 | A BLOCKER that needs a decision is fixed silently | LWY-200.2 | pin: such a BLOCKER stops the loop; `# BLOCKERs fixed` lists every fix | R1 |
 | Automatic reports trip three RETURNs | LWY-200.2 | pin: step 0 excludes a report with a `# BLOCKERs fixed` reply | R1 |

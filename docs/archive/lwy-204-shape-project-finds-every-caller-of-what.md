@@ -15,3 +15,5 @@ One task, LWY-204.1.
 |---|---|---|---|
 | Every story gets the search (behaviour changes too), and shaping asks far more | LWY-204.1 | pin: the trigger is removes or replaces only, and behaviour-only stories are named as unchanged | R1 |
 | plan-project's product check does not flag a missed entry point | LWY-204.1 | pin on step 1's hidden-scope row | R1 |
+| An uncovered entry point is dropped without asking the PO | LWY-204.1 | pin: step 2 puts each into the round as a criterion or *Out of scope* | R1 |
+| The checklist says nothing, so planning's check has no source | LWY-204.1 | pin on the checklist's *Hidden scope* paragraph | R1 |
