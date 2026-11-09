@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execSync, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -89,7 +89,7 @@ test('every HARNESS.md says whether a run can count tokens, and one that cannot 
     } else {
       assert.match(flat, /leeway-sdlc-session-tokens --subagent-id <agent id>/)
       assert.match(flat, /leeway-sdlc-session-tokens --this-session --from <start> --to <end>/)
-      assert.match(flat, /a command with a variable in braces prompts whatever the allow-list says/)
+      assert.match(flat, /a command with a variable in braces prompts/)
       assert.match(flat, /that record leaves `--tokens` out/)
       assert.match(flat, /Never take `subagent_tokens` from the completion notice instead: it is the agent's final context size/)
       assert.match(flat, /Stamp a span's end in one tool call and run the script in a later one, never the same call or the same parallel batch/)
@@ -163,5 +163,64 @@ test('opencode: the plugin refuses a governed bash call by throwing', async () =
     governed(repo, 'off')
   } finally {
     rmSync(repo, { recursive: true, force: true })
+  }
+})
+
+// LWY-189.4: each other agent's "Permissions for an unattended run" says what Claude Code's says (plugin/HARNESS.md), with no mode
+// named and no rule written: the text is pinned exactly, so a code round that words it differently changes this test on purpose.
+const generatedHarnesses = () => readdirSync(join(KIT, 'harness')).map((f) => [f, readFileSync(join(KIT, 'harness', f), 'utf8')])
+const HEADING = '## Permissions for an unattended run'
+const sectionOf = (text) => new RegExp(`^${HEADING}\\n[\\s\\S]*?(?=^## |(?![\\s\\S]))`, 'm').exec(text)?.[0]
+const outsideSection = (text) => text.replace(sectionOf(text) ?? '', '')
+const expectedSection = (name) => `${HEADING}
+
+An unattended run uses ${name}'s own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
+
+UNVERIFIED: no mode has been tried here for ${name}, and none is named.`
+// Done-when grep of the task: neither wording survives anywhere, the permissions section included.
+const BANNED = /allow-list|allow rule|Say before the yes|question 16/i
+
+test('red-test-TC-1: every generated harness has exactly the pinned permissions section', () => {
+  const all = generatedHarnesses()
+  assert.equal(all.length, TARGETS.length)
+  for (const t of TARGETS) {
+    const text = all.find(([f]) => f === `${t.id}.md`)?.[1]
+    assert.ok(text, `${t.id}: no generated harness`)
+    assert.equal(sectionOf(text)?.trimEnd(), expectedSection(t.name), t.id)
+  }
+})
+
+test('red-test-TC-1: no target keeps a permissions field: no mode is pinned, because none has been run', () => {
+  for (const t of TARGETS) assert.equal(t.permissions, undefined, t.id)
+})
+
+test('TC-2 guard: no generated harness says allow-list, allow rule, Say before the yes or question 16 outside the permissions section', () => {
+  for (const [file, text] of generatedHarnesses()) assert.doesNotMatch(outsideSection(text), BANNED, file)
+})
+
+test('red-test-TC-1: scripts/targets.mjs has no line telling an agent to write a rule', () => {
+  const lines = readFileSync(join(ROOT, 'scripts', 'targets.mjs'), 'utf8').split('\n')
+  const hits = lines.map((l, i) => [i + 1, l]).filter(([, l]) => BANNED.test(l))
+  assert.deepEqual(hits, [])
+})
+
+// The generator's own check, on a copy, so a hand edit to targets/ is shown to fail without touching this tree.
+test('build-targets --check fails on a hand edit of a generated harness, and names the file', () => {
+  const copy = mkdtempSync(join(tmpdir(), 'leeway-handedit-'))
+  try {
+    for (const d of ['scripts', 'plugin', 'targets', 'agent-setup']) cpSync(join(ROOT, d), join(copy, d), { recursive: true })
+    const script = join(copy, 'scripts', 'build-targets.mjs')
+    const run = (...a) => spawnSync(process.execPath, [script, ...a], { cwd: copy, encoding: 'utf8' })
+    assert.equal(run().status, 0, 'the copy builds')
+    assert.equal(run('--check').status, 0, 'a fresh build checks clean')
+    const file = join(copy, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'harness', 'cursor.md')
+    writeFileSync(file, readFileSync(file, 'utf8') + '\nhand edit\n')
+    const r = run('--check')
+    assert.equal(r.status, 1)
+    assert.match(r.stderr, /harness\/cursor\.md/)
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
   }
 })

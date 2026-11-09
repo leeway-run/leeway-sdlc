@@ -223,23 +223,47 @@ test('the plan merges into main only on the person\'s word, and closes only once
   assert.match(section, /if it already reads `done`, leave it/);
 });
 
-test('gh pr merge stays off the unattended allow-list, so the merge prompts for the person\'s word', () => {
-  const prereqs = under(run, 'Unattended prerequisites');
-  assert.match(prereqs, /naming what a run calls and nothing more:/);
-  assert.equal(
-    from(prereqs, '**`gh pr merge` stays off', '- **A pre-push guard'),
-    "**`gh pr merge` stays off the allow-list**, always: it merges into `main` through GitHub, not by a push, so the pre-push guard does not cover it, and its prompt is where the person's yes is their word (\"When the plan merges into `main`\"). ",
-    'gh pr merge can be allow-listed, or the pre-push guard is said to cover it',
-  );
+// Replaces the check that sdlc-install says `git push` is "not added until the pre-push guard run names exists" and `gh pr merge`
+// "stays off it always" (LWY-189.2): the install writes no list, so it says neither.
+test('sdlc-install no longer says what stays off or goes on a list: it writes no rule for git push or gh pr merge', () => {
   const install = flat(read('skills/sdlc-install/SKILL.md'));
-  assert.match(install, /`git push` is not added until the pre-push guard run names exists, and `gh pr merge` stays off it always \(the pre-push guard does not cover a merge through GitHub\)\./);
+  assert.doesNotMatch(install, /`git push` is not added|`gh pr merge` stays off|stays off it always/);
+  assert.doesNotMatch(install, /`gh pr merge`/);
 });
 
-test('nothing outside that section merges the plan\'s pull request', () => {
-  const offList = from(under(run, 'Unattended prerequisites'), '**`gh pr merge` stays off', '- **A pre-push guard');
+// The paragraph on `gh pr merge` in "Unattended prerequisites": from its last mention before the pre-push guard bullet.
+const mergeParagraph = () => {
+  const prereqs = under(run, 'Unattended prerequisites');
+  const guardAt = prereqs.indexOf('- **A pre-push guard');
+  const at = prereqs.lastIndexOf('`gh pr merge`', guardAt);
+  return at < 0 ? '' : prereqs.slice(at, guardAt);
+};
+
+// A mention counts unless a negator stands directly before it ("no permission prompt", "writes no allow rule"): a "not"
+// elsewhere in the sentence excuses nothing.
+const NEGATED_BEFORE = /\b(no|not|never|without|none)\s+((write|writes|add|adds|keep|keeps|name|names|needs?)\s+)?((an?|the|any)\s+)?(permission\s+)?$/i;
+const mentions = (text, term) => {
+  const one = flat(text);
+  return [...one.matchAll(term)].filter((m) => !NEGATED_BEFORE.test(one.slice(0, m.index))).map((m) => m[0]);
+};
+const sentencesOf = (text) => flat(text).split(/(?<=[.!?;])\s+/);
+
+// Replaces the test that pinned "stays off the allow-list" and "its prompt is where the person's yes is their word".
+test('gh pr merge is held by the person\'s word, and no allow-list or permission prompt is tied to it', () => {
+  assert.match(merges(), /the plan merges into `main` on the person's word/i);
+  const para = mergeParagraph();
+  assert.ok(para.length > 0, 'no paragraph on `gh pr merge` in "Unattended prerequisites"');
+  assert.match(para, /person's word/);
+  assert.deepEqual(mentions(para, /allow[- ]?list|allow[- ]rules?|permission rules?/gi), [], 'a list is tied to the merge');
+  assert.deepEqual(mentions(para, /\bprompts?\b/gi), [], 'a permission prompt is tied to the merge');
+  const tied = sentencesOf(run).filter((s) => /merg/i.test(s) && mentions(s, /\bprompts?\b/gi).length > 0);
+  assert.deepEqual(tied, [], 'a sentence in run ties a merge to a prompt');
+});
+
+test('nothing outside that paragraph and "When the plan merges into `main`" merges the plan\'s pull request', () => {
   const rest = flat(run)
     .replace(merges(), '')
-    .replace(offList, '');
+    .replace(mergeParagraph(), '');
   assert.doesNotMatch(rest, MERGES);
 });
 
@@ -260,4 +284,36 @@ test('PROCESS.md says a plan is done once it has merged into main', () => {
   assert.match(done, /A plan is done once it has merged into `main`, on the person's word/);
   assert.match(done, /the Plan record goes `in_review`, .* `done` only once that pull request reads `merged`/);
   assert.match(done, /With no plan branch, .* the Plan record goes `done` only once every `done` story reads merged into `main`/);
+});
+
+test('the story gate prints its lines in this order, as one block', () => {
+  const block = [
+    'git -C <story worktree> push -u origin <story branch>',
+    'git -C <primary> fetch origin <base>',
+    'git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>',
+    'git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor HEAD <story branch>',
+    'git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>',
+    'git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>',
+    'git -C <primary> worktree remove <primary>/.worktrees/merge-<story>',
+    'git -C <primary> worktree remove <story worktree>',
+  ].join('\n   ');
+  assert.ok(run.includes(`\n   ${block}\n   \`\`\`\n`), 'the gate lines moved, or something came between them');
+});
+
+// The story gate's recheck of the base and its failure branches, and run's worktrees, as the allow-list test pinned them.
+const GATE = [
+  '**The base may have moved since step 1, and what step 2 gated is the story with the base as it was then.**',
+  'A non-zero exit from `merge-base --is-ancestor` means the base moved: remove this worktree and go back to step 1, before any merge, even one that would be clean, so nothing reaches the base ungated.',
+  'The check reads the merge worktree\'s detached `HEAD`, which only this worktree changes, because worktrees share `origin/<base>` and a parallel session\'s fetch moves it.',
+  'With that exit 0 the story already holds `HEAD`, so the merge cannot conflict.',
+  'If the merge fails all the same, a hook refused it: `git -C <primary> worktree remove --force <primary>/.worktrees/merge-<story>`, stop and say what git printed.',
+  '**If the merge push of `HEAD:<base>` fails,** whatever git printed, run `git -C <primary> fetch origin <base>` and `git -C <primary> merge-base --is-ancestor origin/<base> <story branch>`. Non-zero: the base moved, so remove this worktree and go back to step 1. Exit 0: it did not, so remove this worktree, stop and say what git printed.',
+  '**If the push of the story branch fails,** stop and say what git printed: nothing has merged, and step 1 merges only the base, so going back to it would not help.',
+  'only the first and last of those lines run, and in between comes that convention, such as `gh pr create --base <integration branch> --head <story branch> --title "<story title>" --body-file <body.md>`',
+  'A branch that already exists, on a resume, is added without `-b`.',
+  'The merge and plan-cut worktrees take no setup, and a repo whose hooks need one there must say so under *Per-worktree setup* in `.sdlc/CONFIG.md`.',];
+
+test('the story gate keeps its base-moved recheck, its two push-failure branches and the forced removal', () => {
+  const text = flat(run);
+  for (const needle of GATE) assert.ok(text.includes(needle), `run no longer says: ${needle}`);
 });

@@ -103,7 +103,7 @@ the one failure that corrupts everything downstream.**
 - **No token in any repo file.** `leeway login` keeps it on the machine. A subagent is never handed a
   token, and `leeway-guard` stops its writes.
 - **Verb first.** The plugin prints a call as `<cli> --server <server> <resource> <verb> <args> --as <alias>/<role> --json`,
-  because a permission rule matches the text before its first `*` as written (`run`, "Unattended prerequisites"). The CLI
+  because a harness that asks about a call matches it as written (`HARNESS.md`, "Permissions for an unattended run"). The CLI
   takes the flags on either side, so an attended skill that still prints them before the verb works: it only prompts.
 - Long bodies go in through `--stdin <field>`, so a brief or a verdict is not squeezed through a shell
   argument.
@@ -314,7 +314,7 @@ nothing and exits 2, with a line starting `raise:`: fix the file and raise again
 ran (not executable, or not on the `PATH`): stop the turn and say so. Write the file as JSON with the `Write` tool: in `run`, where run's other bodies go (run, "Where `run`'s own files go"); in
 any other skill, a file outside the repo, by absolute path. `"type"`, `"question"`, `"context"`, `"options"` and
 `"meanwhile"` always; `"tradeoff"`, `"advice"` and `"comment"` where the asker has them. The CLI's own raise, with
-the fields as flags, is off run's allow-list, so it prompts.
+the fields as flags, is not a call a run makes.
 
 An escalation is decided from what it carries, so a person can make the decision from the escalation alone, without
 opening the report behind it:
