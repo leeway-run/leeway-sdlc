@@ -137,7 +137,7 @@ test('every raise in a skill that waits is a site above, in a round a site waits
 // Each way plan-project's plan ends waits on the held stories' gaps before it stops.
 const endings = {
   'the plan gate': ['Raise the QUESTIONs, when the report has any', '### The QUESTIONs'],
-  'the QUESTIONs applied': ['what makes them applied.', '**Applying a QUESTION'],
+  'the QUESTIONs applied': ['what makes them applied.', '**The move follows'],
   '`ready` with no plan gate': ['**A type without a plan gate**', '**A type with one**'],
 };
 for (const [name, [lead, until]] of Object.entries(endings)) {
@@ -213,11 +213,11 @@ test('a person at the terminal does not stop install or tune from waiting', () =
 });
 
 test('no answer moves a story out of the shaped step or the plan gate', () => {
-  assert.match(skill('shape-project'), /No answer moves the story out of the shaped step: that move is the PO's\./);
-  assert.match(skill('plan-project'), /\*\*No answer moves a story out of the shaped step or the plan gate\*\*: those moves are a person's \(step 7\)\./);
+  assert.match(skill('shape-project'), /No answer moves the story out of the shaped step: running `plan-project` on it does, and is the approval of the body\./);
+  assert.match(skill('plan-project'), /\*\*No answer moves a story out of the shaped step or the plan gate\*\*: this skill makes those moves itself, on the conditions step 0's table and step 8 give\./);
   const questions = skill('plan-project');
-  assert.match(questions, /\*\*Applying a QUESTION's answer is not the gate decision\.\*\* It changes a description or a task and posts `# QUESTIONs applied`, and it never moves the story, whatever the answer says, even one that reads as a pass\./);
-  assert.match(questions, /Say so, and move nothing, so the story stays where it was, at the plan gate or at `ready`\. Then wait on the held stories' gaps/);
+  assert.match(questions, /\*\*The move follows `# QUESTIONs applied`, not the answer\.\*\* An answer changes a description or a task, and nothing more, whatever it says, even one that reads as a pass\./);
+  assert.match(questions, /what makes them applied\. Say so\. Then wait on the held stories' gaps/);
   assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops\./);
 });
 

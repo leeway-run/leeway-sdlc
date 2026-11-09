@@ -10,7 +10,7 @@ const skills = readdirSync(join(plugin, 'skills')).map((name) => [name, read(`sk
 const contract = read('PROCESS.md');
 
 // A table row whose first cell is the shaped step or the plan gate names the source of every sentence in it.
-const ROW_SOURCE = /^\| the (?:shaped step|plan gate) \|/;
+const ROW_SOURCE = /^\| the (?:shaped step|plan gate)(?:, [^|]*)? \|/;
 const sentences = (flat) => flat.split(/(?<=[.;!?]\**)\s+(?=[A-Z*`(_])|; | \| /);
 
 // Sentences; in a row whose first cell names the source, each sentence carries that cell.
@@ -36,7 +36,15 @@ const MOVE = /\b(?:mov(?:e|es|ed|ing)|drag(?:s|ged|ging)?)\b/;
 
 const writes = (text) => units(text).filter((u) => WRITE.test(u));
 const outOfGate = (u) => ROW_SOURCE.test(u) || SOURCE.test(u);
-const unasked = (text) => writes(text).filter((u) => outOfGate(u) && !ASKED.test(u));
+// The two moves plan-project makes on its own (LWY-200.1), each only on its condition and with its record: out of the shaped
+// step with no shaping escalation open, and to `ready` on a PASS, or on PASS WITH DECISIONS once `# QUESTIONs applied` is posted.
+const AUTOMATIC = [
+  /^\| the shaped step, with no shaping escalation open \| .*--step <the plan step's id>.*`# Planning started`/,
+  /^On a PASS(?! WITH)\b.*--status ready.*`# Moved to ready`/,
+  /^On PASS WITH DECISIONS, once every QUESTION is answered and the `# QUESTIONs applied` reply is posted\b.*--status ready.*`# Moved to ready`/,
+];
+const automatic = (u) => AUTOMATIC.some((re) => re.test(u));
+const unasked = (text) => writes(text).filter((u) => outOfGate(u) && !ASKED.test(u) && !automatic(u));
 const refusals = (text) => units(text).filter((u) => REFUSE.test(u) && MOVE.test(u));
 
 // A move whose source is named in an earlier sentence is invisible to `unasked`; pinning the count of these writes
@@ -47,12 +55,12 @@ const tally = (text) => {
   return Object.fromEntries(Object.entries(TARGETS).map(([k, re]) => [k, all.filter((u) => re.test(u)).length]));
 };
 const TALLY = {
-  'plan-project': { plan: 2, ready: 3, build: 0 },
+  'plan-project': { plan: 3, ready: 5, build: 0 },
   run: { plan: 0, ready: 0, build: 3 },
 };
 const NONE = { plan: 0, ready: 0, build: 0 };
 
-test('no skill moves a story out of the shaped step or the plan gate unless the person asked', () => {
+test('no skill moves a story out of the shaped step or the plan gate unless the person asked, or it is one of plan-project\'s two own moves', () => {
   for (const [name, text] of skills) assert.deepEqual(unasked(text), [], name);
 });
 
@@ -70,8 +78,23 @@ test('the scan reads the existing writes and tells them apart from a move out of
   const has = (re) => all.filter((u) => re.test(u));
   for (const re of [/--step <the plan step's id>/, /--status ready/, /--step build/, /--step <the shaped step's id>/, /--status done/]) {
     assert.ok(has(re).length > 0, `no write matching ${re}`);
-    assert.deepEqual(has(re).filter(outOfGate), [], String(re));
+    assert.deepEqual(has(re).filter((u) => outOfGate(u) && !automatic(u)), [], String(re));
   }
+});
+
+test('plan-project\'s two own moves are let through only on their condition and with their record', () => {
+  const plan = skills.find(([name]) => name === 'plan-project')[1];
+  const own = writes(plan).filter(automatic);
+  assert.equal(own.length, 3, own.join('\n'));
+  const planted = [
+    '| the shaped step, with a shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step\'s id>`, say so in the session, and post a comment opening `# Planning started` |',
+    '| the shaped step, with no shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step\'s id>`, then carry on |',
+    'On a PASS at the plan gate, move the story to `ready` with `<cli> --as <alias>/planner issue update <story> --status ready` (no step).',
+    'On a RETURN at the plan gate, move the story to `ready` with `<cli> --as <alias>/planner issue update <story> --status ready` and a comment opening `# Moved to ready`.',
+    'On PASS WITH DECISIONS, move the story out of the plan gate with `<cli> --as <alias>/planner issue update <story> --status ready` and a comment opening `# Moved to ready`.',
+  ];
+  for (const text of planted) assert.equal(unasked(`Intro.\n\n${text}\n`).length, 1, text);
+  for (const text of own) assert.deepEqual(unasked(`Intro.\n\n${text}\n`), [], text);
 });
 
 test('a planted unprompted move is caught, and the same move the person asked for is not', () => {
@@ -117,11 +140,12 @@ test('a sentence sending the person to the UI because the agent may not move it 
     assert.equal(refusals(`Intro.\n\n${planted}\n`).length, 1, planted);
 });
 
-test('PROCESS.md says any skill makes the move the person asks for, and none moves a shaped or gated story on its own', () => {
+test('PROCESS.md says any skill makes the move the person asks for, and only plan-project moves a shaped or gated story on its own', () => {
   const cast = contract.split(/\n(?=## )/).find((s) => s.startsWith('## The cast')).replace(/\s+/g, ' ');
   assert.match(cast, /\*\*A move the person asks for\.\*\* Any skill makes any move the person asks for in the session/);
   assert.match(cast, /`issue update <ref> --step <id>` or `--status <status>`, as `<alias>\/agent`, and then says which move it made, from where to where, and what it leaves unmet \(an open or unapplied QUESTION, no coverage report, no tasks\)\./);
-  assert.match(cast, /What no skill does is move a story out of the shaped step or the plan gate on its own initiative/);
+  assert.doesNotMatch(cast, /What no skill does is move a story out of the shaped step or the plan gate on its own initiative/);
+  assert.match(cast, /Only `plan-project` moves a story out of the shaped step or the plan gate on its own, on the conditions "Before the plan: shaping" and "The plan gate" give, and no other skill does: any other skill moves it only when a person asks\./);
   assert.match(contract, /\| `manual` \| .* It never does the work, and it moves the issue past it only when a person asks \("The cast"\) \|/);
   const run = skills.find(([name]) => name === 'run')[1].replace(/\s+/g, ' ');
   assert.match(run, /the plugin never does a manual step and moves the story past it only when the person asks \(`PROCESS\.md`, "The cast"\)\./);
@@ -130,5 +154,5 @@ test('PROCESS.md says any skill makes the move the person asks for, and none mov
 
 test('after a move the person asked for, plan-project restarts at step 0 only from the plan step, and otherwise stops', () => {
   const plan = skills.find(([name]) => name === 'plan-project')[1].replace(/\s+/g, ' ');
-  assert.match(plan, /say which move you made \(`PROCESS\.md`, "The cast"\)\. When that move put the story at the plan step, read the story again and start again at step 0\. After any other move, say where the story now is and stop: make no further move of your own\./);
+  assert.match(plan, /as `<alias>\/agent` and say which move you made \(`PROCESS\.md`, "The cast"\)\. When that move put the story at the plan step, read the story again and start again at step 0\. After any other move, say where the story now is and stop: make no further move of your own\./);
 });

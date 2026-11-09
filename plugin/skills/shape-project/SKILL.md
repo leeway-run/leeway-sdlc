@@ -72,7 +72,7 @@ escalations: re-invoking `shape-project` resumes from step 1, reading the answer
 writing nothing twice: step 1 reads the answers, a follow-up goes out as step 3 says and is waited on the same way,
 and with none, steps 4 and 5 propose and write the body and set the shaped step; an answer to the approval
 escalation is acted on as "When the approval round stays" says. No answer moves the story out of the shaped step:
-that move is the PO's.
+running `plan-project` on it does, and is the approval of the body.
 
 ## The line you do not cross
 
@@ -171,7 +171,7 @@ what the work is checked against, not its background.
 **Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
 that does is a follow-up: raise it as in step 3 and wait. A later round drops what an answer settled: it is not asked
 again, and it is not raised for confirmation. No escalation asks whether to write the body: the PO's
-answers are the approval, and moving the story on from the shaped step is theirs. The two exceptions are under
+answers are the shaping, and running `plan-project` on the story at the shaped step is the approval of the body. The two exceptions are under
 "When the approval round stays" below.
 
 **The shaped step** is the type's first step of kind `gate` after its `shape` step, with no `plan` step between
@@ -204,7 +204,7 @@ reviewer and the divergence reviewer all read.
 Then post **one** comment on the story: what the body says beyond the PO's answers (each thing you inferred,
 worded or left out, one line each), what is still `OPEN:`, and the summary if you wrote one. Set the shaped step,
 `<cli> --server <server> --as <alias>/agent issue update <ref> --step <the shaped step's id>`, and stop. The story
-waits there for the PO.
+waits there until `plan-project` is run on it, and running it approves the body: say so to the PO.
 
 ### When the approval round stays
 
@@ -233,8 +233,8 @@ serve it.
 
 If this round answered gaps a developer sent back, **reply to that comment** (`comment add <ref> --parent cN
 --stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The story goes back to `plan-project`
-when the PO moves it from the shaped step to the plan step, or, on a type with no shaped step, when the developer
-re-runs it; the reply tells them whether that is worth doing yet.
+when it is run on the story at the shaped step, or, on a type with no shaped step, when the developer
+re-runs it; the reply tells them whether that is worth doing yet. Running `plan-project` on the story approves the body.
 
 ## 6. A new story, or several
 

@@ -64,14 +64,14 @@ test('plan-project tells the shaped step from the plan gate, by kind and positio
   assert.match(orient, /by kind and position, never by id/);
 });
 
-test('plan-project starts where shaping ends, and a shaped story waits on the PO', () => {
+test('plan-project starts where shaping ends, moves a shaped story with no shaping escalation open, and refuses the rest', () => {
   const text = start();
   assert.match(text, /the first row that fits decides/);
   assert.match(text, /\| the plan step \| carry on \|/);
   assert.match(text, /\| no step at `backlog`, on a type with no `shape` step \| `<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>`, then carry on \|/);
-  assert.match(text, /\| the shaped step \| \*\*say the story waits on the PO, and stop\.\*\* Moving it to the plan step is their approval of the body\. Write nothing, and do not move it unless the person asks \(step 7\) \|/);
-  assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*.* Write nothing, and do not move it unless the person asks \(step 7\) \|/);
-  assert.match(text, /\| anywhere else \(`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later\) \|/);
+  assert.match(text, /\| the shaped step, with no shaping escalation open \| \`<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>\`, say so in the session, and post a comment opening \`# Planning started\` saying running plan-project was the approval of the body, then carry on \|/);
+  assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*: it was returned, or its session ended before step 8 moved it\. Write nothing, and move it only if the person asks \(step 7\) \|/);
+  assert.match(text, /\| anywhere else \(a step after the plan gate, \`ready\` or later\) \|/);
   assert.doesNotMatch(text, /--step plan\b/);
 });
 
@@ -83,7 +83,7 @@ test('on a type with shape but no shaped step, plan-project starts from shape af
   const rows = startRows();
   const row = rows.indexOf('`shape`, or no step at `backlog`, on a type with `shape` but no shaped step');
   assert.ok(row >= 0 && row < rows.findIndex((r) => r.startsWith('anywhere else')), rows.join('\n'));
-  assert.match(section(skill, '## 7. '), /Step 0 may set the plan step \(a type with no `shape`, or no shaped step\)/);
+  assert.match(section(skill, '## 7. '), /Step 0 may set the plan step \(a type with no \`shape\`, or no shaped step, or a story at the shaped step with no shaping escalation open\)/);
 });
 
 test('sending gaps back sets the story back to shape, and says what hands it back', () => {
@@ -93,24 +93,25 @@ test('sending gaps back sets the story back to shape, and says what hands it bac
   assert.match(gaps, /On a type with no shaped step, where shaping ends at `shape`, end with \*"Answer these with `shape-project` on `<ref>`, then re-run plan-project\."\* instead\./);
   const reply = section(shaping, '### A reply to the gaps sent back');
   assert.doesNotMatch(reply, /The developer re-runs `plan-project`;/);
-  assert.match(reply, /The story goes back to `plan-project` when the PO moves it from the shaped step to the plan step, or, on a type with no shaped step, when the developer re-runs it/);
+  assert.match(reply, /The story goes back to \`plan-project\` when it is run on the story at the shaped step, or, on a type with no shaped step, when the developer re-runs it/);
   const amended = section(shaping, '### When the approval round stays');
   assert.doesNotMatch(amended, /Their next `plan-project` rechecks/);
   assert.match(amended, /Once a person moves the story back to the plan step, `plan-project` rechecks the technical criteria and the tasks that serve it\./);
 });
 
-test('planning ends at the plan gate with the report, and the move to ready is a person\'s', () => {
+test('planning ends with the report, and the move to ready is plan-project\'s on a PASS', () => {
   const gate = section(skill, '## 8. ');
   const [withoutGate, withGate] = gate.split('**A type with one**');
   assert.match(withoutGate, /`issue update <story> --status ready` \(no step\)/);
-  assert.match(withGate, /^: `issue update <story> --step <the plan gate's id>`/);
+  assert.match(withGate, /^: \`issue update <story> --step <the plan gate's id>\`/);
   assert.doesNotMatch(withGate, /--status ready/);
   const report = section(skill, '### Post the full report, then stop at the gate');
   assert.match(report, /Post the \*\*full report\*\* as a comment on each story it covers/);
-  assert.match(report, /No escalation asks for the gate decision: the decision is the person's move\./);
-  assert.match(report, /\*\*Passing the gate\*\* is a person moving the story from the plan gate to `ready`\./);
-  assert.match(report, /\*\*Returning it\*\* is a person moving it back to the plan step\./);
-  assert.match(section(skill, '## 7. '), /The moves out of the shaped step and out of the plan gate are a person's\*\*: this skill never makes them on its own initiative\./);
+  assert.match(report, /No escalation asks for the gate decision: the verdict decides, and this skill makes the move\./);
+  assert.match(report, /A RETURN is not moved to \`ready\`: the story stays at the plan gate with its report, and a person moves it back to the plan step to return it to planning\./);
+  assert.match(report, /The gate is passed per story: one story of a plan moves to \`ready\` while another stays at the plan gate\./);
+  assert.match(report, /On a PASS, move the story to \`ready\` with \`<cli> --as <alias>\/planner issue update <story> --status ready\` \(no step\), and post a comment opening \`# Moved to ready\` naming the report's \`cN\` and its verdict\./);
+  assert.match(section(skill, '## 7. '), /The moves out of the shaped step and out of the plan gate are this skill's own\*\*: this skill makes them on its own/);
 });
 
 test('each QUESTION is a top-level comment of its own, and a report\'s QUESTIONs are the escalations on those comments', () => {
@@ -127,14 +128,14 @@ test('each QUESTION is a top-level comment of its own, and a report\'s QUESTIONs
 
 test('answered QUESTIONs are applied before the move, and the application is a reply on the report', () => {
   const questions = section(skill, '### The QUESTIONs');
-  assert.match(questions, /Say in the session, in this order: answer every QUESTION; this session applies the answers as they come \(if it has ended, run plan-project to apply them\); then move the story to `ready`\. `run` refuses the story until they are applied\./);
+  assert.match(questions, /Say in the session, in this order: answer every QUESTION; this session applies the answers as they come, then moves the story to \`ready\` \(if it has ended, run plan-project to apply them and move it\)\. \`run\` refuses the story until they are applied\./);
   assert.match(questions, /\*\*reply to the report\*\* \(`comment add <story> --parent cN --stdin body`\) with a body opening `# QUESTIONs applied`/);
   assert.match(questions, /That reply is what makes them applied\./);
-  assert.match(questions, /move nothing, so the story stays where it was, at the plan gate or at `ready`\./);
+  assert.match(questions, /On PASS WITH DECISIONS with a QUESTION still open, the story is not moved: it stays at the plan gate while it waits\./);
   const rows = startRows();
   const apply = rows.indexOf('the plan gate, or `ready` with no step, with the latest report\'s QUESTIONs answered and not applied (step 8, "The QUESTIONs")');
   assert.ok(apply >= 0 && apply < rows.indexOf('the plan gate') && apply < rows.findIndex((r) => r.startsWith('anywhere else')), rows.join('\n'));
-  assert.match(start(), /carry on at step 8, "The QUESTIONs": apply them, and move nothing unless the person asks \(step 7\) \|/);
+  assert.match(start(), /carry on at step 8, "The QUESTIONs": apply them, and where the latest report's verdict is PASS WITH DECISIONS and the story is still at the plan gate, move it to \`ready\` as that section says \|/);
 });
 
 test('returned and three or more RETURNs count only the reports since the latest of the move to ready, the move into planning from shaping, a re-plan answer and a re-plan request', () => {
@@ -175,12 +176,12 @@ test('PROCESS.md tells the two gates apart, and records the gate as a step', () 
   assert.match(runtime, /\| `gate` \| One of two, told apart by position, never by id\. The \*\*shaped step\*\*, a `gate` between `shape` and `plan`: shaping ends there .* The \*\*plan gate\*\*, the type's first `gate` after its `plan` step: planning ends there/);
   assert.doesNotMatch(runtime, /After a gate passes the orchestrator sets `--status ready`/);
   const shapingPart = section(contract, '## Before the plan: shaping');
-  assert.match(shapingPart, /\*\*Planning starts at the plan step\.\*\* .* `plan-project` starts only there, or where shaping ends on a type with no shaped step: from `shape` or from no step at `backlog`, setting the plan step itself, since the approval escalation was the approval\./);
-  assert.match(shapingPart, /On a story still at the shaped step it says the story waits on the product owner and stops, writing nothing\. A story it sends gaps back on goes back to `shape`\./);
+  assert.match(shapingPart, /\*\*Planning starts at the plan step\.\*\* Running \`plan-project\` on a story at the shaped step, with no shaping escalation open, is the approval of the body: it moves the story to the plan step itself and posts \`# Planning started\`, saying the run was the approval\. Where shaping ends on a type with no shaped step, it starts from \`shape\` or from no step at \`backlog\`, setting the plan step itself, since the approval escalation was the approval\./);
+  assert.match(shapingPart, /On a type with a shaped step, a story at \`shape\`, or one at the shaped step with a shaping escalation open, is not moved: \`plan-project\` says shaping is not finished and stops, writing nothing\. A story it sends gaps back on goes back to \`shape\`\./);
   const gatePart = section(contract, '## The plan gate');
-  assert.match(gatePart, /posts each QUESTION as its own top-level comment opening `# QUESTION <n> of c<report>` \(`c<report>` the report's first comment\) with one escalation on it, waits on them, and stops with the story at the plan gate\. A report's QUESTIONs are the escalations on those comments\./);
-  assert.match(gatePart, /No escalation asks for the gate decision: \*\*the decision is a person's move\.\*\* Moving the story from the plan gate to `ready` passes it; moving it back to the plan step returns it to planning\./);
-  assert.match(gatePart, /With QUESTIONs, the order is: answer them, let `plan-project` apply the answers \(the session waiting on them does, or a re-invoke once it has ended; it replies `# QUESTIONs applied` to the report and moves nothing\), then move the story to `ready`\./);
+  assert.match(gatePart, /posts each QUESTION as its own top-level comment opening \`# QUESTION <n> of c<report>\` \(\`c<report>\` the report's first comment\) with one escalation on it, and waits on them\. A report's QUESTIONs are the escalations on those comments\./);
+  assert.match(gatePart, /No escalation asks for the gate decision: \*\*the verdict decides, and \`plan-project\` makes the move, per story\.\*\* \`plan-project\` moves the story from the plan gate to \`ready\` on a PASS, with a \`# Moved to ready\` comment naming the report's \`cN\` and its verdict\. A RETURN stays at the plan gate: moving it back to the plan step returns it to planning\./);
+  assert.match(gatePart, /With QUESTIONs, the order is: answer them, and \`plan-project\` applies the answers \(the session waiting on them does, or a re-invoke once it has ended; it replies \`# QUESTIONs applied\` to the report\) and then moves the story to \`ready\` on PASS WITH DECISIONS, with the same comment\./);
   assert.match(gatePart, /it refuses a story with no coverage report, one still at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied\./);
-  assert.match(section(contract, '## Records'), /\| plan gate \| .* each QUESTION in it a top-level comment of its own opening `# QUESTION <n> of c<report>` \(`c<report>` the report's first comment\), with one escalation tied to that comment with `--comment cN`, and the answers applied as a reply to it opening `# QUESTIONs applied`; the story at the plan gate step, and the decision a person's move: to `ready` passes it, back to the plan step returns it \|/);
+  assert.match(section(contract, '## Records'), /\| plan gate \| .* each QUESTION in it a top-level comment of its own opening \`# QUESTION <n> of c<report>\` \(\`c<report>\` the report's first comment\), with one escalation tied to that comment with \`--comment cN\`, and the answers applied as a reply to it opening \`# QUESTIONs applied\`; the story at the plan gate step, then \`--status ready\` by \`plan-project\` on a PASS \(on PASS WITH DECISIONS after \`# QUESTIONs applied\`\), with a comment opening \`# Moved to ready\` that names the report's \`cN\` and its verdict; a RETURN stays at the plan gate, and moving it back to the plan step returns it \|/);
 });

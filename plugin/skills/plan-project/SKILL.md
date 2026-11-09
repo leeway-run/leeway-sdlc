@@ -1,6 +1,6 @@
 ---
 name: plan-project
-description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), interviews the developer on what the code leaves open, writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and ends at the plan gate (when the type has one) - an independent coverage review, then a person passes it by moving the issue to ready. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
+description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), interviews the developer on what the code leaves open, writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and ends at the plan gate (when the type has one) - an independent coverage review, then moves a passing issue to ready. Moves a shaped issue to the plan step. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
 ---
 
 # Plan a project
@@ -53,11 +53,13 @@ whatever happened.
    | the plan step | carry on |
    | `shape`, or no step at `backlog`, on a type with `shape` but no shaped step | with a body and no open escalation: `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on. Shaping ends at `shape` there, and the PO's yes to shape-project's approval escalation was the approval. With no body, or an escalation still open: **say shaping is not finished, and stop.** Write nothing |
    | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
-   | the shaped step | **say the story waits on the PO, and stop.** Moving it to the plan step is their approval of the body. Write nothing, and do not move it unless the person asks (step 7) |
-   | the plan gate, or `ready` with no step, with the latest report's QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and move nothing unless the person asks (step 7) |
-   | the plan gate, or `ready` with no step, with a QUESTION of the latest report open (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": wait on every open one at once ("Wait, then read"), raise a held one as it says, and apply them once every one is answered. Move nothing unless the person asks (step 7) |
-   | the plan gate | **say it waits on the gate, and stop**: a person passes it by moving the story to `ready`, or returns it by moving it to the plan step. Write nothing, and do not move it unless the person asks (step 7) |
-   | anywhere else (`shape` or no step on a type with a shaped step, a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
+   | `shape`, or no step at `backlog`, on a type with a shaped step | **say shaping is not finished, and stop.** Write nothing: planning starts once `shape-project` has set the shaped step |
+   | the shaped step, with a shaping escalation open | **say shaping is not finished, and stop.** Write nothing: the PO's open escalation comes first |
+   | the shaped step, with no shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, say so in the session, and post a comment opening `# Planning started` saying running plan-project was the approval of the body, then carry on |
+   | the plan gate, or `ready` with no step, with the latest report's QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and where the latest report's verdict is PASS WITH DECISIONS and the story is still at the plan gate, move it to `ready` as that section says |
+   | the plan gate, or `ready` with no step, with a QUESTION of the latest report open (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": wait on every open one at once ("Wait, then read"), raise a held one as it says, and apply them once every one is answered. The story moves only after they are applied |
+   | the plan gate | **say it waits on the gate, and stop**: it was returned, or its session ended before step 8 moved it. Write nothing, and move it only if the person asks (step 7) |
+   | anywhere else (a step after the plan gate, `ready` or later) | **say which step or status it is at and that planning starts when a person moves it to the plan step, and stop.** Write nothing |
 
    A story at the plan step that already has tasks or technical criteria is a re-plan: read step 1's note on it.
    Count its coverage reports (comments opening `# Plan coverage:`, step 8) posted since the latest of four marks:
@@ -100,8 +102,8 @@ whatever happened.
    product gaps once the rest of the plan is done (step 8, "The last wait"), since the stories that pass go on without them. **On an answer, and on resume**, read the
    answers with `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first
    thing not done, writing nothing twice: the step that raised it says where its answer leads. An open escalation
-   with no answer means do not proceed. **No answer moves a story out of the shaped step or the plan gate**: those
-   moves are a person's (step 7). With no `.sdlc/leeway.md` there is no binding and this skill cannot run.
+   with no answer means do not proceed. **No answer moves a story out of the shaped step or the plan gate**: this skill
+   makes those moves itself, on the conditions step 0's table and step 8 give. With no `.sdlc/leeway.md` there is no binding and this skill cannot run.
 
    **Check the round before raising it** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change another
    question, merge them into one, or hold the dependent one for the next round. Independent questions go out
@@ -565,9 +567,11 @@ before round 2** and say so inline (send the whole corrected text, after re-read
 
 A status or a step is set by `issue update --step <id>` or `--status <status>` and by nothing else: no comment, no
 escalation and no iteration moves a story. Setting a step sets the step's status in the same write. Step 0 may set
-the plan step (a type with no `shape`, or no shaped step); step 1 may set `shape`; step 8 sets the plan gate, or `--status ready` on a
-type without one. **The moves out of the shaped step and out of the plan gate are a person's**: this skill
-never makes them on its own initiative. When the person asks in the session for one, or for any other move, make it
+the plan step (a type with no `shape`, or no shaped step, or a story at the shaped step with no shaping escalation open); step 1 may set
+`shape`; step 8 sets the plan gate, then `--status ready` for a story that passed, or `--status ready` on a type without a plan gate.
+**The moves out of the shaped step and out of the plan gate are this skill's own**: this skill makes them on its own, on the conditions step 0's
+table and step 8 give, as `<alias>/planner`. It makes each move per story: in a plan of several stories, one moves out of the shaped step or
+the plan gate while another stays where it is. When the person asks in the session for any other move, or for one of these at another time, make it
 as `<alias>/agent` and say which move you made (`PROCESS.md`, "The cast"). When that move put the story at the plan
 step, read the story again and start again at step 0. After any other move, say where the story now is and stop:
 make no further move of your own.
@@ -581,8 +585,8 @@ step), story by story. Once every story of the plan is at `ready`, and not after
 gaps ("The last wait", below), and the skill ends.
 
 **A type with one**: `issue update <story> --step <the plan gate's id>`. You wrote the plan, so you are the one
-reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and a person decides by
-moving the story on.
+reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and its verdict decides
+whether the story moves on.
 
 ### Delegate to the divergence reviewer with ids, not a story
 
@@ -634,18 +638,22 @@ story's coverage table, every finding. Not a summary: the report reaches you as 
 written nowhere else. A report over the 20,000-character comment cap goes across the comment and a reply
 (`comment add <ref> --parent cN --stdin body`), never cut.
 
-**Planning ends here, with the story at the plan gate.** No escalation asks for the gate decision: the decision is
-the person's move. The verdict is the reviewer's recommendation; the decision is not the reviewer's and not yours.
-Say in the session, per story, the report's `cN`, its verdict and what each move means:
+**Planning ends here, with the story at the plan gate or at `ready`.** No escalation asks for the gate decision: the
+verdict decides, and this skill makes the move. The gate is passed per story: one story of a plan moves to `ready`
+while another stays at the plan gate. Say in the session, per story, the report's `cN`, its verdict and what
+happens to it.
 
-- **Passing the gate** is a person moving the story from the plan gate to `ready`. No step: `run` sets the build
-  step when it starts, so a story is never `in_progress` with nobody on it. **No task starts before that move.**
-- **Returning it** is a person moving it back to the plan step. The next `plan-project` fixes the items the
-  BLOCKERs name (step 0) and spawns a **fresh** reviewer — never the same one with a note about what changed. It is
-  still a fresh agent, given the previous report's `cN` and the mode. The next round posts its own report comment.
+On a PASS, move the story to `ready` with `<cli> --as <alias>/planner issue update <story> --status ready` (no step), and
+post a comment opening `# Moved to ready` naming the report's `cN` and its verdict. `run` sets the build step when it
+starts, so a story is never `in_progress` with nobody on it. **No task starts before that move.**
+
+A RETURN is not moved to `ready`: the story stays at the plan gate with its report, and a person moves it back to the
+plan step to return it to planning. The next `plan-project` fixes the items the BLOCKERs name (step 0) and spawns a
+**fresh** reviewer — never the same one with a note about what changed. It is still a fresh agent, given the
+previous report's `cN` and the mode. The next round posts its own report comment.
 
 Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers. Then, with QUESTIONs
-or none, wait on the held stories' gaps ("The last wait", below), and **stop**, with the story where it is.
+or none, wait on the held stories' gaps ("The last wait", below), and **stop**, each story at `ready` or at the plan gate.
 
 ### The QUESTIONs
 
@@ -665,21 +673,23 @@ that reply alone. Every other QUESTION goes out now, together.
 
 **A report's QUESTIONs are the escalations on the comments opening
 `# QUESTION … of c<report>`**; an escalation on no comment, or on the report itself, is not one. Say in the session,
-in this order: answer every QUESTION; this session applies the answers as they come (if it has ended, run
-plan-project to apply them); then move the story to `ready`. `run` refuses the story until they are applied.
+in this order: answer every QUESTION; this session applies the answers as they come, then moves the story to
+`ready` (if it has ended, run plan-project to apply them and move it). `run` refuses the story until they are applied.
 
 Wait on every QUESTION's escalation at once (step 0, "Wait, then read"). On an answer, or on resume, raise a held QUESTION (one the
 report has with no comment yet), unless an answer settled it, and wait on it the same way. When every one is
 answered, change what an answer changes in a description or a task, then **reply to the report** (`comment add
 <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line per escalation, its answer
 and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is
-what makes them applied. Say so, and move nothing, so the story stays where it was, at the plan gate or at
-`ready`. Then wait on the held stories' gaps ("The last wait", below), and stop.
+what makes them applied. Say so. Then wait on the held stories' gaps ("The last wait", below), and stop.
 
-**Applying a QUESTION's answer is not the gate decision.** It changes a description or a task and posts `# QUESTIONs
-applied`, and it never moves the story, whatever the answer says, even one that reads as a pass. Only a person's move
-takes the story from the plan gate to `ready` or back to the plan step, and this skill makes that move only when the
-person asks for it in the session (step 7).
+**The move follows `# QUESTIONs applied`, not the answer.** An answer changes a description or a task, and nothing
+more, whatever it says, even one that reads as a pass. On PASS WITH DECISIONS, once every QUESTION is answered and the
+`# QUESTIONs applied` reply is posted, move the story to `ready` with `<cli> --as <alias>/planner issue update <story> --status ready` (no step) and
+the same `# Moved to ready` comment as a PASS, naming the report's `cN` and its verdict. On PASS WITH DECISIONS with a QUESTION
+still open, the story is not moved: it stays at the plan gate while it waits. On PASS WITH DECISIONS with every QUESTION
+answered and no `# QUESTIONs applied` reply, the story is not moved: it stays at the plan gate until the reply is posted.
+A story already at `ready` is not moved again.
 
 **A person may pass the gate over a BLOCKER, and you may not.** You never downgrade a finding to get the plan
 moving.
@@ -737,5 +747,6 @@ design doc, and no escalation of its interview open. Every planned story has its
 a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
 *planned by* half on its Status line. Every story and task, and the Plan record, has a summary.
 And, for a type with a plan gate, the report is posted, every QUESTION in it is a comment of its own with an
-escalation on it, or held for the next round as "The QUESTIONs" says, and the story waits
-at the plan gate for a person to move it; for a type without one, the story is `--status ready`.
+escalation on it, or held for the next round as "The QUESTIONs" says, and the story waits at
+the plan gate where its report did not pass (a RETURN, or a QUESTION open or unapplied), and is at `ready` where it did (a PASS, or PASS WITH
+DECISIONS with every QUESTION applied); for a type without one, the story is `--status ready`.

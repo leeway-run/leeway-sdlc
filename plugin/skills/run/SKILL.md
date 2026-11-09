@@ -966,7 +966,7 @@ A refusal here writes nothing: say in the session which precondition failed and 
      reviewer's alias), opening `# Plan coverage:`. A gate that only existed in a conversation did not happen: with
      no report, the story was not gated.
    - **It has left the plan gate for `ready` or later**: `issue.status` is `ready`, `in_progress` or `in_review`,
-     and `issue.step` is not the plan gate or a step before it. A person passing the gate is that move. **A story
+     and `issue.step` is not the plan gate or a step before it. The move to `ready` is `plan-project`'s on a PASS, or a person's. **A story
      still at the plan gate waits on the gate.** One at a step before it is not planned.
    - **The latest report's QUESTIONs are answered and applied**: every escalation on a comment opening
      `# QUESTION … of c<report>`, where `c<report>` is that report's first comment, has an answer
