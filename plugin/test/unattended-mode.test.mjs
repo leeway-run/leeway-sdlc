@@ -135,3 +135,40 @@ test('negative: the printed call forms stay, in run and in both agents, with the
     assert.deepEqual(rulesNamed(text), [], file);
   }
 });
+
+// Fixed-string pins on text the allow-list test used to carry and that still holds: run's files and waits, HARNESS's script names and call forms, the agents' lane and `node -e` lines.
+const PINS = [
+  ['plugin/skills/run/SKILL.md', '`sdlc-install` offers to write it (question 16).'],
+  ['plugin/skills/run/SKILL.md', 'deciding from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD, which is how the story gate pushes.'],
+  ['plugin/skills/run/SKILL.md', '**Every call is printed verb first**'],
+  ['plugin/skills/run/SKILL.md', '**Where `run`\'s own files go.**'],
+  ['plugin/skills/run/SKILL.md', 'goes in `.worktrees/.run/` of the primary checkout, named after the ref and passed by absolute path'],
+  ['plugin/skills/run/SKILL.md', '`node -e` and the lane commands can run anything, including `leeway escalation answer`, and `leeway-guard` does not govern the orchestrator'],
+  ['plugin/skills/run/SKILL.md', '| any other | the wait never ran'],
+  ['plugin/skills/run/SKILL.md', 'and `worktree add` refuses a branch that is ("is already used by worktree")'],
+  ['plugin/skills/run/SKILL.md', 'its local `<base>` stays behind `origin/<base>` until its owner pulls'],
+  ['plugin/skills/run/SKILL.md', 'with at least one argument after the verb'],
+  ['plugin/skills/run/SKILL.md', '**You never answer your own escalation:** an answer is the person\'s'],
+  ['plugin/PROCESS.md', 'an attended skill that still prints them before the verb works: it only prompts'],
+  ['plugin/HARNESS.md', '**wait-answer:** `leeway-sdlc-wait-answer`'],
+  ['plugin/HARNESS.md', '**session-tokens:** `leeway-sdlc-session-tokens`'],
+  ['plugin/HARNESS.md', '**raise:** `leeway-sdlc-raise`'],
+  ['plugin/agents/sdlc-implementer.md', 'A lane runs as `cd <worktree> && <lane>`'],
+  ['plugin/agents/sdlc-reviewer.md', 'A lane runs as `cd <worktree> && <lane>`'],
+  ['plugin/agents/sdlc-reviewer.md', 'a mutation and its restore go through `node -e`'],
+  ['plugin/agents/sdlc-implementer.md', '**Deleting or renaming a file** goes through `node -e`'],
+  ['plugin/skills/run/SKILL.md', 'so there is no `mkdir`'],
+  ['plugin/HARNESS.md', 'A git verb takes at least one argument:'],
+  ['plugin/HARNESS.md', 'Start the session at the repo root'],
+  ['plugin/HARNESS.md', 'at a flag placed before the verb or at a call with no `--server`'],
+  ['plugin/HARNESS.md', 'A lane runs in a worktree as `cd <worktree> && <lane>`'],
+  ['plugin/HARNESS.md', 'an agent does these through `node -e`'],
+  ['plugin/agents/sdlc-implementer.md', 'A git verb takes at least one argument:'],
+  ['plugin/agents/sdlc-reviewer.md', 'A git verb takes at least one argument:'],
+  ['plugin/agents/sdlc-implementer.md', 'prompts on another form, `cd <path> && git` included.'],
+  ['plugin/agents/sdlc-reviewer.md', '`cd <path> && git` included.'],
+]
+
+test('the prose the allow-list test used to pin, where it still holds, is still said', () => {
+  for (const [path, needle] of PINS) assert.ok(flat(read(path)).includes(needle), `${path} no longer says: ${needle}`)
+})
