@@ -13,26 +13,35 @@ const skill = read('skills', 'plan-project', 'SKILL.md');
 const process_ = read('PROCESS.md');
 
 // The text from a heading line to the next heading of the same or a higher level; '' when there is no such heading.
+// A line inside a ``` fence is never a heading.
 function section(text, heading) {
   const level = /^#+/.exec(heading)[0].length;
   const lines = text.split('\n');
   const start = lines.findIndex((line) => line === heading);
   if (start < 0) return '';
   let end = lines.length;
+  let fenced = false;
   for (let i = start + 1; i < lines.length; i++) {
-    const m = /^(#+) /.exec(lines[i]);
+    if (/^\s*```/.test(lines[i])) { fenced = !fenced; continue; }
+    const m = !fenced && /^(#+) /.exec(lines[i]);
     if (m && m[1].length <= level) { end = i; break; }
   }
   return lines.slice(start, end).join('\n');
 }
 
+// Matching ignores case and curly apostrophes.
+const norm = (s) => s.toLowerCase().replace(/[\u2018\u2019]/g, "'");
+
 // A section as paragraphs and list items, each on one line, so a phrase wrapped across lines still matches.
-const blocks = (text) => text.split(/\n\n|\n(?=- |\d+\. )/).map((b) => b.replace(/\s+/g, ' ').trim());
-const blockWith = (text, ...phrases) => blocks(text).find((b) => phrases.every((p) => b.includes(p)));
+const blocks = (text) => text.split(/\n\n|\n(?=- |\d+\. )/).map((b) => norm(b.replace(/\s+/g, ' ').trim()));
+// The first block holding, for every argument, that phrase (a string) or one of those phrases (an array of variants).
+const blockWith = (text, ...groups) =>
+  blocks(text).find((b) => groups.every((g) => [].concat(g).some((p) => b.includes(norm(p)))));
 
 const reReview = section(reviewer, '## Re-review');
 const receive = section(reviewer, '## What you receive, and what you must not');
-const reportTemplate = section(reviewer, '## The report');
+// The report template: the fenced block that follows the "## The report" heading.
+const reportTemplate = (/```[a-z]*\n([\s\S]*?)\n```/.exec(section(reviewer, '## The report')) || [])[1] || '';
 const step8 = section(skill, '## 8. The plan gate');
 const delegate = section(skill, '### Delegate to the divergence reviewer with ids, not a story');
 const gate = process_.slice(process_.indexOf('## The plan gate'));
@@ -45,21 +54,30 @@ test('pin 1: the read log has a Fingerprint column, and the named node -e comman
   const header = reviewer.split('\n').find((line) => line.startsWith('| Item | Kind |'));
   assert.ok(header, 'the read log table header is missing');
   assert.ok(header.includes('| Fingerprint |'), `the read log has no Fingerprint column: ${header}`);
-  // The command: a fenced block right after a line naming "Fingerprint command"; one `node -e` line that
-  // reads the text on stdin and prints the first 12 hex characters of its SHA-256.
-  const m = /Fingerprint command[^\n]*\n+```[a-z]*\n([\s\S]*?)\n```/.exec(reviewer);
+  // The command: a fenced block right after a line naming "Fingerprint command"; one `node -e` line that prints the
+  // first 12 hex characters of the SHA-256 of the text, read on stdin or taken as an argument ($1).
+  const m = /fingerprint command[^\n]*\n+```[a-z]*\n([\s\S]*?)\n```/i.exec(reviewer);
   assert.ok(m, 'no fenced block follows a "Fingerprint command" line');
   const command = m[1].trim();
   assert.ok(command.startsWith('node -e'), `the command is not a node -e one-liner: ${command}`);
-  const run = spawnSync('bash', ['-c', command], { input: FIXED_INPUT, encoding: 'utf8' });
-  assert.equal(run.status, 0, run.stderr);
-  assert.equal(run.stdout.trim(), FIXED_FINGERPRINT);
+  // The text goes both ways, on stdin and as $1, so whichever form the command uses is given its input.
+  const run = (text) => spawnSync('bash', ['-c', command, 'fingerprint', text], { input: text, encoding: 'utf8' });
+  const first = run(FIXED_INPUT);
+  assert.equal(first.status, 0, first.stderr);
+  assert.equal(first.stdout.trim(), FIXED_FINGERPRINT);
+  const other = run('another text\n');
+  assert.equal(other.status, 0, other.stderr);
+  assert.match(other.stdout.trim(), /^[0-9a-f]{12}$/, 'the command does not compute the fingerprint of the text it is given');
+  assert.notEqual(other.stdout.trim(), FIXED_FINGERPRINT);
 });
 
 test('pin 2: a changed fingerprint, or an item missing from the previous read log, is read in full and traced', { skip: 'red-test-AC-1 / TC-2: reviewer has no Re-review section' }, () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
-    blockWith(reReview, 'fingerprint changed', 'missing from the previous read log', 'read in full and traced'),
+    blockWith(reReview,
+      ['fingerprint changed', 'changed fingerprint', 'fingerprint has changed', 'fingerprint differs'],
+      'missing from the previous read log',
+      ['read in full and traced', 'read in full, and traced', 'read in full and is traced']),
     'no paragraph of "## Re-review" says a changed fingerprint or an item missing from the previous read log is read in full and traced',
   );
 });
@@ -67,16 +85,19 @@ test('pin 2: a changed fingerprint, or an item missing from the previous read lo
 test('pin 3: ## Earlier findings lists every finding of the previous report, closed or not closed', { skip: 'red-test-AC-1 / TC-3: reviewer has no Earlier findings section' }, () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
-    blockWith(reReview, '## Earlier findings', 'every finding of the previous report', 'closed or not closed'),
+    blockWith(reReview,
+      '## Earlier findings',
+      ['every finding of the previous report', 'every finding in the previous report', 'every earlier finding', 'every finding from the previous report'],
+      ['closed or not closed', 'closed and not closed', 'whether closed or not', 'closed or open', 'closed and open']),
     'no paragraph of "## Re-review" says ## Earlier findings lists every finding of the previous report, closed or not closed',
   );
-  assert.ok(reportTemplate.includes('\n## Earlier findings\n'), 'the report template has no "## Earlier findings" heading');
+  assert.ok(reportTemplate.split('\n').includes('## Earlier findings'), 'the fenced report template has no "## Earlier findings" heading line');
 });
 
 test('pin 4: a new finding on an unchanged item is marked missed earlier and keeps its tag', { skip: 'red-test-AC-2 / TC-3: reviewer has no missed earlier rule' }, () => {
   assert.ok(reReview, 'the reviewer has no "## Re-review" section');
   assert.ok(
-    blockWith(reReview, 'unchanged', '`missed earlier`', 'keeps its tag'),
+    blockWith(reReview, 'unchanged', '`missed earlier`', ['keeps its tag', 'keeps the tag', 'keeps its own tag', 'keeps its severity tag']),
     'no paragraph of "## Re-review" says a new finding on an unchanged item is marked `missed earlier` and keeps its tag',
   );
 });
@@ -87,47 +108,56 @@ test('pin 5: the reviewer never reads the planner replies, and reads its own con
     '"What you receive" does not say to never read the planner replies `# QUESTIONs applied` and `# BLOCKERs fixed` (posted `--as <alias>/planner`)',
   );
   assert.ok(
-    blockWith(receive, '<alias>/reviewer', "your own report's continuation"),
+    blockWith(receive, '<alias>/reviewer', ["your own report's continuation", 'your own continuation', "your report's continuation"]),
     '"What you receive" does not say to read your own report\'s continuation, a reply posted `--as <alias>/reviewer`',
   );
-  assert.ok(receive.includes('never the planner\'s summary') || receive.includes('You never receive the planner\'s summary'), 'the planner\'s-summary rule is gone');
+  assert.ok(blockWith(receive, ["never the planner's summary", "never receive the planner's summary"]), "the planner's-summary rule is gone");
 });
 
 test('pin 6: plan-project step 8 passes, per story, that story\'s previous report cN and the mode', { skip: 'red-test-TC-2: step 8 passes no previous report or mode' }, () => {
   assert.ok(
-    blockWith(delegate, 'per story', "that story's previous report `cN`", '`re-review`', '`full`'),
+    blockWith(delegate,
+      ['per story', 'for each story', "each story's", 'for every story'],
+      ['previous report `cn`', "previous report's `cn`"],
+      '`re-review`',
+      '`full`'),
     'no item of "Delegate to the divergence reviewer" passes, per story, that story\'s previous report `cN` and the mode (`re-review` or `full`)',
   );
   assert.ok(
-    blockWith(step8, 'missing from the previous read log', 'counts as changed'),
+    blockWith(step8, 'missing from the previous read log', ['counts as changed', 'count as changed', 'is changed', 'is treated as changed']),
     'step 8 does not say an item missing from the previous read log counts as changed',
   );
 });
 
 test('pin 7: step 8 makes it full when a thread step into shape follows the previous report', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule after reshaping' }, () => {
   assert.ok(
-    blockWith(step8, 'a thread `step` into `shape` after the previous report', 'full'),
+    blockWith(step8,
+      '`step` into `shape`',
+      ['after the previous report', 'follows the previous report', 'following the previous report', 'since the previous report'],
+      'full'),
     'step 8 does not say the mode is full when a thread `step` into `shape` follows the previous report',
   );
 });
 
 test('pin 8: step 8 makes it full when the person asks in the session', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule when asked' }, () => {
   assert.ok(
-    blockWith(step8, 'the person asks for one in the session', 'full'),
-    'step 8 does not say the mode is full when the person asks for one in the session',
+    blockWith(step8, ['asks in the session', 'asks for one in the session', 'asks for a full review in the session', 'asks for a full one in the session'], 'full'),
+    'step 8 does not say the mode is full when the person asks (for one) in the session',
   );
 });
 
 test('pin 9: step 8 makes it full when the previous report has no Fingerprint column', { skip: 'red-test-TC-4: step 8 has no full rule for an old report' }, () => {
   assert.ok(
-    blockWith(step8, 'the previous report has no `Fingerprint` column', 'full'),
+    blockWith(step8,
+      ['previous report has no `fingerprint` column', 'previous report lacks a `fingerprint` column', 'previous report without a `fingerprint` column', 'previous report has no fingerprint column'],
+      'full'),
     'step 8 does not say the mode is full when the previous report has no `Fingerprint` column',
   );
 });
 
 test('pin 10: step 8 treats a TC change alone as a re-review', { skip: 'red-test-AC-3 / TC-4: step 8 has no TC-change rule' }, () => {
   assert.ok(
-    blockWith(step8, 'a TC change alone is a re-review'),
+    blockWith(step8, ['tc change alone', 'tc change included', 'tc change is'], ['re-review', 'does not make', 'not full']),
     'step 8 does not say a TC change alone is a re-review',
   );
 });
