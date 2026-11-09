@@ -590,6 +590,13 @@ gaps ("The last wait", below), and the skill ends.
 reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and a person decides by
 moving the story on.
 
+### Trace it yourself first
+
+Before you delegate, trace the plan against its own criteria. Map every AC and TC clause to the task that delivers it
+and the named test that fails without it. Map every field or capability one task uses to the task that builds it. Fix
+every gap in the task descriptions and the hazard register (step 4's register, in the design doc) before you delegate.
+The mapping is written nowhere: not posted as a comment, not in the design doc, not in the reviewer's prompt.
+
 ### Delegate to the divergence reviewer with ids, not a story
 
 Delegate to the **sdlc-divergence-reviewer** agent, fresh, as `HARNESS.md` describes; where it says
