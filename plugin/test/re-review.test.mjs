@@ -38,6 +38,17 @@ const blocks = (text) => text.split(/\n\n|\n(?=- |\d+\. )/).map((b) => norm(b.re
 const blockWith = (text, ...groups) =>
   blocks(text).find((b) => groups.every((g) => [].concat(g).some((p) => b.includes(norm(p)))));
 
+// Sentences of a block (already normalised), backticks dropped, so a negation is found whatever the markup.
+const sentences = (block) => block.replace(/`/g, '').split(/(?<=[.!?;])\s+/);
+const has = (s, groups) => groups.every((g) => [].concat(g).some((p) => s.includes(norm(p).replace(/`/g, ''))));
+// Like blockWith, but no sentence of the block that holds the `trigger` phrase may also hold a `banned` one,
+// so "The mode is not full when ..." does not satisfy "The mode is full when ...". Sentences without the trigger are not
+// checked: the rule for a TC change ("... does not make it full") can share a block with them.
+const blockWithout = (text, groups, trigger, banned) =>
+  blocks(text).find((b) => groups.every((g) => [].concat(g).some((p) => b.includes(norm(p)))) &&
+    !sentences(b).some((x) => has(x, [trigger]) && banned.some((p) => x.includes(p))));
+const NOT_FULL = ['not full', 'never full', 'not be full', "isn't full", 'not the full', 'never the full'];
+
 const reReview = section(reviewer, '## Re-review');
 const receive = section(reviewer, '## What you receive, and what you must not');
 // The report template: the fenced block that follows the "## The report" heading.
@@ -124,41 +135,45 @@ test('pin 6: plan-project step 8 passes, per story, that story\'s previous repor
     'no item of "Delegate to the divergence reviewer" passes, per story, that story\'s previous report `cN` and the mode (`re-review` or `full`)',
   );
   assert.ok(
-    blockWith(step8, 'missing from the previous read log', ['counts as changed', 'count as changed', 'is changed', 'is treated as changed']),
+    blockWithout(step8, ['missing from the previous read log', ['counts as changed', 'count as changed', 'is changed', 'is treated as changed']],
+      'missing from the previous read log', ['not count', 'never count', 'not treated', 'never treated', 'not changed', 'never changed', "doesn't count"]),
     'step 8 does not say an item missing from the previous read log counts as changed',
   );
 });
 
 test('pin 7: step 8 makes it full when a thread step into shape follows the previous report', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule after reshaping' }, () => {
   assert.ok(
-    blockWith(step8,
-      '`step` into `shape`',
-      ['after the previous report', 'follows the previous report', 'following the previous report', 'since the previous report'],
-      'full'),
+    blockWithout(step8,
+      ['`step` into `shape`', ['after the previous report', 'follows the previous report', 'following the previous report', 'since the previous report'], 'full'],
+      'into shape', NOT_FULL),
     'step 8 does not say the mode is full when a thread `step` into `shape` follows the previous report',
   );
 });
 
 test('pin 8: step 8 makes it full when the person asks in the session', { skip: 'red-test-AC-3 / TC-4: step 8 has no full rule when asked' }, () => {
   assert.ok(
-    blockWith(step8, ['asks in the session', 'asks for one in the session', 'asks for a full review in the session', 'asks for a full one in the session'], 'full'),
+    blockWithout(step8,
+      [['asks in the session', 'asks for one in the session', 'asks for a full review in the session', 'asks for a full one in the session'], 'full'],
+      'in the session', NOT_FULL),
     'step 8 does not say the mode is full when the person asks (for one) in the session',
   );
 });
 
 test('pin 9: step 8 makes it full when the previous report has no Fingerprint column', { skip: 'red-test-TC-4: step 8 has no full rule for an old report' }, () => {
   assert.ok(
-    blockWith(step8,
-      ['previous report has no `fingerprint` column', 'previous report lacks a `fingerprint` column', 'previous report without a `fingerprint` column', 'previous report has no fingerprint column'],
-      'full'),
+    blockWithout(step8,
+      [['previous report has no `fingerprint` column', 'previous report lacks a `fingerprint` column', 'previous report without a `fingerprint` column', 'previous report has no fingerprint column'], 'full'],
+      'fingerprint', NOT_FULL),
     'step 8 does not say the mode is full when the previous report has no `Fingerprint` column',
   );
 });
 
 test('pin 10: step 8 treats a TC change alone as a re-review', { skip: 'red-test-AC-3 / TC-4: step 8 has no TC-change rule' }, () => {
   assert.ok(
-    blockWith(step8, ['tc change alone', 'tc change included', 'tc change is'], ['re-review', 'does not make', 'not full']),
-    'step 8 does not say a TC change alone is a re-review',
+    blocks(step8).some((b) => sentences(b).some((x) =>
+      has(x, ['tc change', ['alone', 'included'], ['is a re-review', 'otherwise a re-review', 'does not make it full', 'does not make a review full', 'does not make the review full', 'not full']]) &&
+      !['is full', 'is a full', 'makes it full', 'makes a review full', 'makes the review full', 'not a re-review', 'never a re-review', 'not make it a re-review'].some((p) => x.includes(p)))),
+    'step 8 does not say, in one sentence, that a TC change alone is a re-review and does not make a review full',
   );
 });
 
