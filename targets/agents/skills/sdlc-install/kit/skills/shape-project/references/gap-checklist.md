@@ -50,6 +50,8 @@ The capabilities the story assumes exist and do not: a screen, a setting, a kind
 integration. Check the code for each. A capability nobody noticed was missing is how a three-task
 story becomes a seven-task story halfway through.
 
+A story that removes or replaces a capability names every entry point to it, in a criterion or under *Out of scope*: the callers, routes, controls that open it, commands and links the code has. One the body leaves out is hidden scope.
+
 Hidden scope is a product question only when it needs a **scope decision**: build it in this story
 (a criterion), give the user something else for now (a fallback), or leave it out (*Out of scope*,
 with where it went instead). Whether an endpoint, a column or an event exists, and how to build it,

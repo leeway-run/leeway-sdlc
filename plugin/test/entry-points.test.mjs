@@ -32,26 +32,26 @@ const hiddenScopeRow = () => {
 };
 
 // Pin 1: skills/shape-project/SKILL.md, step 2.
-test('shape-project step 2 searches for every caller and entry point only when a story removes or replaces a capability', { skip: 'red-test-AC-1: pin 1 (TC-1), step 2 has no entry-point search yet' }, () => {
+test('shape-project step 2 searches for every caller and entry point only when a story removes or replaces a capability', () => {
   assert.match(stepTwo(), /When a story removes or replaces a capability, search the code for every caller and entry point to it/);
 });
 
 // Pin 2: skills/shape-project/SKILL.md, step 2.
-test('shape-project step 2 shapes a story that only changes behaviour as today', { skip: 'red-test-AC-1: pin 2 (negative case), step 2 does not exempt behaviour-only stories yet' }, () => {
+test('shape-project step 2 shapes a story that only changes behaviour as today', () => {
   assert.match(stepTwo(), /A story that only changes how something behaves, removing or replacing nothing, is shaped as today/);
 });
 
 // Pin 3: skills/shape-project/SKILL.md, step 2.
-test('shape-project step 2 puts each uncovered entry point into the round as a criterion or Out of scope', { skip: 'red-test-AC-1: pin 3 (TC-1), step 2 does not ask about entry points yet' }, () => {
+test('shape-project step 2 puts each uncovered entry point into the round as a criterion or Out of scope', () => {
   assert.match(stepTwo(), /Each entry point the story does not already cover goes into the round as a choice: cover it in a criterion, or leave it under \*Out of scope\*/);
 });
 
 // Pin 4: skills/shape-project/references/gap-checklist.md, ## Hidden scope.
-test('the gap checklist Hidden scope names a removed or replaced capability entry points in a criterion or Out of scope', { skip: 'red-test-AC-2: pin 4 (TC-2), Hidden scope says nothing about entry points yet' }, () => {
+test('the gap checklist Hidden scope names a removed or replaced capability entry points in a criterion or Out of scope', () => {
   assert.match(hiddenScope(), /A story that removes or replaces a capability names every entry point to it, in a criterion or under \*Out of scope\*/);
 });
 
 // Pin 5: skills/plan-project/SKILL.md, step 1, the **hidden scope** row.
-test('plan-project step 1 hidden scope row flags an entry point to a removed or replaced capability the body does not name', { skip: 'red-test-AC-2: pin 5 (TC-2), the hidden scope row has no entry-point clause yet' }, () => {
+test('plan-project step 1 hidden scope row flags an entry point to a removed or replaced capability the body does not name', () => {
   assert.match(hiddenScopeRow(), /an entry point to a removed or replaced capability that the body does not name/);
 });
