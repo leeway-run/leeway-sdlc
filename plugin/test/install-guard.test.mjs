@@ -162,3 +162,38 @@ test('a hook or core.hooksPath already in the way is never overwritten, and noth
     }
   }
 });
+
+// What counts as a pre-push guard and when the install can write one (detection.md), and the lines of the try (SKILL.md), as the allow-list test pinned them.
+const DETECTION = [
+  'git rev-parse --git-path hooks/pre-push',
+  'judged on the push `run` makes: `push origin HEAD:<base>` from a linked worktree, and at the story gate from a detached one.',
+  'git ls-tree origin/<integration branch> -- <that path> # for a relative core.hooksPath: tracked there, mode 100755?',
+  'git config --get core.hooksPath # set here or globally? Exit 1 when it is not',
+  'What counts is an executable file at that path that refuses an update to the integration branch and a force push, deciding from the refs git passes on its stdin, so it refuses `HEAD:<integration branch>` from a detached HEAD',
+  'A hook keyed on the current branch, such as one reading `git rev-parse --abbrev-ref HEAD`, does not count: it refuses `git push origin main` on `main` and lets `HEAD:main` through from any other checkout.',
+  'It can sit in `.git/hooks` or under `core.hooksPath`, which a relative value resolves against the checkout\'s root.',
+  'A relative `core.hooksPath` is therefore per checkout: it counts only when the hook file is tracked and executable on the integration branch, as the second command prints.',
+  'If that ref is missing the command is fatal, and a relative path can\'t count: say so as the reason. It reads the ref as of the last fetch.',
+  'Report what you found, and why a hook you found does not count.',
+  'One that is ignored or generated, such as Husky\'s `.husky/_`, does not count, because the merge worktree takes no setup.',
+  'a `pre-push.sample`, a file that is not executable, a hook in a directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could not read to that effect.',
+  'a `pre-push` there that does not count, an unexecutable or a dangling one included, and any `core.hooksPath`, because with one set git runs nothing from `.git/hooks`.',
+  'A `pre-push.sample` is not in the way.',
+  'The guard goes in `.git/hooks`, never under a tracked `core.hooksPath`: all of a clone\'s worktrees share it from the moment it is written, the merge worktree too.',
+  'so it does nothing until the hook has reached the integration branch, which the guard itself refuses a push to; its setting is per clone anyway, and it would silently stop every hook already in `.git/hooks`.',
+  'What that costs is that the guard isn\'t versioned: each clone gets it by running the install.',
+  'The guard the install writes counts by the rule above.',];
+const TRY = [
+  'Otherwise create its directory, write `scaffold/hooks/pre-push.tmpl` in this skill to that path, with `{{INTEGRATION_BRANCH}}` filled from the integration branch, make it executable',
+  'mkdir -p "$(dirname <that path>)" # before the write: git prints the path even when a clone has no hooks directory',
+  'chmod +x <that path> # after the write',];
+
+test('detection says what counts as a pre-push guard and where the install may write one', () => {
+  const text = flat(detection);
+  for (const needle of DETECTION) assert.ok(text.includes(needle), `detection.md no longer says: ${needle}`);
+});
+
+test('the install writes the guard with these steps and tries it', () => {
+  const text = flat(skill);
+  for (const needle of TRY) assert.ok(text.includes(needle), `SKILL.md no longer says: ${needle}`);
+});

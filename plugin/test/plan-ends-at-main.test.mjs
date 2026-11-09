@@ -285,3 +285,35 @@ test('PROCESS.md says a plan is done once it has merged into main', () => {
   assert.match(done, /the Plan record goes `in_review`, .* `done` only once that pull request reads `merged`/);
   assert.match(done, /With no plan branch, .* the Plan record goes `done` only once every `done` story reads merged into `main`/);
 });
+
+test('the story gate prints its lines in this order, as one block', () => {
+  const block = [
+    'git -C <story worktree> push -u origin <story branch>',
+    'git -C <primary> fetch origin <base>',
+    'git -C <primary> worktree add --detach <primary>/.worktrees/merge-<story> origin/<base>',
+    'git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor HEAD <story branch>',
+    'git -C <primary>/.worktrees/merge-<story> merge --no-ff -F <message file> <story branch>',
+    'git -C <primary>/.worktrees/merge-<story> push origin HEAD:<base>',
+    'git -C <primary> worktree remove <primary>/.worktrees/merge-<story>',
+    'git -C <primary> worktree remove <story worktree>',
+  ].join('\n   ');
+  assert.ok(run.includes(`\n   ${block}\n   \`\`\`\n`), 'the gate lines moved, or something came between them');
+});
+
+// The story gate's recheck of the base and its failure branches, and run's worktrees, as the allow-list test pinned them.
+const GATE = [
+  '**The base may have moved since step 1, and what step 2 gated is the story with the base as it was then.**',
+  'A non-zero exit from `merge-base --is-ancestor` means the base moved: remove this worktree and go back to step 1, before any merge, even one that would be clean, so nothing reaches the base ungated.',
+  'The check reads the merge worktree\'s detached `HEAD`, which only this worktree changes, because worktrees share `origin/<base>` and a parallel session\'s fetch moves it.',
+  'With that exit 0 the story already holds `HEAD`, so the merge cannot conflict.',
+  'If the merge fails all the same, a hook refused it: `git -C <primary> worktree remove --force <primary>/.worktrees/merge-<story>`, stop and say what git printed.',
+  '**If the merge push of `HEAD:<base>` fails,** whatever git printed, run `git -C <primary> fetch origin <base>` and `git -C <primary> merge-base --is-ancestor origin/<base> <story branch>`. Non-zero: the base moved, so remove this worktree and go back to step 1. Exit 0: it did not, so remove this worktree, stop and say what git printed.',
+  '**If the push of the story branch fails,** stop and say what git printed: nothing has merged, and step 1 merges only the base, so going back to it would not help.',
+  'only the first and last of those lines run, and in between comes that convention, such as `gh pr create --base <integration branch> --head <story branch> --title "<story title>" --body-file <body.md>`',
+  'A branch that already exists, on a resume, is added without `-b`.',
+  'The merge and plan-cut worktrees take no setup, and a repo whose hooks need one there must say so under *Per-worktree setup* in `.sdlc/CONFIG.md`.',];
+
+test('the story gate keeps its base-moved recheck, its two push-failure branches and the forced removal', () => {
+  const text = flat(run);
+  for (const needle of GATE) assert.ok(text.includes(needle), `run no longer says: ${needle}`);
+});

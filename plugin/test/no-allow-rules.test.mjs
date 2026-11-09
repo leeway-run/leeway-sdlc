@@ -1,6 +1,7 @@
 // LWY-189.5, TC-1 and TC-7: nothing the plugin ships tells an agent to write a permission rule, and every call `run` prints
 // keeps the form a harness that asks about a call matches as written (verb first with `--server`, git as `git -C <path> <verb>`).
 // Replaces allow-list.test.mjs, which pinned 0.3.0's allow-list text.
+// The scan reads Markdown, templates, TOML, JSON and the hook and adapter scripts (.mjs, .js) whole; plugin/test/ and *.test.mjs are left out.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,23 +13,24 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const read = (path) => readFileSync(join(ROOT, path), 'utf8').replace(/\r\n/g, '\n')
 const flat = (text) => text.replace(/\s+/g, ' ')
 
-// ---- The scan: every Markdown and template file under plugin/ and targets/, the generated harnesses included.
-// plugin/test/ is left out: its tests and fixtures quote what they forbid, and 0.3.0's table is a fixture.
-const SCANNED = /\.(md|tmpl)$/
+// ---- The scan: every Markdown, template, TOML, JSON, .mjs and .js file under plugin/ and targets/, the generated harnesses included.
+const SCANNED = /\.(md|tmpl|toml|json|mjs|js)$/
 const filesUnder = (dir) =>
   readdirSync(join(ROOT, dir), { withFileTypes: true }).flatMap((e) => {
     const path = `${dir}/${e.name}`
-    if (e.isDirectory()) return path === 'plugin/test' ? [] : filesUnder(path)
-    return SCANNED.test(e.name) ? [path] : []
+    if (e.isDirectory()) return path === 'plugin/test' || e.name === 'node_modules' ? [] : filesUnder(path)
+    return SCANNED.test(e.name) && !/\.test\.mjs$/.test(e.name) ? [path] : []
   })
 const FILES = [...filesUnder('plugin'), ...filesUnder('targets')]
 
-// A rule-shaped token: a tool name, an open bracket and a pattern.
-const RULE = /\b(?:Bash|Edit|Read)\([^)\s]/g
+// A rule-shaped token: a tool name, an open bracket and a pattern, or an MCP tool's name.
+const RULE = /\b(?:(?:Edit|Read|Write|Glob|Grep|WebFetch)\(\s*[^)\s]|(?:[Bb]ash|[Ww]eb[Ff]etch) ?\(\s*[^)\s]|mcp__\w+)/g
 // The phrases for the thing the plugin no longer writes.
-const PHRASE = /allow[- ]list|permissions\.allow|allow rules?\b/gi
+const PHRASE = /allow[- ]list|permissions\.(?:allow|deny)|allow rules?\b|approval rules?|allowed[- ]?tools|permission rules?/gi
+const WRITES = /\b(?:add|adds|write|writes|writing|put|puts|extend|extends)\b/i
+const REMOVES = /\b(?:remove[sd]?|delete[sd]?|no longer)\b/i
 
-// The two places that may name them: sync-repo, which removes the rules 0.3.0 wrote, and a sentence saying the plugin writes none.
+// May name them: sync-repo between its two markers and where it removes or names 0.3.0's, and a sentence saying the plugin writes none.
 const SYNC_REPO = /^(plugin|targets\/agents)\/skills\/sync-repo\/SKILL\.md$/
 const FORMS_FROM = "**The forms of run's 0.3.0 allow-list.**"
 const FORMS_TO = '**Never synced, never compared, never opened for writing:**'
@@ -39,8 +41,10 @@ const findings = (path, text) => {
   let formsFrom = Infinity
   let formsTo = Infinity
   if (SYNC_REPO.test(path)) {
-    formsFrom = lines.findIndex((l) => l.includes(FORMS_FROM)) + 1 || Infinity
-    formsTo = lines.findIndex((l) => l.includes(FORMS_TO)) + 1 || Infinity
+    const from = lines.findIndex((l) => l.includes(FORMS_FROM)) + 1
+    const to = lines.findIndex((l) => l.includes(FORMS_TO)) + 1
+    if (!from || !to || to <= from) found.push({ path, line: 1, why: "sync-repo's 0.3.0 region markers moved" })
+    else [formsFrom, formsTo] = [from, to]
   }
   const paragraphOf = (n) => {
     let a = n
@@ -48,6 +52,11 @@ const findings = (path, text) => {
     while (a > 0 && lines[a - 1].trim()) a--
     while (b < lines.length - 1 && lines[b + 1].trim()) b++
     return lines.slice(a, b + 1).join(' ')
+  }
+  // A sentence excuses its phrase only when it says the plugin writes none and no clause after that writes one.
+  const writesNone = (sentence) => {
+    const at = sentence.search(/\bwrites no\b/)
+    return at !== -1 && !WRITES.test(sentence.slice(at + 'writes no'.length))
   }
   lines.forEach((line, i) => {
     const n = i + 1
@@ -57,10 +66,10 @@ const findings = (path, text) => {
     }
     for (const m of line.matchAll(PHRASE)) {
       const paragraph = flat(paragraphOf(i))
-      // Every sentence of the paragraph that holds the phrase must say the plugin writes none.
       const holding = paragraph.split(/(?<=\.)\s+/).filter((s) => s.toLowerCase().includes(m[0].toLowerCase()))
-      if (holding.length && holding.every((s) => /\bwrites no\b/.test(s))) continue
-      if (SYNC_REPO.test(path) && paragraph.includes('0.3.0')) continue
+      if (holding.length && holding.every(writesNone)) continue
+      if (SYNC_REPO.test(path) && paragraph.includes('0.3.0') && REMOVES.test(paragraph)) continue
+      if (SYNC_REPO.test(path) && line.slice(0, m.index).endsWith('0.3.0 ') && holding.every((s) => !WRITES.test(s))) continue
       found.push({ path, line: n, why: `"${m[0]}" outside a line that says the plugin writes none or that sync-repo removes 0.3.0's` })
       break
     }
@@ -90,14 +99,42 @@ test('the scan fails on an instruction to write a rule, and passes on what the p
   assert.equal(hit('x\n\nAdd `Bash(git -C * diff *)`\n')[0].line, 3)
   assert.deepEqual(hit('The plugin writes no allow rule\nand no permission setting.'), [])
   assert.deepEqual(hit('Gemini wires `.gemini/settings.json`, and OpenCode `opencode.json` `instructions`.'), [])
-  // A sentence that says it writes none excuses its own sentence, not the one after it.
+  // A "writes no" sentence excuses itself only: not the next sentence, nor a later clause that writes one.
   assert.equal(hit('The plugin writes no allow rule. Add an allow rule for git.').length, 1)
-  // sync-repo's 0.3.0 copy is excused there and nowhere else.
+  assert.equal(hit('The plugin writes no allow rule, so add an allow rule.').length, 1)
+  // Other spellings of a rule or of the list.
+  for (const text of [
+    'Add `Bash (git -C * diff *)`.',
+    'Add `bash(git status:*)`.',
+    'Add Write(/.worktrees/**).',
+    'Add WebFetch(domain:x.com).',
+    'Add Glob(**).',
+    'Add Grep(x).',
+    'Allow mcp__leeway__issue_get.',
+    'Add Edit( /x ).',
+    'Set the allowed tools.',
+    'Set "allowedTools": [].',
+    'Add the approval rules.',
+    'Add a permission rule.',
+    'Add it to permissions.deny.',
+  ]) assert.equal(hit(text).length, 1, text)
+  // sync-repo's 0.3.0 copy is excused between its two markers and nowhere else.
   const sync = `a\n\n${FORMS_FROM} The 0.3.0 list:\n\n- \`Bash(node -e *)\`\n\n${FORMS_TO}\n\nAdd \`Bash(node -e *)\`\n`
-  assert.deepEqual(hit(sync, 'plugin/skills/sync-repo/SKILL.md').map((f) => f.line), [9])
+  const syncPath = 'plugin/skills/sync-repo/SKILL.md'
+  assert.deepEqual(hit(sync, syncPath).map((f) => f.line), [9])
   assert.equal(hit(sync).length, 3)
-  assert.equal(hit("run's 0.3.0 allow-list is removed.", 'plugin/skills/sync-repo/SKILL.md').length, 0)
+  // A marker renamed, missing or reversed fails, and a rule after it is still found.
+  const unmarked = sync.replace(FORMS_TO, '**Never synced:**')
+  assert.deepEqual(hit(unmarked, syncPath).map((f) => f.why).filter((w) => w.includes('region markers moved')).length, 1)
+  assert.ok(hit(`${unmarked}Add \`Bash(git -C * diff *)\`.\n`, syncPath).some((f) => f.why.startsWith('a permission rule')))
+  assert.ok(hit(sync.replace(FORMS_FROM, '**Renamed:**'), syncPath).some((f) => f.why.includes('region markers moved')))
+  assert.ok(hit(`${FORMS_TO}\n\n${FORMS_FROM}\n`, syncPath).some((f) => f.why.includes('region markers moved')))
+  const marked = (text) => `${FORMS_FROM}\n\n${FORMS_TO}\n\n${text}\n`
+  assert.equal(hit(marked("run's 0.3.0 allow-list is removed."), syncPath).length, 0)
   assert.equal(hit("run's 0.3.0 allow-list is removed.").length, 1)
+  // A 0.3.0 paragraph is excused where it removes, and a write instruction in one is not.
+  assert.equal(hit(marked('Since 0.3.0, write an allow rule and add it to permissions.allow, per the allow-list.'), syncPath).length, 1)
+  assert.equal(hit(marked('The 0.3.0 allow-list has no plugin file.'), syncPath).length, 0)
 })
 
 // ---- Every call the plugin prints where a run reads it: run, its two templates, PROCESS.md and both agent files.
@@ -162,7 +199,7 @@ const subcommands = (command) => {
   return parts.map((p) => p.trim()).filter(Boolean)
 }
 
-// In run, the read-only paragraph names forms to say what a subagent may not do, so its spans are held to exactly those.
+// In run, the read-only paragraph's spans are held to exactly the list in the test below.
 const denials = [run.indexOf('**How it reaches Leeway**, in these words'), run.indexOf('> **You never ask the user')]
 const PARSED = Object.entries({
   run: run.slice(0, denials[0]) + run.slice(denials[1]),
@@ -192,6 +229,9 @@ const fill = (call) =>
     .replace(/^leeway\b/, `${CLI} --server ${SERVER}`)
     .replace(/^<cli> --server <server>/, `${CLI} --server ${SERVER}`)
     .replace(/^<cli>(?= )/, CLI)
+    .replace(/^<wait-answer>/, 'leeway-sdlc-wait-answer')
+    .replace(/^<session-tokens>/, 'leeway-sdlc-session-tokens')
+    .replace(/^<raise>/, 'leeway-sdlc-raise')
     .replace(/<(lane|gate command|setup command)>/g, 'mylane x')
     .replace(/<[^<>]+>/g, 'x')
 
@@ -203,6 +243,16 @@ const wrongWith = (call) => {
   for (const sub of subs) {
     if (/^git\s/.test(sub) && !/^git -C \S+ [a-z]/.test(sub)) return 'not git -C <path> <verb>'
     if (sub.startsWith(`${CLI} `) && !/^\S+ --server \S+ [a-z][a-z-]* [a-z][a-z-]*/.test(sub)) return 'not verb first with --server'
+  }
+  return null
+}
+
+// The programs a printed call may start with: Leeway's CLI, git, a lane, the plugin's scripts, node, gh, echo and pwd.
+const PROGRAMS = new Set([CLI, 'git', 'cd', 'node', 'gh', 'echo', 'pwd', 'mylane', 'leeway-sdlc-wait-answer', 'leeway-sdlc-session-tokens', 'leeway-sdlc-raise'])
+const unknownProgram = (call) => {
+  for (const sub of subcommands(fill(call))) {
+    const program = sub.replace(/^(?:[A-Za-z_]+=\S* )+/, '').split(/\s/)[0]
+    if (!PROGRAMS.has(program)) return program
   }
   return null
 }
@@ -243,9 +293,27 @@ test('every line of a sh fence keeps its form', () => {
     for (const line of shell) {
       if (/^(leeway|git|<cli>)\b/.test(line)) n++
       assert.equal(wrongWith(line), null, `${name}: ${line}`)
+      assert.equal(unknownProgram(line), null, `${name}: a program this does not know: ${line}`)
     }
   }
   assert.ok(n > 40, `only ${n} fence lines found`)
+})
+
+test('an unknown program in a sh fence fails, and so do a path, a variable, a subshell and an assignment', () => {
+  for (const bad of ['rm -rf x', './scripts/x.sh --force', '/bin/rm -rf x', '$LEEWAY issue delete X', '(cd x && rm y)', 'foo=1 rm x', 'git -C x status | xargs rm']) {
+    assert.notEqual(unknownProgram(bad), null, bad)
+  }
+  for (const good of ['leeway issue get <ref> --json | node -e "x"', 'FOO=1 git -C x status', '<raise> --server <server> --as <alias>/<role> <ref> <fields file> -- <cli>', 'cd <worktree> && <lane>']) {
+    assert.equal(unknownProgram(good), null, good)
+  }
+})
+
+test('the counting one-liner is printed in run verb first, with the server, as a sh fence line', () => {
+  const lines = parsed('run').shell.filter((l) => /^(leeway|<cli>)\b.* --json \| node -e /.test(l))
+  assert.equal(lines.length, 1, 'the counting one-liner moved or is printed more than once')
+  assert.match(lines[0], /^leeway issue get <ref> --json \| node -e '/)
+  assert.equal(wrongWith(lines[0]), null)
+  assert.notEqual(wrongWith(lines[0].replace('issue get <ref> --json', '--json issue get <ref>')), null)
 })
 
 test('a "$ " line of a template keeps its form, and a fence with no language holds nothing else', () => {

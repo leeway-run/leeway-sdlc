@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +11,7 @@ import { TARGETS, harness } from '../../scripts/targets.mjs'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SERVER = 'https://s.test'
+const flat = (text) => text.replace(/\s+/g, ' ')
 
 for (const [name, script] of [['leeway-sdlc-wait-answer', 'wait-answer.mjs'], ['leeway-sdlc-session-tokens', 'session-tokens.mjs'], ['leeway-sdlc-raise', 'raise.mjs']]) {
   test(`${name} runs ${script} and hands back its exit code`, { skip: process.platform === 'win32' }, () => {
@@ -66,4 +67,17 @@ test('other agents run the scripts from .sdlc/kit, where the build copies them, 
   assert.throws(() => statSync(join(ROOT, 'targets', 'agents', 'bin')))
   assert.ok(statSync(join(ROOT, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'scripts', 'wait-answer.mjs')))
   assert.ok(statSync(join(ROOT, 'targets', 'agents', 'skills', 'sdlc-install', 'kit', 'scripts', 'raise.mjs')))
+})
+
+// The Claude Code version bin/ needs and the claude.ai and Cowork notice, in the README, HARNESS and both manifests.
+const NOTICES = [
+  ['plugin/HARNESS.md', 'Claude Code 2.1.91 and later'],
+  ['README.md', 'version 2.1.91 or later'],
+  ['plugin/HARNESS.md', 'claude.ai and Cowork don\'t install a plugin with a top-level `bin/`'],
+  ['README.md', 'claude.ai and Cowork don\'t install a plugin that has one'],
+  ['.claude-plugin/marketplace.json', 'Claude Code 2.1.91 or later only: claude.ai and Cowork don\'t install a plugin with a top-level bin/'],
+  ['plugin/.claude-plugin/plugin.json', 'Claude Code 2.1.91 or later only: claude.ai and Cowork don\'t install a plugin with a top-level bin/'],]
+
+test('the README, HARNESS and both manifests say bin/ needs Claude Code 2.1.91 and is not installed by claude.ai or Cowork', () => {
+  for (const [path, needle] of NOTICES) assert.ok(flat(readFileSync(join(ROOT, path), 'utf8')).includes(needle), `${path} no longer says: ${needle}`)
 })
