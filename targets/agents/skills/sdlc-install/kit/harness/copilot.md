@@ -80,10 +80,11 @@ After writing them: Nothing to trust: Copilot runs `.github/hooks/*.json` from t
 
 ## Permissions for an unattended run
 
-run's allow-list ("Unattended prerequisites") goes in `.github/copilot/settings.json` (`permissions`), or `--allow-tool` flags for one run. Write each entry in that file's format.
+An unattended run uses GitHub Copilot (CLI and VS Code agent mode)'s own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
 
-**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how GitHub Copilot (CLI and VS Code agent mode) matches a rule against a command with flags.
-No form has been tried here, so a yes may still prompt.
+UNVERIFIED: no mode has been tried here for GitHub Copilot (CLI and VS Code agent mode), and none is named.
 
 ## Installed version, update and restart
 

@@ -80,10 +80,11 @@ After writing them: Run `/hooks-trust` in Grok so it runs `.grok/hooks/leeway-sd
 
 ## Permissions for an unattended run
 
-run's allow-list ("Unattended prerequisites") goes in `~/.grok/config.toml` or the project's `.grok/` settings (permission rules). Write each entry in that file's format.
+An unattended run uses xAI Grok Build's own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
 
-**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how xAI Grok Build matches a rule against a command with flags.
-No form has been tried here, so a yes may still prompt.
+UNVERIFIED: no mode has been tried here for xAI Grok Build, and none is named.
 
 ## Installed version, update and restart
 

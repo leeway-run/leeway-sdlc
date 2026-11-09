@@ -23,7 +23,6 @@ export const TARGETS = [
     floorImport: 'read-first',
     delegate:
       'Ask for the named agent explicitly, for example "spawn the `sdlc-implementer` agent with this prompt: …". Custom agents are `.codex/agents/<name>.toml`. UNVERIFIED: that the main agent selects a custom agent by name; if it starts a generic one instead, stop and say so rather than running the loop without the agent\'s instructions.',
-    permissions: '`.codex/config.toml` (approval policy and sandbox), or the `/approvals` setting for one person.',
     wait: null,
     installed: 'the leeway-sdlc entry under `/plugins` in the Codex TUI.',
     refresh: '`codex plugin marketplace add leeway-run/leeway-sdlc` refreshes the marketplace; the new version is in `targets/agents/HARNESS.md` there.',
@@ -52,7 +51,6 @@ export const TARGETS = [
     floorImport: 'read-first',
     delegate:
       'Delegate to the custom agent by name: in Copilot CLI the `task` tool with the agent `sdlc-implementer` (or ask "use the sdlc-implementer agent to …"); in VS Code, `runSubagent` with that agent. Agents are `.github/agents/<name>.agent.md`.',
-    permissions: '`.github/copilot/settings.json` (`permissions`), or `--allow-tool` flags for one run.',
     wait: null,
     installed: '`copilot plugin list`.',
     refresh: '`copilot plugin marketplace update` where it was installed from a marketplace; otherwise the install command again.',
@@ -92,7 +90,6 @@ export const TARGETS = [
     floorImport: '@',
     delegate:
       'Each agent in `.gemini/agents/` is a tool of the same name: call the `sdlc-implementer` tool with the prompt. A subagent cannot start another one.',
-    permissions: '`.gemini/settings.json` (`tools.allowed`), or `--allowed-tools` for one run.',
     wait: null,
     installed: '`gemini skills list`.',
     refresh: 'the install command again; the new version is in `targets/agents/HARNESS.md` of `leeway-run/leeway-sdlc`.',
@@ -116,7 +113,6 @@ export const TARGETS = [
     instructionsFile: 'AGENTS.md',
     floorImport: 'read-first',
     delegate: 'Ask for the subagent by name ("use the sdlc-implementer subagent to …", or `/sdlc-implementer`). Agents are `.cursor/agents/<name>.md`.',
-    permissions: '`.cursor/cli.json` (`permissions.allow`) for the CLI; the agent settings for the editor.',
     wait: null,
     installed: '`npx skills list -a cursor`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
@@ -142,7 +138,6 @@ export const TARGETS = [
     floorImport: 'read-first',
     floorSetting: 'also add the ENGINEERING path to `instructions` in `opencode.json` (OpenCode does not follow `@` imports).',
     delegate: 'Use the Task tool with `subagent_type` set to the agent name, for example `sdlc-implementer`. Agents are `.opencode/agents/<name>.md` with `mode: subagent`.',
-    permissions: '`opencode.json` (`permission.bash`).',
     wait: null,
     installed: '`npx skills list -a opencode`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
@@ -179,7 +174,6 @@ export const LeewaySdlcGuard = async ({ directory } = {}) => ({
     instructionsFile: 'AGENTS.md',
     floorImport: 'read-first',
     delegate: 'Delegate to the custom subagent by name ("use the sdlc-implementer subagent to …"). Agents are `.grok/agents/<name>.md`. UNVERIFIED: the delegation tool\'s name.',
-    permissions: '`~/.grok/config.toml` or the project\'s `.grok/` settings (permission rules).',
     wait: null,
     installed: '`grok inspect` (lists skills).',
     refresh: 'nothing to refresh: the update command fetches the latest.',
@@ -285,10 +279,11 @@ After writing them: ${t.after}
 
 ## Permissions for an unattended run
 
-run's allow-list ("Unattended prerequisites") goes in ${t.permissions} Write each entry in that file's format.
+An unattended run uses ${t.name}'s own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
 
-**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how ${t.name} matches a rule against a command with flags.
-No form has been tried here, so a yes may still prompt.
+UNVERIFIED: no mode has been tried here for ${t.name}, and none is named.
 
 ## Installed version, update and restart
 

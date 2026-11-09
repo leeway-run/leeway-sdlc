@@ -80,10 +80,11 @@ After writing them: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.
 
 ## Permissions for an unattended run
 
-run's allow-list ("Unattended prerequisites") goes in `opencode.json` (`permission.bash`). Write each entry in that file's format.
+An unattended run uses OpenCode's own unattended or auto-approve mode, if it has one, which the person starts: the run
+does not turn it on, and the plugin writes no rule and no setting for it. Without such a mode, a person approves each
+prompt, and the run is attended; run ("Unattended prerequisites") says what else an unattended run needs.
 
-**Say before the yes (sdlc-install, question 16).** UNVERIFIED: how OpenCode matches a rule against a command with flags.
-No form has been tried here, so a yes may still prompt.
+UNVERIFIED: no mode has been tried here for OpenCode, and none is named.
 
 ## Installed version, update and restart
 

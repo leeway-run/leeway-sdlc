@@ -212,19 +212,6 @@ removal. With no block yet, either found is what sdlc-install's question 13 asks
 is asked. When the file already has a `leeway-sdlc:begin` block, an earlier install settled question 13, so
 skip only its part: the repeated sections, what the block lacks, and the removal.
 
-**An existing allow-list.** In the place `HARNESS.md`, "Permissions for an unattended run", names, which of
-run's allow-list entries ("Unattended prerequisites") are already there, in the form that place's harness gives. Question
-16 offers only the missing ones. An entry an earlier install or the person wrote is never removed, but report it when it is
-out of date:
-
-- **Dead, matches nothing `run` prints:** a flag-less entry an install before 0.3.0 wrote, such as `Bash(leeway spend record:*)`
-  or `Bash(git commit:*)`, a kit script's per-version path, such as `Bash(node <...>/cache/<marketplace>/leeway-sdlc/<version>/scripts/wait-answer.mjs:*)`,
-  and the `escalation raise` rule, which `run` no longer calls: it raises through `<raise>`.
-  These are harmless and can be deleted by hand; the new rules do their work.
-- **Too wide:** an entry that covers the verbs `run` leaves off, such as `Bash(<cli> --server <server> *)` or `Bash(leeway *)`.
-  Say that while it stays, `escalation answer`, the deletes and any new CLI verb run with no prompt, and that it is the
-  person's to remove.
-
 **A pre-push guard.** Whether the repo already has the guard `run` requires ("Unattended prerequisites"), judged on the
 push `run` makes: `push origin HEAD:<base>` from a linked worktree, and at the story gate from a detached one.
 
@@ -246,10 +233,7 @@ count, because the merge worktree takes no setup. Nor do these: a `pre-push.samp
 directory git is not pointed at (`.githooks/` with no `core.hooksPath`), a `pre-push` that only lints, and one you could
 not read to that effect.
 
-Report what you found, and why a hook you found does not count. Question 16 tells the person the truth by it. With no guard, `push` is not
-a missing entry, but the guard is: with every other entry there, question 16 still comes back, so a repo already at fourteen rules gets the offer. An existing push rule with no guard, `Bash(git -C * push *)` or
-a wider one that matches it, is reported as too wide: while it stays, a push runs with no prompt and nothing refuses it, so one
-wrong argument reaches the integration branch, and it is the person's to remove.
+Report what you found, and why a hook you found does not count. Question 16 tells the person the truth by it.
 
 **Whether the install can write a guard.** With no guard that counts, question 16 makes its offer only when the third command
 prints nothing, nothing is at the first command's path and the integration branch's name has no `'`, which git allows and the script's single quotes do not. Anything else is in the way, and is reported: a `pre-push` there that
