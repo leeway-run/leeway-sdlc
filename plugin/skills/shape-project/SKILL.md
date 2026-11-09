@@ -63,8 +63,8 @@ today in that area and what is unclear, never only "see cN". **No pick:** no `"a
 answer means do not proceed. With no `.sdlc/leeway.md` there is no binding and this skill cannot run: stop and
 say so.
 
-**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on each open
-escalation of the round in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`):
+**Wait, then carry on.** Raise each with `<raise>` (`escalation.escalation` in what it prints is the `eN`), then wait on the round
+as `run` does: start one background wait per open escalation of the round, all together (`run`, "Wait, then carry on", with this skill in place of `run`):
 say once what you wait on and until when, start the wait as `HARNESS.md`, "Waiting for an answer", says, answer a
 question the PO asks of you and wait again (exit 5), and write nothing while one is open. On any exit but 0 and 5,
 or where `HARNESS.md` says `wait: stop`, stop the turn as run's table says, naming the story and its open
@@ -113,6 +113,8 @@ where it is offered, a permission check, a scan, a size or format limit, a dupli
 cleanup that deletes. Each is a product question for the PO — *"today import only works where
 document import is switched on; should this follow the same switch?"* — because a story that is
 silent about a rule the code enforces either breaks it or inherits it without anyone deciding.
+
+**Look for every way in to what the story takes away.** When a story removes or replaces a capability, search the code for every caller and entry point to it: a function or component's callers, the routes, the UI controls that open it, the commands, the links. Each entry point the story does not already cover goes into the round as a choice: cover it in a criterion, or leave it under *Out of scope*. Raise it in step 3's round as the hidden scope it is, merged with any question one answer would settle (the round rule there). A story that only changes how something behaves, removing or replacing nothing, is shaped as today: this search does not run.
 
 You change nothing in the repo. This session writes only to Leeway.
 

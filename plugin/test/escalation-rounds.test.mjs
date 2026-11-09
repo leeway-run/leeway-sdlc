@@ -62,7 +62,7 @@ test('PROCESS.md says a QUESTION can be held, and sends the reader to plan-proje
 test('run raises independent questions together and does not hide the friction proposal behind a wait', () => {
   const text = skill('run');
   assert.match(text, /\*\*Check the round before raising more than one\*\*/);
-  assert.match(text, /Independent ones are raised together, not rationed behind a wait, and waited on one after another/);
+  assert.match(text, /Independent ones are raised together, not rationed behind a wait, and waited on all together \("Wait, then carry on"\)/);
   assert.match(text, /A brief with a second block raises it in the same round/);
   assert.match(text, /A verdict with more than one `Escalates:` block raises them all in this round/);
   assert.match(text, /\*\*Debt proposals from one verdict are one round\*\*/);

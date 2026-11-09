@@ -220,7 +220,7 @@ for (const [name, row, pattern] of rowPins) test(name, () => assert.match(resume
 
 const exitPins = [
   ['exit 0: reads every story this session plans again', '0', /\| answered \| read every story this session plans again\./],
-  ['exit 0: another open is waited on with its own ref and 16 hours', '0', /Another still open: wait on that one, with its `ref` and 16 hours of its own\./],
+  ['exit 0: another open is waited on with its own ref and 16 hours', '0', /Another still open: its wait keeps running, with its `ref` and 16 hours of its own, and this carries on only when every escalation of the round is answered\./],
   ['exit 0: none open goes back to the table', '0', /None: the table above/],
   ['exit 1: a bug in this run stops the turn', '1', /\| the call was wrong, or `<ref>` has no `eN` \| a bug in this run: stop the turn and say so \|/],
   ['exit 2: stops the turn', '2', /\| no answer by the deadline \| stop the turn/],
@@ -249,7 +249,7 @@ const partPins = [
   ['first round: --meanwhile says nothing moves until it closes', 'The first round', /`"meanwhile": "Nothing: no design doc, criteria or tasks until the interview closes\."`/],
   ['first round: held questions are posted, naming what they wait on with its ref', 'The first round', /Post the held ones' comments last, each holding `Held on <ref> eN`, the escalations it waits on, so a re-invoke finds them/],
   ['the wait: says once what it waits on', 'Wait, then read', /Say once what you wait on and until when/],
-  ['the wait: as run does, on the first open one, polling nothing', 'Wait, then read', /Then wait on the first open escalation, as `run` does \(`run`, "Wait, then carry on"\), started as `HARNESS\.md`, "Waiting for an answer", says, polling nothing and doing no other work of this plan/],
+  ['the wait: as run does, on every open one together, polling nothing', 'Wait, then read', /Then wait on the round as `run` does: start one background wait per open escalation of the round, all together \(`run`, "Wait, then carry on"\), each started as `HARNESS\.md`, "Waiting for an answer", says, polling nothing and doing no other work of this plan/],
   ['the wait uses the entry\'s own ref, the story, the Plan record or a sibling', 'Wait, then read', /`<ref>` is the entry's own `ref`, the story, the Plan record or a sibling story/],
   ['only the answer is an answer', 'Wait, then read', /Only the answer is an answer: a comment, a status change or an edited description is not/],
   ['next round: only with every escalation answered, reading each label and note', 'The next round', /With every escalation answered, read each `label` and `note`, then re-read what they touch/],

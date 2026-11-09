@@ -40,8 +40,8 @@ server secret is written to any file, and none is shown in the transcript.**
 does), do not prompt in the terminal: raise each interview question as an escalation on the install's issue
 (the ref the human gave when invoking this skill; with none, stop and say that an issue is needed), with the
 pre-filled answer as the first option and 2 to 5 options in all, and wait until the round is answered. Each is
-raised with `<raise>` (`escalation.escalation` in what it prints is the `eN`); wait on each open one in turn, as `run` does (`run`, "Wait, then
-carry on", for the wait and its exits; `PROCESS.md`, "Questions to the human are escalations"), answering a
+raised with `<raise>` (`escalation.escalation` in what it prints is the `eN`); wait on them as `run` does: start one background wait per open escalation of the round, all together (`run`, "Wait, then
+carry on", for the waits and their exits; `PROCESS.md`, "Questions to the human are escalations"), answering a
 question asked of you and waiting again (exit 5). Wait even when the person is at the terminal: they answer on the
 escalation, and a reply typed in the terminal is not an answer. **On every answer, carry on as the interview's order
 says**: raise the next round, the questions that waited on the answers now in ("Rounds", below), and once the

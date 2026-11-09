@@ -37,7 +37,7 @@ round drops what an answer settled.
    taking or keeping loses; `"advice"` your pick and why, that option first and marked `"suggested": true`, or no
    pick and why, with none marked. The other questions this skill asks are raised the same way.
 2. Raise every one of them in the same turn (`escalation.escalation` in what `<raise>` prints is the `eN`), then wait on
-   each open one in turn, as `run` does (`run`, "Wait, then carry on", with this skill in place of `run`;
+   them as `run` does: start one background wait per open escalation of the round, all together (`run`, "Wait, then carry on", with this skill in place of `run`;
    `PROCESS.md`, "Questions to the human are escalations"), answering a question asked of you and waiting again
    (exit 5). On every answer, carry on as "On resume" says, writing nothing twice. On any exit but 0 and 5, or where
    `HARNESS.md` says `wait: stop`, stop the turn as run's table says, naming the issue and the escalations:

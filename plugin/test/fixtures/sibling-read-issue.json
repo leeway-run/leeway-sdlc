@@ -1,0 +1,213 @@
+{
+  "subIssues": [
+    {
+      "ref": "LWY-900.1",
+      "title": "sub"
+    }
+  ],
+  "project": {
+    "key": "LWY"
+  },
+  "issue": {
+    "ref": "LWY-900",
+    "title": "A story",
+    "description": "body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body body "
+  },
+  "comments": [
+    {
+      "id": "c1",
+      "body": "a long comment"
+    }
+  ],
+  "iterations": [
+    {
+      "n": 1
+    }
+  ],
+  "escalations": [
+    {
+      "ref": "LWY-900",
+      "number": 1,
+      "type": "clarification",
+      "question": "Story answered?",
+      "context": "ctx Story answered?",
+      "tradeoff": "t",
+      "advice": "a",
+      "options": [
+        {
+          "label": "Yes",
+          "by": null,
+          "argument": "arg",
+          "suggested": true
+        },
+        {
+          "label": "No",
+          "by": null,
+          "argument": "arg2",
+          "suggested": false
+        }
+      ],
+      "meanwhile": "m",
+      "comment": "c3",
+      "by": {
+        "userId": "u1",
+        "userName": "Nick Scheynen",
+        "actor": {
+          "alias": "tidy-grebe",
+          "role": "planner"
+        }
+      },
+      "createdAt": 1794215503113,
+      "answer": {
+        "label": "Yes",
+        "note": "because",
+        "by": {
+          "userId": "u1",
+          "userName": "Nick Scheynen",
+          "actor": null
+        },
+        "answeredAt": 1794217080600
+      },
+      "clarificationState": "none",
+      "waitingOn": "you",
+      "seenAt": null,
+      "unseen": false,
+      "clarifications": []
+    },
+    {
+      "ref": "LWY-900.1",
+      "number": 1,
+      "type": "clarification",
+      "question": "Sub-issue question, same number",
+      "context": "ctx Sub-issue question, same number",
+      "tradeoff": "t",
+      "advice": "a",
+      "options": [
+        {
+          "label": "Yes",
+          "by": null,
+          "argument": "arg",
+          "suggested": true
+        },
+        {
+          "label": "No",
+          "by": null,
+          "argument": "arg2",
+          "suggested": false
+        }
+      ],
+      "meanwhile": "m",
+      "comment": "c3",
+      "by": {
+        "userId": "u1",
+        "userName": "Nick Scheynen",
+        "actor": {
+          "alias": "tidy-grebe",
+          "role": "planner"
+        }
+      },
+      "createdAt": 1794215503113,
+      "answer": {
+        "label": "Yes",
+        "note": "because",
+        "by": {
+          "userId": "u1",
+          "userName": "Nick Scheynen",
+          "actor": null
+        },
+        "answeredAt": 1794217080600
+      },
+      "clarificationState": "none",
+      "waitingOn": "you",
+      "seenAt": null,
+      "unseen": false,
+      "clarifications": []
+    },
+    {
+      "ref": "LWY-900",
+      "number": 2,
+      "type": "clarification",
+      "question": "Story open?",
+      "context": "ctx Story open?",
+      "tradeoff": "t",
+      "advice": "a",
+      "options": [
+        {
+          "label": "Yes",
+          "by": null,
+          "argument": "arg",
+          "suggested": true
+        },
+        {
+          "label": "No",
+          "by": null,
+          "argument": "arg2",
+          "suggested": false
+        }
+      ],
+      "meanwhile": "m",
+      "comment": "c3",
+      "by": {
+        "userId": "u1",
+        "userName": "Nick Scheynen",
+        "actor": {
+          "alias": "tidy-grebe",
+          "role": "planner"
+        }
+      },
+      "createdAt": 1794215503113,
+      "answer": null,
+      "clarificationState": "none",
+      "waitingOn": "human",
+      "seenAt": null,
+      "unseen": false,
+      "clarifications": []
+    },
+    {
+      "ref": "LWY-900.1",
+      "number": 2,
+      "type": "clarification",
+      "question": "Sub-issue open, same number",
+      "context": "ctx Sub-issue open, same number",
+      "tradeoff": "t",
+      "advice": "a",
+      "options": [
+        {
+          "label": "Yes",
+          "by": null,
+          "argument": "arg",
+          "suggested": true
+        },
+        {
+          "label": "No",
+          "by": null,
+          "argument": "arg2",
+          "suggested": false
+        }
+      ],
+      "meanwhile": "m",
+      "comment": "c3",
+      "by": {
+        "userId": "u1",
+        "userName": "Nick Scheynen",
+        "actor": {
+          "alias": "tidy-grebe",
+          "role": "planner"
+        }
+      },
+      "createdAt": 1794215503113,
+      "answer": null,
+      "clarificationState": "none",
+      "waitingOn": "human",
+      "seenAt": null,
+      "unseen": false,
+      "clarifications": []
+    }
+  ],
+  "agents": [],
+  "thread": [],
+  "threadTruncated": false,
+  "pullRequests": [],
+  "reviewAvailable": false,
+  "totals": {}
+}
