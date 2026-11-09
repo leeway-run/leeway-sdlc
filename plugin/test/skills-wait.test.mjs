@@ -218,7 +218,7 @@ test('no answer moves a story out of the shaped step or the plan gate', () => {
   const questions = skill('plan-project');
   assert.match(questions, /\*\*Applying a QUESTION's answer is not the gate decision\.\*\* It changes a description or a task and posts `# QUESTIONs applied`, and it never moves the story, whatever the answer says, even one that reads as a pass\./);
   assert.match(questions, /Say so, and move nothing, so the story stays where it was, at the plan gate or at `ready`\. Then wait on the held stories' gaps/);
-  assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and waits on the next gap escalation still open, or, with none, stops\./);
+  assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops\./);
 });
 
 // Where an agent cannot wait (`wait: stop`), the skill stops, and a person's question to the agent goes unheard.

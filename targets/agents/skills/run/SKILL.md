@@ -170,12 +170,12 @@ project run. Where a path below says to raise an escalation and wait, do this:
    stopping when it ends without an answer (exit 2, 3 or 4).
    With several waits running, each exit is handled for its own escalation, not for the round. Exit 0 carries on only
    when every escalation of the round is answered: read the issue, and where another is still open, its wait keeps
-   running. Exit 5 answers the question and restarts that escalation's wait only. A stop exit (2, 3, 4, 1 or any other)
+   running, except that an answer that ends the work (step 5) is followed at once. Exit 5 answers the question and restarts that escalation's wait only. A stop exit (2, 3, 4, 1 or any other)
    acts as it does today for that exit and leaves the other waits running: a re-invoke of `run` reads what they found.
 
    | Exit | It means | So |
    |---|---|---|
-   | 0 | answered; `{"label","note","by"}` on stdout | read the issue, and carry on (step 5) when every escalation of the round is answered |
+   | 0 | answered; `{"label","note","by"}` on stdout | read the issue, and carry on (step 5) when every escalation of the round is answered, or at once on an answer that ends the work |
    | 2 | no answer by the deadline | stop the turn: the escalation and any `# Run status` comment stay, and re-invoking `run` resumes (for a wait in "The plan's end", `run` on the project) |
    | 4 | the CLI asked for `leeway login` | a blocker outside Leeway: stop the turn, and name the action, `leeway login --server <server>`, after which re-invoking `run` resumes |
    | 3 | Leeway did not answer | stop the turn and say so, as stop 10 ("Hard stop conditions") does |

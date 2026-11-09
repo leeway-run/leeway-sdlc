@@ -180,7 +180,7 @@ into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.*
 the plan is done, as step 8's "The last wait" says: at once, when this session plans no other story. The answer has
 to reach the body before planning: planning on a comment makes a second source that drifts from the first. So
 whatever the answer, this session does not plan the story again: it says the answer in the session and that the
-story waits at `shape` for the PO, and waits on the next gap escalation still open, or, with none, stops. The
+story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops. The
 next `plan-project` takes it from step 0 once the body carries the answer.
 
 **Several stories:** the ones that pass go on; the held ones wait. Name the held ones to the divergence reviewer in

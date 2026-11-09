@@ -403,7 +403,7 @@ opening the report behind it:
 
   Nothing else is written: no second escalation and no comment for it. A question is not the answer: do no work
   that depends on the escalation, and carry on only on exit 0. A CLI refusal is not at once an outage: a refusal with `invalid_clarification_answer`
-  (an answer over 1,000 characters) is shortened and written once more, not treated as an outage. **If the answer is not
+  (an answer over 1,000 characters) is shortened and written once more, not treated as an outage; an empty answer refused the same way is written again with its text. **If the answer is not
   written** (the CLI refuses it, Leeway does not answer, or it asks for `leeway login`), do not wait again, because the question still open
   would end the next wait at once: act as for exit 4 where the CLI asked for `leeway login`, and as for exit 3
   otherwise, naming the escalation and the question and saying what the CLI said. Where the wait holds work, that
