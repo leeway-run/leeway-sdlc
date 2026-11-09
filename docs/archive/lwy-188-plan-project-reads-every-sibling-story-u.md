@@ -9,7 +9,7 @@ The second remains. `plan-project`, "What is asked", reads each sibling story wi
 
 `<cli> --server <server> --json issue get <ref> | node -e "<keep only escalations whose ref is <ref>, each with its answer>"`
 
-with the exact `node -e` body in the skill, and a pin on it.
+with the exact `node -e` body in the skill, and a pin on it. It keeps each matching escalation whole, every field (LWY-188 e1).
 
 ## Breakdown
 One task, LWY-188.1.

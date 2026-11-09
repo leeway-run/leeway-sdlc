@@ -11,7 +11,9 @@ Story: LWY-201. Shaping answers: e1 (full only after reshaping or when asked), e
 - lists every finding of the previous report under a new `## Earlier findings` section, closed or not closed, with why;
 - on an unchanged item checks only the earlier findings; anything new it still sees there is reported marked `missed earlier`, keeping its tag (e2).
 
-**Full or re-review (e1).** Full, as today, when the thread shows a `step` entry into `shape` after the previous report's `createdAt` (the story went back through shaping), or when the person asks in the session. Otherwise a re-review, even when only TCs changed. The line "spawns a **fresh** reviewer — never the same one with a note about what changed" stays true: still a fresh agent, now given the previous report's `cN`.
+**Per story (e5).** Reports are one comment per story, so the previous report's `cN` is passed per story; an item absent from that report's read log counts as changed and is read in full.
+
+**Full or re-review (e1, e4).** Full, as today, when the previous report has no `Fingerprint` column (written before this change), or when the thread shows a `step` entry into `shape` after the previous report's `createdAt` (the story went back through shaping), or when the person asks in the session. Otherwise a re-review, even when only TCs changed. The line "spawns a **fresh** reviewer — never the same one with a note about what changed" stays true: still a fresh agent, now given the previous report's `cN`.
 
 ## Breakdown
 One task, LWY-201.1: the reviewer's text and plan-project's delegation, one behaviour.
