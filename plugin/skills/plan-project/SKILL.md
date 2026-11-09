@@ -393,6 +393,9 @@ first one.
 pieces someone can finish. Where the recipes doc already covers this change type, it *is* the breakdown. Start
 from that, not from a blank page.
 
+**Read `references/task-size.md` before cutting tasks**, with the repo's `## Task size` adjustments from
+`.sdlc/CONFIG.md` applied. It says how big a task should be: guidance you weigh, not a rule.
+
 **The hazard register is made of dangers.** The things that break silently, the traps a neighbour already fell
 into, the invariant this change could violate. Each entry names:
 
@@ -601,6 +604,10 @@ however it returns. Pass:
 - The refs of any stories **held at step 1**, named as held, so it lists them rather than tracing them.
 - The **path to the design doc**, or that there is none.
 - The **doc map** from `.sdlc/CONFIG.md`, with each doc's `real` / `stub` / `absent` state.
+- The **task-size guidance**: the text of `references/task-size.md`, with each `off` row's point removed and each
+  `added` row's text appended, from the `## Task size` section of `.sdlc/CONFIG.md`. No section, or an empty table,
+  is the file as written. A row naming a point the plugin does not have (an unknown point) is reported in the
+  session and ignored.
 - Per story, that story's previous report `cN` and the mode: `re-review` or `full`. A story with no earlier report
   gets `full` and no `cN`. Reports are one comment per story, so the `cN` is that story's own.
 - Whether it can read Leeway, and how: the real `<cli>`, `--server <server>`, read verbs only. **If it cannot,

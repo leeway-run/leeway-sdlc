@@ -1,7 +1,7 @@
 # leeway-sdlc wiring for this repo
 
 <!-- Machine-maintained by the installer, human-editable. The loop and its subagents read this.
-     If a row here is wrong, the loop is confidently wrong. Repo facts only: the process itself
+     If a row here is wrong, the loop is confidently wrong. Repo facts only, and the `## Task size` adjustments: the process itself
      (types, steps, caps, review depth, blocking rungs) lives in Leeway and is read with
      `process get`; the server, product and CLI command are in .sdlc/leeway.md. -->
 
@@ -59,6 +59,15 @@ its glob (repo-relative, `**` across folders). No rows: the hook and the gate do
 
 Branch names come from the process (each type's branch prefix) and are `<prefix>/<ref lower>-<slug>`,
 the slug at most 40 characters, written back with `issue update --branch`.
+
+## Task size
+
+Adjusts the plugin's task-size guidance for this repo. A row names a point of the guidance: `off` in the second
+column removes that point, `added` appends the text in the third as a point of this repo's own. An empty table leaves
+the guidance as written.
+
+| Point | Off or added | Text |
+|---|---|---|
 
 ## Repo copies
 

@@ -22,7 +22,7 @@ auditing itself with one extra step.**
 Your prompt carries the **item id(s)** — the plan, or the story when the work has no plan — the
 **path to the design doc**, and the **doc map** from `.sdlc/CONFIG.md` with each doc's `real` /
 `stub` / `absent` state — and, where there are any, the ids of the stories **held at the product
-check**. Nothing else, except on a later report for a story: the **mode**, `re-review` or `full`, and, on a
+check**. It also carries the **task-size guidance**, the repo's adjusted text. Nothing else, except on a later report for a story: the **mode**, `re-review` or `full`, and, on a
 re-review, that story's previous report `cN`.
 
 **A re-review reads your own earlier output, never the planner's account of it.** Read the previous report by its
@@ -178,9 +178,10 @@ you check its fixture yourself where you can. **A condition with no isolating ch
   same job as the new code — read the sibling, not just its name — and does not say **extract** or
   **copy**. Undecided, the implementer copies, because "follow this example" reads as copy. It is a
   QUESTION: whether to widen the task to an extraction is the human's call.
-- **Tasks too big for one review round.** More than one layer, several surfaces, or a diff you would
-  expect to run to many hundreds of lines. Review finds least in the largest tasks. Say why you
-  judge it too big.
+- **Tasks too big for one review round.** Judge each task against the task-size guidance in your prompt,
+  and no other measure: no layer count and no line estimate of your own. Review finds least in the largest
+  tasks. A task the guidance suggests splitting is a NOTE naming the point it strains. With no task-size
+  guidance in your prompt, raise no size finding.
 
 ## Findings
 
@@ -190,8 +191,8 @@ would close it.
 | Tag | Means | Typical |
 |---|---|---|
 | **BLOCKER** | The plan cannot be executed as written without a criterion going undelivered or a hazard going unclosed | orphan AC or TC; a criterion delivered but proven by nothing; story with no numbered ACs; hazard with no owner or no closing check; a condition of a compound rule with no isolating check; ordering gap; missing negative case on a data-scope, role or isolation criterion; hidden scope no task builds |
-| **QUESTION** | Only a human can decide it, and the answer changes the plan | scope drift; an untestable AC or TC whose intent you cannot pin down; a TC that changes what the user gets; a task you judge too big; any other missing negative case; a same-job *Parity* source with no extract-or-copy decision |
-| **NOTE** | Worth knowing, changes nothing unless someone chooses to | wording, a check that could be cheaper, a sibling worth citing under *Parity*; a story held at the product check |
+| **QUESTION** | Only a human can decide it, and the answer changes the plan | scope drift; an untestable AC or TC whose intent you cannot pin down; a TC that changes what the user gets; any other missing negative case; a same-job *Parity* source with no extract-or-copy decision |
+| **NOTE** | Worth knowing, changes nothing unless someone chooses to | wording, a check that could be cheaper, a sibling worth citing under *Parity*; a story held at the product check; a task the guidance suggests splitting, naming the point it strains |
 
 **If the tag is unclear, take the more severe one.** A QUESTION a human answers in a line costs less
 than a BLOCKER found in round three.
