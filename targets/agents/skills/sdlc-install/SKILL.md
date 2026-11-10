@@ -457,9 +457,37 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
 - `<cli> process get <KEY> --json` once more: its outer `version` (the revision) is what you set, and the types are what you
   told the human.
 - Confirm the instructions file loads the floor (the `@` line, or the read-first line, names an existing file).
-- Where you wrote wiring, confirm the hook works: pipe a governed payload through it and expect exit 2,
-  `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`,
-  and say plainly that the guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
+- Where you wrote wiring, confirm the guard works **as this agent loads it**, and say plainly that the
+  guard's scoping in this agent is as `HARNESS.md`, "Governed-agent marker", describes.
+  - **Every agent but OpenCode:** pipe a governed payload through the hook and expect exit 2,
+    `echo '{"tool_input":{"command":"git commit -m x"}}' | node .sdlc/kit/hooks/adapters/guard.mjs <agent> --governed; echo $?`.
+  - **OpenCode:** the adapter pipe alone is not the check. OpenCode 2.x has no shell-command hooks: it
+    loads `.opencode/plugins/leeway-sdlc.js` and the plugin's `execute.before` hook throws to refuse a
+    call, so a payload piped straight through `guard.mjs` exits 2 while the plugin OpenCode never loaded
+    sits on disk with the guards silently absent (docs/targets/opencode.md, "Hook payloads"). Drive the
+    plugin **as OpenCode loads it**: one scratch OpenCode run in a copy of this repo that has the written
+    wiring, with the governed marker live and a governed shell call made, must be **refused** with the
+    guard's reason, and the call must not run. LWY-214.1 measured it: with the plugin present a
+    `git commit` under a live marker comes back blocked (`Blocked: \`git commit\` is not available to this
+    subagent…`) and no commit is made; with `.opencode/plugins/leeway-sdlc.js` absent the same call runs
+    and commits. Do it in a scratch repo (a `cp -R` of the repo into a temp dir), so the install leaves
+    nothing behind:
+    ```sh
+    node .sdlc/kit/hooks/adapters/governed.mjs on <task-ref>
+    opencode run --auto [--model <provider/model>] "Run exactly this command with the shell tool and report its output verbatim: git commit --allow-empty -m check"
+    node .sdlc/kit/hooks/adapters/governed.mjs off <task-ref>
+    git log --oneline -1     # unchanged: the guard refused the commit
+    ```
+    `--model` only where no default model is configured (the guard, not the model, is what the check
+    exercises).
+    A run that commits, or prints no refusal, means the plugin is not loaded: **the check fails**, and a
+    V1 file left at `.opencode/plugins/leeway-sdlc.js` (or none) is why. **Where you cannot run a scratch
+    OpenCode session** — no `opencode` on the PATH, or a session that cannot be driven — do not fall back
+    to the adapter pipe and call it verified: say what you could not verify, plainly, as an item in the
+    "did not settle" list below, and never claim the guards are live when the plugin's load was not shown.
+    Confirm at least that the file at `.opencode/plugins/leeway-sdlc.js` is the V2 shape (`Plugin.define`
+    with a `setup`, not a function returning `tool.execute.before`): a V1 file is refused at load and the
+    guards are absent.
 - Print what to do next: `shape-project` for a product owner to shape an issue (when the type has `shape`),
   `plan-project` for work spanning more than one sub-issue, `run` for a single sub-issue, a planned issue
   unattended or a project, `sdlc-tune` to change the process later. Name each as `HARNESS.md`'s
