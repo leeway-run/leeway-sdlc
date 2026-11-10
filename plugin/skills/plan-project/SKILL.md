@@ -51,10 +51,10 @@ whatever happened.
    | The story is at | So |
    |---|---|
    | the plan step | carry on |
+   | `shape`, in a round trip (`PROCESS.md`, "Before the plan: shaping") | hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says, as step 1 does on *Hold*. On the hand-back, continue the earlier run, not a new run |
+   | `shape`, with its latest gap comment's escalation open | wait on it at once ("Wait, then read"), then follow step 1's answer. Write nothing before the answer |
    | `shape`, or no step at `backlog`, on a type with `shape` but no shaped step | with a body and no open escalation: `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on. Shaping ends at `shape` there, and the PO's yes to shape-project's approval escalation was the approval. With no body, or an escalation still open: **say shaping is not finished, and stop.** Write nothing |
    | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
-   | `shape`, in a round trip (`PROCESS.md`, "Before the plan: shaping") | hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says, as step 1 does on *Hold*, and plan the session's other stories meanwhile. On the hand-back, continue the earlier run, not a new run |
-   | `shape`, with its latest gap comment's escalation open | wait on it at once ("Wait, then read"), then follow step 1's answer. Write nothing before the answer |
    | `shape`, or no step at `backlog`, on a type with a shaped step | **say shaping is not finished, and stop.** Write nothing: planning starts once `shape-project` has set the shaped step |
    | the shaped step, with a shaping escalation open | **say shaping is not finished, and stop.** Write nothing: the PO's open escalation comes first |
    | the shaped step, with no shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, say so in the session, and post a comment opening `# Planning started` saying running plan-project was the approval of the body, then carry on, and in a round trip it says the PO's answers to shaping were the approval of the body instead |
@@ -177,7 +177,7 @@ as proposed* (only for **too big**) and *Accept the gaps as written* (the answer
 into the body as `OPEN:` lines by the PO's hand). Wait on it at once, beside the session's other waits ("Wait, then
 read"), and let the rest of the plan go on. What makes it a round trip is defined in `PROCESS.md`, "Before the plan: shaping".
 
-**On *Hold*,** post a comment opening `# Shaping started` as `<alias>/planner`, naming the gap comment's `cN` and the escalation's `eN`, and saying the PO's answers to the gaps go into the body through `shape-project`. Say in the session that the story is handed over to shape-project, then hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says. `shape-project` uses the session's alias. The other stories keep planning while the held one is shaped: another story's wait that exits is acted on at once, and a held story gets no tasks meanwhile. On the hand-back, continue the earlier run, not a new run, and read step 0 again. Where nothing else is left to do, end the turn, since a background wait that exits wakes the session.
+**On *Hold*,** post a comment opening `# Shaping started` as `<alias>/planner`, naming the gap comment's `cN` and the escalation's `eN`, and saying the PO's answers to the gaps go into the body through `shape-project`. Say in the session that the story is handed over to shape-project, then hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says. `shape-project` uses the session's alias. The other stories are not promised to keep planning while the held one is shaped; the probe showed only that another story's wait that exits is acted on at once, whichever skill the session is in. A held story gets no tasks meanwhile. On the hand-back, continue the earlier run, not a new run, and read step 0 again. Where nothing else is left to do, end the turn, since a background wait that exits wakes the session. **A held story's round trip still in flight keeps the session on it:** its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.
 
 *Split* starts no shaping. *Accept* starts no shaping. Both leave the story at `shape` for the PO, and the next `plan-project` takes it from step 0 once the body carries the answer. Only *Hold* hands over, and after the escalation is answered: no hand-over is made while it is open, and nothing is handed over on a question, a comment or an edit.
 
@@ -588,7 +588,7 @@ make no further move of your own.
 The last step, once the whole hierarchy exists. **No task starts before it.**
 
 **A type without a plan gate** goes from plan to ready with no gate: `issue update <story> --status ready` (no
-step), story by story. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.
+step), story by story. A round trip still in flight decides when the session stops (step 1).
 
 **A type with one**: `issue update <story> --step <the plan gate's id>`. You wrote the plan, so you are the one
 reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and its verdict decides
@@ -675,7 +675,7 @@ all small fixes, you fix them and have the plan reviewed again, without a person
 For each round, edit the items, then reply to the report (`comment add <story> --parent cN --stdin body`) with a body opening `# BLOCKERs fixed`, one line per BLOCKER: number, item, change. Each automatic round applies the answered QUESTIONs before the re-review. Each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, passed the previous report's `cN` and the mode `re-review`. A PASS from any automatic round moves the story to `ready` like a first-report PASS, with the same `# Moved to ready` comment naming that report's `cN`. The loop runs per story: one story's loop never holds or moves another story.
 
 Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers. Then, with QUESTIONs
-or none, say where each story is. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open, each story at `ready` or at the plan gate.
+or none, say where each story is, at `ready` or at the plan gate. A round trip still in flight decides when the session stops (step 1).
 
 ### The QUESTIONs
 
@@ -703,7 +703,7 @@ report has with no comment yet), unless an answer settled it, and wait on it the
 answered, change what an answer changes in a description or a task, then **reply to the report** (`comment add
 <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line per escalation, its answer
 and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is
-what makes them applied. Say so. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.
+what makes them applied. Say so. A round trip still in flight decides when the session stops (step 1).
 
 **The move follows `# QUESTIONs applied`, not the answer.** An answer changes a description or a task, and nothing
 more, whatever it says, even one that reads as a pass. On PASS WITH DECISIONS, once every QUESTION is answered and the

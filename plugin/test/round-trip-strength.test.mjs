@@ -4,14 +4,12 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// LWY-222.2, round 1 (TC-6): the pins round-trip.test.mjs leaves open. Each reads only plugin/PROCESS.md and
-// plugin/skills/plan-project/SKILL.md, names the phrase it matches, and is run on fixtures that break it.
+// LWY-222.2, rounds 1 and 2 (TC-6): the pins round-trip.test.mjs leaves open. Each reads only plugin/PROCESS.md, plugin/skills/plan-project/SKILL.md (and shape-project for the restatement pin), names the phrase it matches, and is run on fixtures that break it.
 //
 //   - the definition of a round trip, in PROCESS.md "Before the plan: shaping": it names no step after the plan step, and no
 //     answer but *Hold*;
 //   - plan-project "Done when": a held story is not left "with no tasks" as its end state;
-//   - plan-project's three endings (the plan gate, "# QUESTIONs applied", `ready` with no plan gate): a held story's round trip
-//     still in flight keeps the session on it, and the session stops when none is still open.
+//   - plan-project step 1 states once what keeps the session on a round trip in flight; its three endings (the plan gate, "# QUESTIONs applied", `ready` with no plan gate) point at it.
 const plugin = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (...parts) => readFileSync(join(plugin, ...parts), 'utf8').replace(/\r\n/g, '\n');
 
@@ -103,30 +101,96 @@ test('the "Done when" pin fails the old wording and passes the new one', () => {
   assert.doesNotMatch('Every story passed the product check, or its gaps went back to the PO as one comment, and on *Hold* it was handed to shape-project.', NO_TASKS);
 });
 
-// --- the endings: a round trip in flight keeps the session on it (c5) ----------------------------------------------
+// --- one statement of what keeps the session on a round trip (step 1), and a pointer in each ending (c5, c10) ------------
 
 const IN_FLIGHT = [/\bround trip\b/, /\bin flight\b/, /\bkeeps the session\b/, /\bwaits stay running\b/, /\bhand-over\b/, /\bhand-back\b/, /\bnone\b[^.]*\bstill open\b/];
+const POINTER = [/\bround trip\b/, /\bin flight\b/, /\bstep 1\b/];
 const ENDINGS = {
   'the plan gate': ['Raise the QUESTIONs, when the report has any', '### The QUESTIONs'],
   '`# QUESTIONs applied`': ['what makes them applied.', '**The move follows'],
   '`ready` with no plan gate': ['**A type without a plan gate**', '**A type with one**'],
 };
 
+test('plan-project step 1: a held story\'s round trip in flight keeps the session on it, its waits stay running, and the session stops when none is still open', () => {
+  const gapsPart = section(planProject, '### Gaps → back to the PO');
+  assert.ok(sentenceWith(gapsPart, ...IN_FLIGHT), `no sentence saying a held story's round trip in flight keeps the session on it, its waits stay running, its hand-over and hand-back carry on, and it stops when none is still open\n${flat(gapsPart)}`);
+});
+
 for (const [name, [lead, until]] of Object.entries(ENDINGS)) {
-  test(`plan-project's ending at ${name}: a held story's round trip in flight keeps the session on it, and it stops when none is still open`, () => {
+  test(`plan-project's ending at ${name}: a round trip in flight decides when the session stops, by a pointer to step 1 and not a copy of it`, () => {
     const text = between(planProject, lead, until);
-    assert.ok(sentenceWith(text, ...IN_FLIGHT), `no sentence saying a held story's round trip in flight keeps the session on it, its waits stay running, its hand-over and hand-back carry on, and it stops when none is still open\n${flat(text)}`);
+    assert.ok(sentenceWith(text, ...POINTER), `no sentence pointing at step 1 for a round trip still in flight\n${flat(text)}`);
+    assert.doesNotMatch(flat(text), /\bwaits stay running\b/, 'the in-flight statement is copied into the ending; step 1 states it once');
   });
 }
 
-test('the ending pin fails an ending with no round trip in flight, and one that waits on the gaps last', () => {
-  const ok = 'A held story\'s round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.';
-  assert.ok(sentenceWith(ok, ...IN_FLIGHT));
+test('the ending pins fail an ending with no pointer, a copy of the statement, and one that waits on the gaps last; the step 1 pin fails a statement without a part', () => {
+  const ptr = 'A round trip still in flight decides when the session stops (step 1).';
+  assert.ok(sentenceWith(ptr, ...POINTER));
   for (const bad of [
     'Then say where each story is, and stop.',
     'Then wait on the held stories\' gaps ("The last wait", below), and stop.',
+    ptr.replace('(step 1)', ''),
+    ptr.replace('still in flight ', ''),
+  ]) assert.equal(sentenceWith(bad, ...POINTER), undefined, bad);
+  const ok = 'A held story\'s round trip still in flight keeps the session on it: its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.';
+  assert.ok(sentenceWith(ok, ...IN_FLIGHT));
+  assert.match(ok, /\bwaits stay running\b/);
+  for (const bad of [
     ok.replace('keeps the session on it', 'ends the session'),
     ok.replace(', and the session stops when none is still open', ''),
     ok.replace('its waits stay running, ', ''),
   ]) assert.equal(sentenceWith(bad, ...IN_FLIGHT), undefined, bad);
+});
+
+// --- step 0: no earlier `shape` row decides a story in a round trip (c8) --------------------------------------------
+
+const startRows = section(planProject, '## 0. ')
+  .split('\n')
+  .filter((line) => /^\s*\| /.test(line) && !/^\s*\|---/.test(line))
+  .map((line) => flat(line));
+// The "Start where shaping ends" table: the rows after its "The story is at" header.
+const rows = startRows.slice(startRows.findIndex((r) => r.startsWith('| The story is at |')) + 1);
+const isShapeRow = (r) => /^\| [^|]*`shape`/.test(r);
+const isRoundTripRow = (r) => /\bround trip\b/.test(r) && /\bhand(?:s|ed)? over\b/.test(r);
+const isGapOpenRow = (r) => /\blatest gap comment\b/.test(r) && /\bescalation\b[^|]*\bopen\b/.test(r);
+// The problem found, or null: a `shape` row that is neither round-trip row, listed above one of them, would decide first.
+function earlierShapeRow(table) {
+  const last = Math.max(...table.map((r, i) => (isRoundTripRow(r) && isShapeRow(r)) || (isGapOpenRow(r) && isShapeRow(r)) ? i : -1));
+  assert.ok(last >= 0, 'no round-trip row at `shape`');
+  const hit = table.slice(0, last).find((r) => isShapeRow(r) && !isRoundTripRow(r) && !isGapOpenRow(r));
+  return hit ?? null;
+}
+
+test('plan-project step 0: no `shape` row listed before the round-trip rows can decide a story in a round trip', () => {
+  assert.equal(earlierShapeRow(rows), null, 'an earlier `shape` row fits a story in a round trip first ("the first row that fits decides")');
+});
+
+test('the row-order pin fails today\'s order, with the refusal rows above the round-trip rows, and passes the right one', () => {
+  const rt = rows.find((r) => isShapeRow(r) && isRoundTripRow(r));
+  const open = rows.find((r) => isShapeRow(r) && isGapOpenRow(r));
+  const noShaped = rows.find((r) => r.startsWith('| `shape`, or no step at `backlog`, on a type with `shape` but no shaped step |'));
+  assert.ok(rt && open && noShaped, 'a row is missing');
+  assert.equal(earlierShapeRow([noShaped, rt, open]), noShaped);
+  assert.equal(earlierShapeRow([rt, noShaped, open]), noShaped);
+  assert.equal(earlierShapeRow([rt, open, noShaped]), null);
+});
+
+// --- TC-1: plan-project and shape-project do not restate the definition (c11) ---------------------------------------
+
+const shapeProject = read('skills', 'shape-project', 'SKILL.md');
+const RESTATES = [/\blatest gap comment\b/, /\banswered\b[^.]*\*Hold\*|\*Hold\*[^.]*\banswered\b/];
+
+for (const [name, text] of [['plan-project', planProject], ['shape-project', shapeProject]]) {
+  test(`${name}/SKILL.md does not restate the definition of a round trip (latest gap comment with its escalation answered *Hold*), which PROCESS.md holds`, () => {
+    assert.equal(sentenceWith(text, ...RESTATES), undefined, `${name} restates the definition: ${sentenceWith(text, ...RESTATES)}`);
+  });
+}
+
+test('the restatement pin fails the reviewer\'s wording and a rewording of it, and passes step 0\'s row', () => {
+  for (const bad of [
+    'A story is in a round trip when its latest gap comment has its escalation answered *Hold*.',
+    'The story counts as held again once *Hold* was the answer to its latest gap comment\'s escalation, answered by the PO.',
+  ]) assert.ok(sentenceWith(bad, ...RESTATES), bad);
+  assert.equal(sentenceWith('| `shape`, with its latest gap comment\'s escalation open | wait on it at once |', ...RESTATES), undefined);
 });
