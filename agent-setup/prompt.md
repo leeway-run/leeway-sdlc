@@ -4,9 +4,9 @@ You are setting up the user's coding agent to work with Leeway (https://leeway.r
 Run commands from the root of the repo the user wants to set up. **Never ask for, read, print or write a Leeway
 token.** Where a step says ASK, ask the user and wait for the answer.
 
-leeway-sdlc has been tested with Claude Code only. If you are another agent, tell the user before step 3 that
-support for their agent is built in but has not been verified yet, that verified support will come later, and
-that issues go to https://github.com/leeway-run/leeway-sdlc/issues. Then carry on.
+leeway-sdlc is verified with Claude Code and OpenCode 2.x; the other agents are a preview. If you are one of the
+others, tell the user before step 3 that support for their agent is built in but has not been verified yet, that
+verified support will come later, and that issues go to https://github.com/leeway-run/leeway-sdlc/issues. Then carry on.
 
 The snippet that sent you here may name a `server` and a `product`. Keep them for step 4.
 
@@ -56,9 +56,9 @@ After step 4: Nothing to trust. If your account was moved to Antigravity CLI, th
 After step 4: Nothing to trust: Cursor runs `.cursor/hooks.json` from the repo.
 
 ### OpenCode
-- `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a opencode --yes`
+- `npx -y skills add leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes`
 
-After step 4: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.js`.
+After step 4: Nothing to restart for the plugin: OpenCode 2.x reloads `.opencode/plugins/leeway-sdlc.js` on save (measured — docs/targets/opencode.md), and a new session picks up the skills and agent files.
 
 ### xAI Grok Build
 - `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a grok --yes`
@@ -85,6 +85,7 @@ Leeway agent setup complete
   ✓ repo bound to     <product key>
 ```
 
-Then list anything the user still has to do: the trust or restart step for the agent, from step 3. For any agent
-other than Claude Code, end with: "leeway-sdlc is tested with Claude Code only so far. If something doesn't work,
-please report it at https://github.com/leeway-run/leeway-sdlc/issues".
+Then list anything the user still has to do: the trust or restart step for the agent, from step 3. If the agent is a
+preview — any but Claude Code and OpenCode 2.x — end with: "leeway-sdlc is a preview for your agent so far; Claude
+Code and OpenCode 2.x are verified. If something doesn't work, please report it at
+https://github.com/leeway-run/leeway-sdlc/issues".

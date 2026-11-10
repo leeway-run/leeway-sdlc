@@ -5,7 +5,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { execSync, spawnSync } from 'node:child_process'
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -148,19 +148,89 @@ test('copilot: the hook on the agent itself governs without a marker', () => {
   }
 })
 
-test('opencode: the plugin refuses a governed bash call by throwing', async () => {
+// OpenCode 2.x loads a plugin as a module whose default export is `Plugin.define({ id, setup })`,
+// and receives the guards `setup` registers with `ctx.tool.hook("execute.before", …)`. The V1
+// export — a function returning a `tool.execute.before` key — is rejected at load and never fires
+// (docs/targets/opencode.md, "Hook payloads"). `@opencode/plugin` is provided by the agent's
+// runtime, so the test stubs it with the contract .1 measured (`typeof Plugin.define ===
+// "function"`) and imports the generated file itself.
+const stubOpenCodePlugin = (repo) => {
+  const dir = join(repo, 'node_modules', '@opencode', 'plugin')
+  mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: '@opencode/plugin', type: 'module', main: 'index.js' }))
+  writeFileSync(join(dir, 'index.js'), 'export const Plugin = { define: (definition) => definition }\n')
+}
+
+test('red-test-AC-3: opencode: the V2 plugin refuses a governed bash call by throwing', async () => {
   const repo = installInto('opencode')
   try {
+    const fixture = JSON.parse(readFileSync(join(ROOT, 'plugin', 'hooks', 'adapters', 'fixtures', 'opencode.json'), 'utf8'))
+    stubOpenCodePlugin(repo)
     const plugin = join(repo, '.opencode', 'plugins', 'leeway-sdlc.js')
-    assert.ok(existsSync(plugin))
-    const { LeewaySdlcGuard } = await import(pathToFileURL(plugin).href)
-    const hooks = await LeewaySdlcGuard({ directory: repo })
-    const before = hooks['tool.execute.before']
-    await before({ tool: 'bash' }, { args: { command: 'git commit -m x' } })
+    assert.ok(existsSync(plugin), 'the wiring is installed')
+    const definition = (await import(pathToFileURL(plugin).href)).default
+    assert.ok(definition && typeof definition.setup === 'function', 'the default export is a Plugin.define({ id, setup }) definition; the V1 file exports a function instead')
+    assert.equal(definition.id, 'leeway-sdlc')
+
+    const hooks = {}
+    await definition.setup({ location: { directory: repo }, tool: { hook: (name, handler) => { hooks[name] = handler } } })
+    const before = hooks['execute.before']
+    assert.equal(typeof before, 'function', 'setup registers the guard on execute.before through ctx.tool.hook')
+
+    // The fixture's guard view, back in the shape OpenCode 2.x sends: the tool's arguments arrive
+    // under `input`. `cwd` is not in the event; it comes from the plugin's ctx.location.directory.
+    const event = (view, command) => ({ tool: view.tool, sessionID: view.sessionID, agent: view.agent, input: { ...view.args, command } })
+    const refuses = (e, pattern) => assert.rejects(async () => before(e), pattern)
+
+    // One condition differs between refused and allowed: the agent (rule a, the identity field).
+    await refuses(event(fixture.subagent, 'git commit -m x'), /git commit/)
+    await before(event(fixture.main, 'git commit -m x'))
+    // One condition differs between judged and skipped: the tool; a read is not a shell call.
+    await before({ ...event(fixture.subagent, 'git commit -m x'), tool: 'read' })
+
+    // With a live marker every shell call is the subagent's, and one that names the marker
+    // directory is refused, while `governed.mjs off` stays allowed as the orchestrator's way out.
+    // The isolating pair at the decide level is plugin/hooks/adapters/guard.test.mjs, "under a
+    // marker, the marker directory is off limits but governed.mjs off works".
     governed(repo, 'on')
-    await assert.rejects(before({ tool: 'bash' }, { args: { command: 'git commit -m x' } }), /git commit/)
-    await before({ tool: 'read' }, { args: { filePath: 'x' } })
+    await refuses(event(fixture.main, 'rm -rf .sdlc/.governed'), /marker/)
+    await before(event(fixture.main, 'node .sdlc/kit/hooks/adapters/governed.mjs off T-1'))
     governed(repo, 'off')
+  } finally {
+    rmSync(repo, { recursive: true, force: true })
+  }
+})
+
+test('red-test-TC-2: opencode: the generated plugin judges only through the guard adapter', () => {
+  const repo = installInto('opencode')
+  try {
+    const source = readFileSync(join(repo, '.opencode', 'plugins', 'leeway-sdlc.js'), 'utf8')
+    // Every verdict comes from `.sdlc/kit/hooks/adapters/guard.mjs`'s decide, which asks the two
+    // cores (git-guard.mjs, leeway-guard.mjs): the plugin's whole dependency surface is that
+    // adapter and the runtime, and it contains no judging, git or Leeway matching of its own.
+    assert.doesNotMatch(source, /\bjudge\s*\(/)
+    assert.doesNotMatch(source, /\bgit\b/)
+    assert.doesNotMatch(source, /git-guard|leeway-guard/)
+    assert.match(source, /import \{ decide \}/)
+    const imports = [...source.matchAll(/from\s+['"]([^'"]+)['"]/g)].map((m) => m[1]).sort()
+    assert.deepEqual(imports, ['../../.sdlc/kit/hooks/adapters/guard.mjs', '@opencode/plugin'])
+    // The V1 shape — a function returning a `tool.execute.before` key — is gone.
+    assert.doesNotMatch(source, /tool\.execute\.before/)
+  } finally {
+    rmSync(repo, { recursive: true, force: true })
+  }
+})
+
+test('red-test-AC-2: opencode: the reviewer agents deny edits and the implementer does not', () => {
+  const repo = installInto('opencode')
+  try {
+    const agent = (name) => readFileSync(join(repo, '.opencode', 'agents', `${name}.md`), 'utf8')
+    // The declaration LWY-214.1 measured on 2.2.6: `opencode debug agents` reports
+    // {"action":"edit","resource":"*","effect":"deny"} for `permission:\n  edit: deny`.
+    for (const name of ['sdlc-reviewer', 'sdlc-divergence-reviewer']) {
+      assert.match(agent(name), /^permission:\n  edit: deny$/m, `${name}: the measured declaration must keep it unable to edit`)
+    }
+    assert.doesNotMatch(agent('sdlc-implementer'), /^\s*edit:\s*deny\s*$/m, 'the implementer edits the repo')
   } finally {
     rmSync(repo, { recursive: true, force: true })
   }
