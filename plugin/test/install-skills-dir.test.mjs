@@ -14,7 +14,7 @@ const install = flat(readFileSync(join(root, 'plugin', 'skills', 'sdlc-install',
 // The bullet that writes the .gitignore lines, up to the next bullet.
 const bullet = /- `\.gitignore` lines (.*?)(?= - \*\*Where|$)/.exec(install)?.[1] ?? '';
 
-test('red-test-TC-1: the .gitignore bullet adds the skills-dir path HARNESS.md names, only when it is not none', { skip: 'red-test-TC-1: the bullet adds no skills-dir line yet' }, () => {
+test('red-test-TC-1: the .gitignore bullet adds the skills-dir path HARNESS.md names, only when it is not none', () => {
   assert.match(bullet, /\.worktrees\/.*\.sdlc\/\.governed\//, 'could not find the .gitignore bullet');
   assert.match(bullet, /\*\*skills-dir\*\*/);
   assert.match(bullet, /only if absent/);
@@ -22,13 +22,13 @@ test('red-test-TC-1: the .gitignore bullet adds the skills-dir path HARNESS.md n
   assert.match(bullet, /nothing for `none`|adds nothing for `none`|none` adds nothing/);
 });
 
-test('red-test-TC-1: skills-lock.json stays committed, and no ignore line is a pattern or a parent directory', { skip: 'red-test-TC-1: sdlc-install does not mention skills-lock.json yet' }, () => {
+test('red-test-TC-1: skills-lock.json stays committed, and no ignore line is a pattern or a parent directory', () => {
   assert.match(bullet, /`skills-lock\.json` (stays|is) committed/);
   // Exactly the directory, never `.agents/` or a glob that would match skills-lock.json.
   assert.doesNotMatch(bullet, /gitignore[^.]*`\.agents\/?`|`\.grok\/?`|`\.agents\/\*/);
 });
 
-test('red-test-TC-1: the check-ignore step after the .gitignore write includes the skills-dir', { skip: 'red-test-TC-1: the check-ignore step covers only the local-notes file' }, () => {
+test('red-test-TC-1: the check-ignore step after the .gitignore write includes the skills-dir', () => {
   const step = /`\{\{LOCAL_NOTES_FILE\}\}`\*\* — (.*?)(?= ## Step 7|$)/.exec(install)?.[1] ?? '';
   assert.match(step, /git check-ignore/);
   assert.match(step, /skills-dir/);

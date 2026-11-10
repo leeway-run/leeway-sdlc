@@ -240,7 +240,7 @@ test('red-test-AC-2: opencode: the reviewer agents deny edits and the implemente
 const SKILLS_DIRS = { opencode: '.agents/skills/', cursor: '.agents/skills/', grok: '.grok/skills/', gemini: null, codex: null, copilot: null }
 const skillsDirLine = (text) => /^- \*\*skills-dir:\*\* (.*)$/m.exec(text)?.[1]
 
-test('red-test-TC-1: every HARNESS.md names its skills-dir, and none where the skills live outside the repo', { skip: 'red-test-TC-1: no harness carries a skills-dir line yet' }, () => {
+test('red-test-TC-1: every HARNESS.md names its skills-dir, and none where the skills live outside the repo', () => {
   assert.deepEqual(TARGETS.map((t) => t.id).sort(), Object.keys(SKILLS_DIRS).sort())
   for (const t of TARGETS) {
     const want = SKILLS_DIRS[t.id]
