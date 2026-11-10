@@ -76,7 +76,9 @@ is how it carries on there: either command, re-run once the answer is in.
 | Hazard | Owning task | The check that proves it closed | Rung |
 |---|---|---|---|
 | Invoking a skill from inside a running skill does not take over, drops the alias, or its waits do not wake the session | LWY-222.1 | the probe on Claude Code, recorded in `docs/targets/claude.md`; the HARNESS line claims nothing the record does not show | R3 |
+| A hand-over displaces the other stories' planning in the same session, or the hand-back starts a second plan-project run over stories the first still holds (AC-3) | LWY-222.1 | the probe's two-stories case (LWY-222 e8), recorded in `docs/targets/claude.md`: one story handed to shaping while another's interview wait is open, then handed back | R3 |
 | A target's harness is edited by hand and drifts from `scripts/targets.mjs` | LWY-222.1 | `node scripts/build-targets.mjs --check` | R1 |
+| A rewrite adds a cap or count on round trips (AC-5) | LWY-222.2 | pin: no limit or count tied to the gap comment, *Hold* or `# Shaping started` in `plan-project/SKILL.md`, `shape-project/SKILL.md` or `PROCESS.md` | R1 |
 | The gap escalation is not tied to the gap comment, so no skill can recognise the round trip | LWY-222.2 | pin: step 1's raise sets `"comment"` to the gap comment's `cN` | R1 |
 | *Split* or *Accept* starts shaping | LWY-222.2 | two pins, one per answer: each starts nothing | R1 |
 | The held story's gap escalation is still waited on last, delaying its shaping (AC-3) | LWY-222.2 | `skills-wait.test.mjs`'s last-wait pins rewritten to "at once, beside the other waits"; absent-phrase pin on "waited on last" | R1 |
