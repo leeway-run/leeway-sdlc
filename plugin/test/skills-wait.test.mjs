@@ -45,14 +45,13 @@ const sites = {
   'shape-project: an edit that contradicts an answer': ['shape-project', 'Where the edit contradicts an answer', 'Otherwise the version'],
   'shape-project: the approval round': ['shape-project', 'Then raise one escalation, *Write this body', 'On *Do not write*'],
   'plan-project: where the human is asked': ['plan-project', '**Where the human is asked.** This repo', 'With no `.sdlc/leeway.md` there is no binding'],
-  'plan-project: the product gaps': ['plan-project', 'and raise one escalation, *"`<ref>` has N product gaps', 'The next `plan-project` takes it'],
+  'plan-project: the product gaps': ['plan-project', 'and raise one escalation, *"`<ref>` has N product gaps', '**Several stories:**'],
   'plan-project: the next round': ['plan-project', 'Raise it and wait as above, its round one higher', 'A first-round decision'],
   'plan-project: the floor questions': ['plan-project', 'and raise that rule\'s question as an escalation', 'On an answer, or on resume, write each answer'],
   'plan-project: the QUESTIONs': ['plan-project', 'Raise the QUESTIONs, when the report has any', '### The QUESTIONs'],
   'plan-project: a held QUESTION': ['plan-project', 'raise a held QUESTION (one the', 'When every one is answered'],
   'plan-project: three RETURNs': ['plan-project', '**raise one escalation on the story**', 'Give two options'],
   'plan-project: a QUESTION open on a re-invoke at the plan gate': ['plan-project', 'with a QUESTION of the latest report open', '| the plan gate | '],
-  'plan-project: the last wait': ['plan-project', '### The last wait', '**What is lost.**'],
   'sync-repo: the round': ['sync-repo', '2. Raise every one of them in the same turn', 'On every answer'],
   'sync-repo: an open question on resume': ['sync-repo', '**While any question is open', 'So the tree stays clean'],
   'sdlc-install: the interview': ['sdlc-install', 'raise each interview question as an escalation', 'Each is raised with `<raise>`'],
@@ -134,37 +133,37 @@ test('every raise in a skill that waits is a site above, in a round a site waits
   }
 });
 
-// Each way plan-project's plan ends waits on the held stories' gaps before it stops.
+// LWY-222.2 (TC-4): the held stories' gap escalations are waited on when they are raised (step 1), so no way plan-project's
+// plan ends waits on them last, and "The last wait" is gone. Rewritten from the pins that required the last wait.
 const endings = {
   'the plan gate': ['Raise the QUESTIONs, when the report has any', '### The QUESTIONs'],
   'the QUESTIONs applied': ['what makes them applied.', '**The move follows'],
   '`ready` with no plan gate': ['**A type without a plan gate**', '**A type with one**'],
 };
 for (const [name, [lead, until]] of Object.entries(endings)) {
-  test(`plan-project's ending at ${name} waits on the held stories' gaps before it stops`, () => {
+  test(`plan-project's ending at ${name} does not wait on the held stories' gaps last`, { skip: `red-test-TC-4: the ending at ${name} still waits on the held stories' gaps ("The last wait")` }, () => {
     const text = extract('plan-project', lead, until);
-    const gaps = text.search(/wait on the held stories' gaps \("The last wait", below\)/);
-    const end = text.search(/\b(stop|stops)\b|\bthe skill ends\b|\bend(s)? (the|your|this) turn\b/i);
-    assert.ok(gaps >= 0, `the ending at ${name} does not wait on the held stories' gaps`);
-    assert.ok(end > gaps, `the ending at ${name} stops before it waits on the held stories' gaps`);
+    assert.doesNotMatch(text, /wait on the held stories' gaps|"The last wait"/);
   });
 }
 
-test('a plan with no gate waits on the held stories\' gaps once, after every story is at ready', () => {
-  assert.match(skill('plan-project'), /`issue update <story> --status ready` \(no step\), story by story\. Once every story of the plan is at `ready`, and not after each one, wait on the held stories' gaps/);
+test('a plan with no gate ends after every story is at `ready`, and waits on no held story\'s gap last', { skip: 'red-test-TC-4: the no-gate ending still waits on the held stories\' gaps' }, () => {
+  const text = skill('plan-project');
+  assert.match(text, /`issue update <story> --status ready` \(no step\), story by story\./);
+  assert.doesNotMatch(text, /Once every story of the plan is at `ready`, and not after each one, wait on the held stories' gaps/);
 });
 
-test('a held story\'s interview escalations are named and left open, not waited on', () => {
+test('"The last wait" is gone, and a held story\'s interview escalations no longer point to it', { skip: 'red-test-TC-4: plan-project still has "The last wait" and points to it' }, () => {
   const text = skill('plan-project');
-  assert.match(text, /A held story's interview escalations still open, where a product question held it in the middle of its interview \("The developer interview", "What is asked"\), are not waited on in this session: they hold no work in it/);
-  assert.match(text, /Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on every open gap escalation at once as "Wait, then read" says/);
-  assert.match(text, /and a held story's interview escalation is not waited on at all \("The last wait"\)/);
+  assert.doesNotMatch(text, /"The last wait"|### The last wait/);
+  assert.doesNotMatch(text, /Say which held stories it waits on, and which interview escalations stay open without a wait/);
 });
 
-test('plan-project waits on a held story\'s gaps last, never in the middle of another story\'s interview', () => {
+test('plan-project waits on a held story\'s gaps at once, beside the other waits, never last', { skip: 'red-test-TC-4: plan-project waits on a held story\'s gaps last' }, () => {
   const text = skill('plan-project');
-  assert.match(text, /A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview/);
-  assert.match(text, /\*\*Before the plan ends, wait on every step 1 gap escalation of this session still open\*\*: at the plan gate, with QUESTIONs or none; at `ready` on a type with no plan gate; and in a session whose every story step 1 held/);
+  assert.doesNotMatch(text, /it is waited on last|never in the middle of another story's interview/);
+  assert.doesNotMatch(text, /\*\*Before the plan ends, wait on every step 1 gap escalation of this session still open\*\*/);
+  assert.match(from(text, '### Gaps → back to the PO', '**Several stories:**'), /\bat once\b[^.]*\b(?:beside|alongside)\b[^.]*\bother waits\b|\b(?:beside|alongside)\b[^.]*\bother waits\b[^.]*\bat once\b/);
 });
 
 test('each skill that raises points to run\'s "Wait, then carry on" and the contract, and does not copy the loop', () => {
@@ -217,8 +216,13 @@ test('no answer moves a story out of the shaped step or the plan gate', () => {
   assert.match(skill('plan-project'), /\*\*No answer moves a story out of the shaped step or the plan gate\*\*: this skill makes those moves itself, on the conditions step 0's table and step 8 give\./);
   const questions = skill('plan-project');
   assert.match(questions, /\*\*The move follows `# QUESTIONs applied`, not the answer\.\*\* An answer changes a description or a task, and nothing more, whatever it says, even one that reads as a pass\./);
-  assert.match(questions, /what makes them applied\. Say so\. Then wait on the held stories' gaps/);
-  assert.match(questions, /So whatever the answer, this session does not plan the story again: it says the answer in the session and that the story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops\./);
+  assert.match(questions, /That reply is what makes them applied\. Say so\./);
+});
+
+test('the QUESTIONs ending no longer waits on the held stories\' gaps, and no sentence says the session never plans a held story again', { skip: 'red-test-TC-4: "Say so. Then wait on the held stories\' gaps" and "does not plan the story again" are still there' }, () => {
+  const questions = skill('plan-project');
+  assert.doesNotMatch(questions, /what makes them applied\. Say so\. Then wait on the held stories' gaps/);
+  assert.doesNotMatch(questions, /this session does not plan the story again/);
 });
 
 // Where an agent cannot wait (`wait: stop`), the skill stops, and a person's question to the agent goes unheard.
