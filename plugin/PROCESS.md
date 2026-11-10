@@ -165,7 +165,16 @@ the run was the approval. Where shaping ends on a type with no shaped step, it s
 `backlog`, setting the plan step itself, since the approval escalation was the approval. A type with no `shape` starts
 from no step at `backlog` the same way. On a type with a shaped step, a story at `shape`, or one at the shaped step
 with a shaping escalation open, is not moved: `plan-project` says shaping is not finished and stops, writing nothing.
-A story it sends gaps back on goes back to `shape`.
+A story `plan-project` sends gaps back on goes back to `shape`, and on *Hold* a round trip starts.
+
+**A round trip** is a story that planning sent back to the PO and shaping then takes up in the same session, with no
+second invocation. A story is in a round trip when its latest gap comment (the comment whose closing sentence begins *"Answer these with `shape-project` on `<ref>`"*) has its escalation answered *Hold*, and the story is at `shape`, the shaped step or the plan step. Its shaping half is done once a `# Planning started` follows that gap comment. Its four steps:
+1. `plan-project` raises its "how do we proceed?" escalation tied to the gap comment, and waits on it at once, beside its other waits.
+2. On *Hold*, `plan-project` posts `# Shaping started` naming the gap comment's `cN` and the escalation's `eN`, and hands the story over to `shape-project` (`HARNESS.md`, "Handing over to a skill"). *Split* and *Accept* hand nothing over.
+3. In a round trip `shape-project` writes the body from the PO's answers, sets the shaped step and hands the story back to `plan-project`.
+4. In a round trip `# Planning started` says the PO's answers to shaping were the approval of the body, and planning resumes.
+
+An answer is acted on under the skill whose role raised the escalation: `agent` for `shape-project`, `planner` for `plan-project`, and for that story only. An answer to an escalation raised as `planner` is never acted on under `shape-project`, nor one raised as `agent` under `plan-project`. Nothing counts round trips: a story goes back to shaping as often as planning needs the PO.
 
 | Part of the story | Owner | Written through |
 |---|---|---|
@@ -195,6 +204,7 @@ exists.
    `plan-project` moves the story from the plan gate to `ready` on a PASS, with a `# Moved to ready` comment naming the
    report's `cN` and its verdict. A RETURN stays at the plan gate: moving it back to the plan step returns it to planning.
    On a RETURN where every BLOCKER is a fix to existing items, plan-project fixes it, replies `# BLOCKERs fixed` and runs a re-review at most 2 times before the story stops at the plan gate.
+   On a type with `shape`, Three RETURNs go through the gap path of `plan-project` step 1: a gap comment, the story back at `shape` and the escalation tied to it.
    **No task starts before the move to `ready`**, and an answer to a QUESTION is not that move. With QUESTIONs, the order
    is: answer them, and `plan-project` applies the answers (the session waiting on them does, or a re-invoke once it has
    ended; it replies `# QUESTIONs applied` to the report) and then moves the story to `ready` on PASS WITH DECISIONS,

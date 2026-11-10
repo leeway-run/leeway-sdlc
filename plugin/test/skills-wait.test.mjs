@@ -141,25 +141,25 @@ const endings = {
   '`ready` with no plan gate': ['**A type without a plan gate**', '**A type with one**'],
 };
 for (const [name, [lead, until]] of Object.entries(endings)) {
-  test(`plan-project's ending at ${name} does not wait on the held stories' gaps last`, { skip: `red-test-TC-4: the ending at ${name} still waits on the held stories' gaps ("The last wait")` }, () => {
+  test(`plan-project's ending at ${name} does not wait on the held stories' gaps last`, () => {
     const text = extract('plan-project', lead, until);
     assert.doesNotMatch(text, /wait on the held stories' gaps|"The last wait"/);
   });
 }
 
-test('a plan with no gate ends after every story is at `ready`, and waits on no held story\'s gap last', { skip: 'red-test-TC-4: the no-gate ending still waits on the held stories\' gaps' }, () => {
+test('a plan with no gate ends after every story is at `ready`, and waits on no held story\'s gap last', () => {
   const text = skill('plan-project');
   assert.match(text, /`issue update <story> --status ready` \(no step\), story by story\./);
   assert.doesNotMatch(text, /Once every story of the plan is at `ready`, and not after each one, wait on the held stories' gaps/);
 });
 
-test('"The last wait" is gone, and a held story\'s interview escalations no longer point to it', { skip: 'red-test-TC-4: plan-project still has "The last wait" and points to it' }, () => {
+test('"The last wait" is gone, and a held story\'s interview escalations no longer point to it', () => {
   const text = skill('plan-project');
   assert.doesNotMatch(text, /"The last wait"|### The last wait/);
   assert.doesNotMatch(text, /Say which held stories it waits on, and which interview escalations stay open without a wait/);
 });
 
-test('plan-project waits on a held story\'s gaps at once, beside the other waits, never last', { skip: 'red-test-TC-4: plan-project waits on a held story\'s gaps last' }, () => {
+test('plan-project waits on a held story\'s gaps at once, beside the other waits, never last', () => {
   const text = skill('plan-project');
   assert.doesNotMatch(text, /it is waited on last|never in the middle of another story's interview/);
   assert.doesNotMatch(text, /\*\*Before the plan ends, wait on every step 1 gap escalation of this session still open\*\*/);
@@ -219,7 +219,7 @@ test('no answer moves a story out of the shaped step or the plan gate', () => {
   assert.match(questions, /That reply is what makes them applied\. Say so\./);
 });
 
-test('the QUESTIONs ending no longer waits on the held stories\' gaps, and no sentence says the session never plans a held story again', { skip: 'red-test-TC-4: "Say so. Then wait on the held stories\' gaps" and "does not plan the story again" are still there' }, () => {
+test('the QUESTIONs ending no longer waits on the held stories\' gaps, and no sentence says the session never plans a held story again', () => {
   const questions = skill('plan-project');
   assert.doesNotMatch(questions, /what makes them applied\. Say so\. Then wait on the held stories' gaps/);
   assert.doesNotMatch(questions, /this session does not plan the story again/);

@@ -84,12 +84,12 @@ const DEFINITION = {
 const OTHER_THAN_HOLD = /\*(?:Split|Accept)\b[^*]*\*|\bany answer\b|\bwhatever the answer\b/;
 
 for (const [condition, res] of Object.entries(DEFINITION)) {
-  test(`PROCESS.md "Before the plan: shaping" defines a round trip: ${condition}`, { skip: 'red-test-TC-1: PROCESS.md defines no round trip yet' }, () => {
+  test(`PROCESS.md "Before the plan: shaping" defines a round trip: ${condition}`, () => {
     found(shapingPart, `saying ${condition}`, ...res);
   });
 }
 
-test('PROCESS.md "Before the plan: shaping": the definition names no answer but *Hold*', { skip: 'red-test-TC-1: PROCESS.md defines no round trip yet' }, () => {
+test('PROCESS.md "Before the plan: shaping": the definition names no answer but *Hold*', () => {
   const sentence = sentenceWith(shapingPart, /\bround trip\b/, /\blatest gap comment\b/, /answered \*Hold\*/);
   assert.ok(sentence, 'no sentence defining a round trip by its latest gap comment answered *Hold*');
   assert.doesNotMatch(sentence, OTHER_THAN_HOLD);
@@ -115,7 +115,7 @@ test('the round-trip definition pins each fail on exactly the one condition a fi
   assert.ok(OTHER_THAN_HOLD.test(broken['a story that planning sends back, whatever the answer'].replace('answered *Hold*', 'answered *Split*') ));
 });
 
-test('PROCESS.md "Before the plan: shaping" gives the four steps of a round trip: Hold, `# Shaping started`, shaping, planning resumes', { skip: 'red-test-TC-1: PROCESS.md has no round-trip steps yet' }, () => {
+test('PROCESS.md "Before the plan: shaping" gives the four steps of a round trip: Hold, `# Shaping started`, shaping, planning resumes', () => {
   found(shapingPart, 'saying that on *Hold* plan-project posts `# Shaping started` and hands the story to shape-project',
     /\*Hold\*/, /`# Shaping started`/, /\bplan-project\b/, /\bshape-project\b/, /\bhand/);
   found(shapingPart, 'saying that in a round trip shape-project, once the body is written, hands the story back to plan-project',
@@ -124,23 +124,23 @@ test('PROCESS.md "Before the plan: shaping" gives the four steps of a round trip
     /\bround trip\b/, /`# Planning started`/, /answers to shaping/, /approval of the body/);
 });
 
-test('PROCESS.md: an answer is acted on under the skill whose role raised the escalation, for that story only', { skip: 'red-test-TC-4: PROCESS.md says nothing of who acts on an answer' }, () => {
+test('PROCESS.md: an answer is acted on under the skill whose role raised the escalation, for that story only', () => {
   found(shapingPart, 'saying an answer is acted on under the skill whose role raised it: `agent` for shape-project, `planner` for plan-project',
     /\bacted on\b/, /\brole\b/, /`agent`/, /`planner`/, /\bshape-project\b/, /\bplan-project\b/);
   found(shapingPart, 'saying that answer is acted on for that story only', /\bthat story only\b/);
 });
 
-test('PROCESS.md: an escalation raised by `planner` is not acted on under shape-project', { skip: 'red-test-TC-4: PROCESS.md says nothing of who acts on an answer' }, () => {
+test('PROCESS.md: an escalation raised by `planner` is not acted on under shape-project', () => {
   found(shapingPart, 'saying an answer to an escalation raised as `planner` is not acted on under shape-project',
     /`planner`/, /\bshape-project\b/, /\b(?:not|never)\b/, /\bacted on\b|\bacts on\b/);
 });
 
-test('PROCESS.md "The plan gate": Three RETURNs on a type with `shape` goes through the gap path, with an escalation', { skip: 'red-test-AC-1: PROCESS.md\'s plan gate does not mention Three RETURNs' }, () => {
+test('PROCESS.md "The plan gate": Three RETURNs on a type with `shape` goes through the gap path, with an escalation', () => {
   found(gatePart, 'saying that on a type with `shape` three RETURNs go through the gap path: the gap comment, `shape` and the tied "how do we proceed?" escalation',
     /Three RETURNs|three (?:or more )?coverage reports/i, /\bshape\b/, /\bgap\b/, /\bescalation\b/);
 });
 
-test('PROCESS.md: nothing counts round trips', { skip: 'red-test-AC-5: PROCESS.md does not say round trips have no limit' }, () => {
+test('PROCESS.md: nothing counts round trips', () => {
   found(shapingPart, 'saying nothing counts round trips', /\bround trips?\b/, /\bnothing counts\b|\bno limit\b|\bno count\b|\bno cap\b/i);
 });
 
@@ -152,36 +152,36 @@ test('PROCESS.md and plan-project do not restate the definition of a round trip 
 
 // --- TC-1: plan-project cites the definition and raises tied to the gap comment ------------------------------
 
-test('plan-project cites the definition in PROCESS.md, "Before the plan: shaping"', { skip: 'red-test-TC-1: plan-project does not cite a round-trip definition' }, () => {
+test('plan-project cites the definition in PROCESS.md, "Before the plan: shaping"', () => {
   found(gaps + '\n' + start0, 'citing `PROCESS.md`, "Before the plan: shaping" for what a round trip is',
     /\bround trip\b/, /`PROCESS\.md`, "Before the plan: shaping"/);
 });
 
-test('plan-project step 1: the "how do we proceed?" escalation is raised with `"comment"` the gap comment\'s `cN`', { skip: 'red-test-TC-1: step 1 raises the escalation with no comment tie' }, () => {
+test('plan-project step 1: the "how do we proceed?" escalation is raised with `"comment"` the gap comment\'s `cN`', () => {
   assert.match(flat(gaps), /how do we proceed\?[^.]*`"comment"`[^.]*gap comment's `cN`|`"comment"`[^.]*gap comment's `cN`[^.]*how do we proceed\?/);
 });
 
 // --- AC-1, AC-3, TC-4: the gap escalation is waited on at once ----------------------------------------------
 
-test('plan-project step 1: the gap escalation is waited on at once, beside the session\'s other waits', { skip: 'red-test-TC-4: step 1 waits on it last, "once the rest of the plan is done"' }, () => {
+test('plan-project step 1: the gap escalation is waited on at once, beside the session\'s other waits', () => {
   found(gaps, 'saying the gap escalation is waited on at once, beside the session\'s other waits',
     /\bwait/i, /\bat once\b/, /\b(?:beside|alongside)\b[^.]*\bother waits\b/);
   assert.doesNotMatch(flat(gaps), /once the rest of the plan is done/);
 });
 
-test('plan-project "Wait, then read": a held story\'s gap escalation is waited on when it is raised, not last', { skip: 'red-test-TC-4: the exit-0 row says it is waited on last' }, () => {
+test('plan-project "Wait, then read": a held story\'s gap escalation is waited on when it is raised, not last', () => {
   found(waitRead, 'saying a held story\'s step 1 gap escalation is waited on when it is raised, beside the other waits',
     /\bgap escalation\b/, /\bwaited on\b/, /\b(?:when|as soon as) (?:it is )?raised\b|\bat once\b/, /\b(?:beside|alongside)\b/);
   assert.doesNotMatch(flat(waitRead), /waited on last/);
 });
 
-test('plan-project says nothing of "The last wait" or "waited on last" any more', { skip: 'red-test-TC-4: plan-project still has "The last wait"' }, () => {
+test('plan-project says nothing of "The last wait" or "waited on last" any more', () => {
   assert.doesNotMatch(flat(planProject), /The last wait|waited on last|wait on the held stories' gaps/);
   assert.ok(!/^### The last wait/m.test(planProject), 'the section "The last wait" is still a heading');
 });
 
 // The absent-phrase pin of the hazard register, over plan-project/SKILL.md and PROCESS.md.
-test('the old sentences "this session does not plan the story again" and "waited on last" appear in neither plan-project nor PROCESS.md', { skip: 'red-test-AC-1: plan-project/SKILL.md still says both' }, () => {
+test('the old sentences "this session does not plan the story again" and "waited on last" appear in neither plan-project nor PROCESS.md', () => {
   for (const [name, text] of Object.entries({ 'plan-project/SKILL.md': planProject, 'PROCESS.md': contract })) {
     for (const phrase of ['this session does not plan the story again', 'waited on last'])
       assert.ok(!flat(text).includes(phrase), `${name} still says "${phrase}"`);
@@ -190,19 +190,19 @@ test('the old sentences "this session does not plan the story again" and "waited
 
 // --- AC-1, TC-3: *Hold* hands over, *Split* and *Accept* do not ---------------------------------------------
 
-test('plan-project step 1: on *Hold* it posts `# Shaping started` naming the gap comment\'s `cN` and the escalation\'s `eN`, as `<alias>/planner`', { skip: 'red-test-TC-3: step 1 posts no `# Shaping started`' }, () => {
+test('plan-project step 1: on *Hold* it posts `# Shaping started` naming the gap comment\'s `cN` and the escalation\'s `eN`, as `<alias>/planner`', () => {
   found(gaps, 'on *Hold* posting a comment opening `# Shaping started`', /\*Hold\*/, /`# Shaping started`/);
   found(gaps, 'saying `# Shaping started` names the gap comment\'s `cN` and the escalation\'s `eN`',
     /`# Shaping started`/, /gap comment's `cN`/, /escalation's `eN`/);
   found(gaps, 'saying `# Shaping started` is posted as `<alias>/planner`', /`# Shaping started`/, /<alias>\/planner/);
 });
 
-test('plan-project step 1: it says each hand-over to shaping in the session', { skip: 'red-test-TC-3: step 1 hands nothing over' }, () => {
+test('plan-project step 1: it says each hand-over to shaping in the session', () => {
   found(gaps, 'on *Hold* saying the hand-over to shape-project in the session',
     /\bhand(?:s|ing)? (?:the story )?over\b|\bhand-over\b/, /\bshape-project\b|\bshaping\b/, /\bin the session\b/);
 });
 
-test('plan-project step 1: it hands over to shape-project as `HARNESS.md`, "Handing over to a skill", says', { skip: 'red-test-TC-2: step 1 hands over to nothing' }, () => {
+test('plan-project step 1: it hands over to shape-project as `HARNESS.md`, "Handing over to a skill", says', () => {
   found(gaps, 'handing over to shape-project as `HARNESS.md`, "Handing over to a skill", says',
     /\bhand(?:s|ing)? over to (?:the )?`?shape-project`?/i, /as `HARNESS\.md`, "Handing over to a skill", says/);
 });
@@ -216,54 +216,54 @@ test('no skill hands over by reading another skill\'s SKILL.md to follow it', ()
   }
 });
 
-test('plan-project step 1: *Split* starts no shaping', { skip: 'red-test-AC-1: step 1 does not say *Split* starts no shaping' }, () => {
+test('plan-project step 1: *Split* starts no shaping', () => {
   found(gaps, 'saying *Split* starts no shaping', /\*Split\b/, /\b(?:starts? (?:no shaping|nothing)|nothing (?:starts|is handed over)|no shaping)\b/);
 });
 
-test('plan-project step 1: *Accept* starts no shaping', { skip: 'red-test-AC-1: step 1 does not say *Accept* starts no shaping' }, () => {
+test('plan-project step 1: *Accept* starts no shaping', () => {
   found(gaps, 'saying *Accept* starts no shaping', /\*Accept\b/, /\b(?:starts? (?:no shaping|nothing)|nothing (?:starts|is handed over)|no shaping)\b/);
 });
 
-test('plan-project step 1: nothing is handed over to shaping while the gap escalation is open, and only *Hold* hands over', { skip: 'red-test-AC-1: step 1 hands over on no answer' }, () => {
+test('plan-project step 1: nothing is handed over to shaping while the gap escalation is open, and only *Hold* hands over', () => {
   found(gaps, 'saying the hand-over to shaping is never made before the escalation is answered *Hold*',
     /\b(?:never|not|only|no)\b/, /\bhand(?:s|ing)? over\b|\bhand-over\b/, /\bopen\b|\banswered\b|\bunanswered\b/, /\*Hold\*/);
 });
 
-test('plan-project step 1: the other stories keep planning while a held story is shaped (AC-3)', { skip: 'red-test-AC-3: step 1 does not say the other stories keep planning during shaping' }, () => {
+test('plan-project step 1: the other stories keep planning while a held story is shaped (AC-3)', () => {
   found(gaps, 'saying the other stories keep planning while the held one is shaped',
     /\bshap(?:ed|ing)\b/, /\bother stories\b|\bthe others\b/, /\b(?:keep|carry on|go on)\b[^.]*\bplanning\b|\bplanning (?:carries on|goes on)\b/);
 });
 
 // --- the carry-forward from LWY-222.1's probe (docs/targets/claude.md, "Handing over to a skill") ---------------
 
-test('plan-project says the hand-over uses the session\'s alias', { skip: 'red-test-TC-2: the probe held only when the text says to use the session\'s alias' }, () => {
+test('plan-project says the hand-over uses the session\'s alias', () => {
   found(gaps, 'saying shape-project, handed over to, uses the session\'s alias', /\bshape-project\b/, /\bthe session's alias\b/, /\b(?:use|uses|keep|keeps|under)\b/i);
 });
 
-test('plan-project says that on the hand-back it continues the earlier run rather than starting a new one', { skip: 'red-test-TC-2: the probe resumed the first run only when the text says to continue an earlier run' }, () => {
+test('plan-project says that on the hand-back it continues the earlier run rather than starting a new one', () => {
   found(gaps + '\n' + start0, 'saying that on the hand-back it continues the earlier run, not a new one',
     /\bhand-back\b|\bhands? (?:it|the story) back\b|\bhanded back\b/, /\bcontinue(?:s)? (?:the |this |its )?earlier run\b/,
     /\b(?:not|never|rather than)\b[^.]*\b(?:new|second|another)\b[^.]*\brun\b/);
 });
 
-test('plan-project says another story\'s wait is acted on when it exits, whichever skill the session is in', { skip: 'red-test-TC-2: the probe acted on it only because the caller\'s text had that standing rule' }, () => {
+test('plan-project says another story\'s wait is acted on when it exits, whichever skill the session is in', () => {
   found(planProject, 'saying another story\'s wait is acted on when it exits, in whatever skill the session is in',
     /\banother story's\b/i, /\bwait\b/, /\bexits?\b/, /\bacted on\b|\bact on\b/, /\bwhichever skill\b|\bwhatever skill\b/, /\bthe session is in\b/);
 });
 
 // --- TC-4: who acts on an answer ---------------------------------------------------------------------------
 
-test('plan-project "Wait, then read": an answer is acted on under the skill whose role raised it', { skip: 'red-test-TC-4: "Wait, then read" says nothing of the raiser\'s role' }, () => {
+test('plan-project "Wait, then read": an answer is acted on under the skill whose role raised it', () => {
   found(waitRead, 'saying an answer is acted on under the skill whose role raised the escalation: `planner` here',
     /\bacted on\b/, /\brole\b/, /`planner`/, /\bplan-project\b|\bthis skill\b/);
 });
 
-test('plan-project "Wait, then read": an escalation raised by `agent` is not acted on under plan-project', { skip: 'red-test-TC-4: "Wait, then read" says nothing of the raiser\'s role' }, () => {
+test('plan-project "Wait, then read": an escalation raised by `agent` is not acted on under plan-project', () => {
   found(waitRead, 'saying an answer to an escalation raised as `agent` is not acted on under plan-project (it is shape-project\'s)',
     /`agent`/, /\bshape-project\b/, /\b(?:not|never)\b/, /\bacted on\b|\bacts on\b|\bact on\b/);
 });
 
-test('plan-project "Wait, then read": one story\'s answer is acted on for that story only, and neither holds nor moves another', { skip: 'red-test-AC-3: "Wait, then read" says nothing of an answer being for that story only' }, () => {
+test('plan-project "Wait, then read": one story\'s answer is acted on for that story only, and neither holds nor moves another', () => {
   found(waitRead, 'saying an answer is acted on for that story only', /\bthat story only\b/);
   found(waitRead, 'saying one story\'s answer neither holds nor moves another story',
     /\banother story\b/, /\b(?:holds?|moves?)\b/, /\b(?:never|not|neither|nor)\b/);
@@ -271,7 +271,7 @@ test('plan-project "Wait, then read": one story\'s answer is acted on for that s
 
 // --- step 0's rows: the story is at `shape` in a round trip ---------------------------------------------------
 
-test('step 0: a story at `shape` in a round trip is handed over to shape-project, in a row before the refusal row', { skip: 'red-test-AC-4: step 0 has no round-trip row' }, () => {
+test('step 0: a story at `shape` in a round trip is handed over to shape-project, in a row before the refusal row', () => {
   const refusal = rowIndex(SHAPE_ROW);
   assert.ok(refusal >= 0, `no row "${SHAPE_ROW}"`);
   const before = rows.slice(0, refusal).find((r) => /^\| `shape`/.test(r) && /\bround trip\b/.test(r) && /\bhand(?:s|ed)? over to (?:the )?`?shape-project`?|\bhand(?:s|ing)? over\b/.test(r));
@@ -280,7 +280,7 @@ test('step 0: a story at `shape` in a round trip is handed over to shape-project
   assert.doesNotMatch(before, /say shaping is not finished/);
 });
 
-test('step 0: a story at `shape` whose latest gap comment\'s escalation is open is waited on, then follows step 1\'s answer', { skip: 'red-test-AC-4: step 0 has no row for an open gap escalation' }, () => {
+test('step 0: a story at `shape` whose latest gap comment\'s escalation is open is waited on, then follows step 1\'s answer', () => {
   const refusal = rowIndex(SHAPE_ROW);
   const hit = rows.slice(0, refusal).find((r) => /^\| `shape`/.test(r) && /\blatest gap comment\b/.test(r) && /\bescalation\b[^|]*\bopen\b/.test(r));
   assert.ok(hit, `no row before "${SHAPE_ROW}" about a story at \`shape\` whose latest gap comment's escalation is open\n${rows.join('\n')}`);
@@ -289,7 +289,7 @@ test('step 0: a story at `shape` whose latest gap comment\'s escalation is open 
   assert.doesNotMatch(hit, /--step/);
 });
 
-test('step 0: the shaped-step row says that in a round trip `# Planning started` says the PO\'s answers to shaping were the approval of the body', { skip: 'red-test-TC-3: the shaped-step row says only that running plan-project was the approval' }, () => {
+test('step 0: the shaped-step row says that in a round trip `# Planning started` says the PO\'s answers to shaping were the approval of the body', () => {
   const r = row('the shaped step, with no shaping escalation open');
   assert.match(r, /`# Planning started`/);
   assert.match(r, /\bin a round trip\b[^|]*\bthe PO's answers to shaping were the approval of the body\b/);
@@ -304,7 +304,7 @@ test('step 0: a story at the shaped step with a shaping escalation open is still
 
 // --- AC-1 (Three RETURNs), TC-5 -----------------------------------------------------------------------------
 
-test('step 8 Three RETURNs: on a type with `shape` it goes through step 1\'s gap path, with the tied escalation', { skip: 'red-test-AC-1: Three RETURNs on a type with `shape` posts a comment and raises nothing' }, () => {
+test('step 8 Three RETURNs: on a type with `shape` it goes through step 1\'s gap path, with the tied escalation', () => {
   const text = flat(questions);
   assert.doesNotMatch(text, /post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending/);
   found(questions, 'saying that on a type with `shape` three RETURNs take step 1\'s gap path: the gap comment, `shape` and the tied escalation',
@@ -329,7 +329,7 @@ const COVERAGE_REPORTS = /coverage reports?|`# Plan coverage:`|\bwindow\b/i;
 const NO_LIMIT = /\bnothing counts\b|\bno (?:limit|count|cap)\b|\bwithout (?:a |any )?(?:limit|cap|count)\b/i;
 const ties = (text) => sentences(text).filter((s) => ROUND_TRIP.test(s) && LIMIT.test(s) && !COVERAGE_REPORTS.test(s) && !NO_LIMIT.test(s));
 
-test('AC-5: no text in plan-project, shape-project or PROCESS.md caps or counts round trips; PROCESS.md says nothing counts them', { skip: 'red-test-AC-5: PROCESS.md does not yet say nothing counts round trips' }, () => {
+test('AC-5: no text in plan-project, shape-project or PROCESS.md caps or counts round trips; PROCESS.md says nothing counts them', () => {
   for (const [name, text] of Object.entries({ 'plan-project/SKILL.md': planProject, 'shape-project/SKILL.md': shaping, 'PROCESS.md': contract })) {
     assert.deepEqual(ties(text), [], `${name} ties a limit or a count to a round trip`);
   }
@@ -355,11 +355,11 @@ test('the AC-5 scan fails a cap or a count on round trips and passes step 0\'s c
 
 // --- Done when and the description -------------------------------------------------------------------------
 
-test('plan-project "Done when": a story whose gaps went back to the PO is handed to shaping on *Hold*, not left with no tasks and no next step', { skip: 'red-test-AC-1: "Done when" says only that its gaps went back as one comment and it has no tasks' }, () => {
+test('plan-project "Done when": a story whose gaps went back to the PO is handed to shaping on *Hold*, not left with no tasks and no next step', () => {
   found(doneWhen, 'saying a story whose gaps went back to the PO was handed to shaping on *Hold* (with a `# Shaping started` comment)',
     /\bgaps went back to the PO\b/, /\*Hold\*|`# Shaping started`|\bshape-project\b/);
 });
 
-test('plan-project\'s description says a held story is handed to shaping and planning resumes', { skip: 'red-test-AC-1: the description says only that gaps are sent back to the PO' }, () => {
+test('plan-project\'s description says a held story is handed to shaping and planning resumes', () => {
   assert.match(description, /\bhands? [^.,-]{0,50}\bto (?:`?shape-project`?|shaping)\b/i);
 });

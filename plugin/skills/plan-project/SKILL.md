@@ -1,6 +1,6 @@
 ---
 name: plan-project
-description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans the work before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), interviews the developer on what the code leaves open, writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, their sub-issues and the dependencies, reads back the branch names, and ends at the plan gate (when the type has one) - an independent coverage review, then moves a passing issue to ready. Moves a shaped issue to the plan step. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
+description: Use whenever work is filed in Leeway - an issue with sub-issues, more than one issue, or anything touching the schema, auth, a product rule or an ownership boundary - in a new project or an existing one, including requests worded "file issues", "write this up", "break it down", "park it for later" or "turn this feedback into tickets", unless `.sdlc/leeway.md` sets `filing-work` to `manual`. Plans before any code is written - checks each issue's product side and sends its gaps back to the PO (when its type has a shape step), interviews the developer on what the code leaves open, writes the design doc and each issue's technical criteria, creates the Leeway project, its issues, sub-issues and dependencies, reads back the branches, ends at the plan gate (when the type has one) - a coverage review, then moves a passing issue to ready. Moves a shaped issue to the plan step, and hands a held one to `shape-project`. Runs only for an issue whose type has a plan step. Skip it for a one-file fix with an obvious test.
 ---
 
 # Plan a project
@@ -53,9 +53,11 @@ whatever happened.
    | the plan step | carry on |
    | `shape`, or no step at `backlog`, on a type with `shape` but no shaped step | with a body and no open escalation: `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on. Shaping ends at `shape` there, and the PO's yes to shape-project's approval escalation was the approval. With no body, or an escalation still open: **say shaping is not finished, and stop.** Write nothing |
    | no step at `backlog`, on a type with no `shape` step | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, then carry on |
+   | `shape`, in a round trip (`PROCESS.md`, "Before the plan: shaping") | hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says, as step 1 does on *Hold*, and plan the session's other stories meanwhile. On the hand-back, continue the earlier run, not a new run |
+   | `shape`, with its latest gap comment's escalation open | wait on it at once ("Wait, then read"), then follow step 1's answer. Write nothing before the answer |
    | `shape`, or no step at `backlog`, on a type with a shaped step | **say shaping is not finished, and stop.** Write nothing: planning starts once `shape-project` has set the shaped step |
    | the shaped step, with a shaping escalation open | **say shaping is not finished, and stop.** Write nothing: the PO's open escalation comes first |
-   | the shaped step, with no shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, say so in the session, and post a comment opening `# Planning started` saying running plan-project was the approval of the body, then carry on |
+   | the shaped step, with no shaping escalation open | `<cli> --as <alias>/planner issue update <story> --step <the plan step's id>`, say so in the session, and post a comment opening `# Planning started` saying running plan-project was the approval of the body, then carry on, and in a round trip it says the PO's answers to shaping were the approval of the body instead |
    | the plan gate, or `ready` with no step, with the latest report's QUESTIONs answered and not applied (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": apply them, and where the latest report's verdict is PASS WITH DECISIONS and the story is still at the plan gate, move it to `ready` as that section says |
    | the plan gate, or `ready` with no step, with a QUESTION of the latest report open (step 8, "The QUESTIONs") | carry on at step 8, "The QUESTIONs": wait on every open one at once ("Wait, then read"), raise a held one as it says, and apply them once every one is answered. The story moves only after they are applied |
    | the plan gate | **say it waits on the gate, and stop**: it was returned, or its session ended before step 8 moved it. Write nothing, and move it only if the person asks (step 7) |
@@ -98,8 +100,8 @@ whatever happened.
    pick, invent none: no option is suggested, and Advice says there is no pick and why. **Every escalation this skill raises is waited on**, as "Wait,
    then read" (under "The developer interview") says, with its exits and the answer to a question asked of you. The
    interview's questions and step 5's floor and repository questions are waited on where they are raised, since the
-   work after them depends on them, and so are step 8's QUESTIONs and its "Three RETURNs" escalation; step 1's
-   product gaps once the rest of the plan is done (step 8, "The last wait"), since the stories that pass go on without them. **On an answer, and on resume**, read the
+   work after them depends on them, and so are step 8's QUESTIONs and its "Three RETURNs" escalation, and step 1's
+   product gaps, each when it is raised. **On an answer, and on resume**, read the
    answers with `issue get` (`escalations[].answer`) and the story's step and comments, and carry on from the first
    thing not done, writing nothing twice: the step that raised it says where its answer leads. An open escalation
    with no answer means do not proceed. **No answer moves a story out of the shaped step or the plan gate**: this skill
@@ -170,14 +172,14 @@ to plan-project."* On a type with no shaped step, where shaping ends at `shape`,
 latest such comment first: if the gaps are the same, do not post them again.
 
 Then set the story back to the PO's step, `issue update <story> --step shape`, and raise one escalation, *"`<ref>`
-has N product gaps: how do we proceed?"*, with the options, your pick first, *Hold; the PO answers with shape-project*, *Split the story
+has N product gaps: how do we proceed?"*, tied to the gap comment with `"comment"` set to the gap comment's `cN`, with the options, your pick first, *Hold; the PO answers with shape-project*, *Split the story
 as proposed* (only for **too big**) and *Accept the gaps as written* (the answer's note says why, and the gaps go
-into the body as `OPEN:` lines by the PO's hand). **A held story gets no tasks.** Then wait on it once the rest of
-the plan is done, as step 8's "The last wait" says: at once, when this session plans no other story. The answer has
-to reach the body before planning: planning on a comment makes a second source that drifts from the first. So
-whatever the answer, this session does not plan the story again: it says the answer in the session and that the
-story waits at `shape` for the PO, and the other gap waits keep running; with none still open, it stops. The
-next `plan-project` takes it from step 0 once the body carries the answer.
+into the body as `OPEN:` lines by the PO's hand). Wait on it at once, beside the session's other waits ("Wait, then
+read"), and let the rest of the plan go on. What makes it a round trip is defined in `PROCESS.md`, "Before the plan: shaping".
+
+**On *Hold*,** post a comment opening `# Shaping started` as `<alias>/planner`, naming the gap comment's `cN` and the escalation's `eN`, and saying the PO's answers to the gaps go into the body through `shape-project`. Say in the session that the story is handed over to shape-project, then hand over to `shape-project` for that story as `HARNESS.md`, "Handing over to a skill", says. `shape-project` uses the session's alias. The other stories keep planning while the held one is shaped: another story's wait that exits is acted on at once, and a held story gets no tasks meanwhile. On the hand-back, continue the earlier run, not a new run, and read step 0 again. Where nothing else is left to do, end the turn, since a background wait that exits wakes the session.
+
+*Split* starts no shaping. *Accept* starts no shaping. Both leave the story at `shape` for the PO, and the next `plan-project` takes it from step 0 once the body carries the answer. Only *Hold* hands over, and after the escalation is answered: no hand-over is made while it is open, and nothing is handed over on a question, a comment or an edit.
 
 **Several stories:** the ones that pass go on; the held ones wait. Name the held ones to the divergence reviewer in
 step 8.
@@ -299,7 +301,7 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 
 | Exit | It means | So |
 |---|---|---|
-| 0 | answered | read every story this session plans again. Another still open: its wait keeps running, with its `ref` and 16 hours of its own, and this carries on only when every escalation of the round is answered. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is not one of these: it is waited on last, in step 8's "The last wait", never in the middle of another story's interview, and a held story's interview escalation is not waited on at all ("The last wait") |
+| 0 | answered | read every story this session plans again. Another still open: its wait keeps running, with its `ref` and 16 hours of its own, and this carries on only when every escalation of the round is answered. None: the table above, or, for a wait outside the interview, the step that raised it. A held story's step 1 gap escalation is waited on when it is raised, beside the others, and its answer is acted on as step 1 says |
 | 2 | no answer by the deadline | stop the turn, naming the escalations and the story: they stay, and re-invoking `plan-project` resumes from step 0 and the table above |
 | 4 | the CLI asked for `leeway login` | stop the turn and name the action, `leeway login --server <server>`; re-invoking resumes |
 | 3 | Leeway did not answer | stop the turn and say so; re-invoking resumes |
@@ -309,6 +311,8 @@ node <plugin-files>/scripts/wait-answer.mjs --server <server> <ref> <eN> -- <cli
 Where `HARNESS.md` says `wait: stop`, skip the wait and act at once as for exit 2. A person can answer at once or days
 later: the answer is read the same way, and a re-invoke with one still open waits on it again, with no second comment or
 escalation. **A partly answered round is still open:** one answer of two starts nothing. Only the answer is an answer: a comment, a status change or an edited description is not.
+
+**An answer is acted on under the skill whose role raised its escalation**: `planner` here, so this skill acts on it. An answer to an escalation of the `agent` role is not acted on under plan-project: it is shape-project's. An answer is acted on for that story only: it neither holds nor moves another story of the session. Another story's wait that exits is acted on when it exits, whichever skill the session is in.
 
 **An answer that settles a question still open** does not close it: nothing can withdraw an escalation, and you do not
 answer one yourself. Say in the session that eN is settled by eM and only needs its answer, raise nothing about it, and
@@ -584,8 +588,7 @@ make no further move of your own.
 The last step, once the whole hierarchy exists. **No task starts before it.**
 
 **A type without a plan gate** goes from plan to ready with no gate: `issue update <story> --status ready` (no
-step), story by story. Once every story of the plan is at `ready`, and not after each one, wait on the held stories'
-gaps ("The last wait", below), and the skill ends.
+step), story by story. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.
 
 **A type with one**: `issue update <story> --step <the plan gate's id>`. You wrote the plan, so you are the one
 reader who cannot check it: an artifact cannot audit itself. So a fresh context does, and its verdict decides
@@ -672,7 +675,7 @@ all small fixes, you fix them and have the plan reviewed again, without a person
 For each round, edit the items, then reply to the report (`comment add <story> --parent cN --stdin body`) with a body opening `# BLOCKERs fixed`, one line per BLOCKER: number, item, change. Each automatic round applies the answered QUESTIONs before the re-review. Each automatic round delegates a re-review to a fresh sdlc-divergence-reviewer, passed the previous report's `cN` and the mode `re-review`. A PASS from any automatic round moves the story to `ready` like a first-report PASS, with the same `# Moved to ready` comment naming that report's `cN`. The loop runs per story: one story's loop never holds or moves another story.
 
 Raise the QUESTIONs, when the report has any (below), wait on them and apply their answers. Then, with QUESTIONs
-or none, wait on the held stories' gaps ("The last wait", below), and **stop**, each story at `ready` or at the plan gate.
+or none, say where each story is. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open, each story at `ready` or at the plan gate.
 
 ### The QUESTIONs
 
@@ -700,7 +703,7 @@ report has with no comment yet), unless an answer settled it, and wait on it the
 answered, change what an answer changes in a description or a task, then **reply to the report** (`comment add
 <story> --parent cN --stdin body`) with a body opening `# QUESTIONs applied`: one line per escalation, its answer
 and what it changed, or that it changed nothing, and one line per held QUESTION an answer settled. That reply is
-what makes them applied. Say so. Then wait on the held stories' gaps ("The last wait", below), and stop.
+what makes them applied. Say so. A held story's round trip still in flight keeps the session on it (step 1): its waits stay running, its hand-over and hand-back carry on, and the session stops when none is still open.
 
 **The move follows `# QUESTIONs applied`, not the answer.** An answer changes a description or a task, and nothing
 more, whatever it says, even one that reads as a pass. On PASS WITH DECISIONS, once every QUESTION is answered and the
@@ -714,8 +717,8 @@ A story already at `ready` is not moved again.
 moving.
 
 **Three RETURNs mean the story is wrong, not the plan.** Step 0 counts them, before any re-planning: three or more
-coverage reports in its window. Then stop re-planning. When the type has `shape`, set `--step shape` and post what
-the rounds could not trace as a step 1 comment to the PO, with step 1's ending. When it has no `shape`, **raise one
+coverage reports in its window. Then stop re-planning. When the type has `shape`, take step 1's gap path: what
+the rounds could not trace as its gap comment to the PO, the story set back to `shape`, and step 1's escalation tied to that comment. When it has no `shape`, **raise one
 escalation on the story**, tied to the latest report with `"comment"` its `cN`, asking the person how to go on:
 *"`<ref>` has three or more coverage reports and none passed: how do we go on?"* The reviewer is tracing a story that
 does not say what anyone means by it. Wait on it (step 0). Give two options, each naming what plan-project does next:
@@ -734,20 +737,6 @@ session to plan the story again. Then post a comment on the story opening `# Re-
 posted because the person asked and naming who asked, and carry on from step 0: the reports after that comment
 start a fresh window.
 
-### The last wait
-
-**Before the plan ends, wait on every step 1 gap escalation of this session still open**: at the plan gate, with
-QUESTIONs or none; at `ready` on a type with no plan gate; and in a session whose every story step 1 held, where
-nothing else is planned. A gap escalation is waited on nowhere else, since the stories that pass go on without it.
-A held story's interview escalations still open, where a product question held it in the middle of its interview
-("The developer interview", "What is asked"), are not waited on in this session: they hold no work in it,
-since the story gets no tasks, and they stay open until a person answers them, as its gap comment says.
-Say which held stories it waits on, and which interview escalations stay open without a wait, then wait on every open gap escalation at once as "Wait, then read" says, answering a question
-asked of you. On an answer, say it as step 1 says; the other waits keep running. With none still open, stop. Its answer goes
-to the PO, not to this plan, so the wait holds no work here: where it ends without an answer (exit 2, 3 or 4, or
-`wait: stop`), say once which escalations stay open and that the PO answers them with `shape-project`, and stop. A
-re-invoke does not wait on them again: step 0 stops on a story at `shape`.
-
 **What is lost.** The gate checks that the plan traces to the story, not that the story is right or the design is
 good. A criterion nobody wrote down cannot be found missing.
 
@@ -760,8 +749,8 @@ its ref in the project description and a row in `.sdlc/leeway.md`, branch names 
 someone could pick up from its description alone.
 
 Plus: **every hazard names an owning task**, or the doc says which one does not and why. Every task's done-when
-names at least one thing that must be proven false. Every story passed the product check — or its gaps went back
-to the PO as one comment and it has no tasks. Every planned story, a new one too, has a `# Interview closed`, posted before its
+names at least one thing that must be proven false. Every story passed the product check, or its gaps went back
+to the PO as one comment tied to a "how do we proceed?" escalation, and on *Hold* it was handed to shape-project with a `# Shaping started` comment and planned again on the hand-back (nothing is handed over on *Split* or *Accept*). Every planned story, a new one too, has a `# Interview closed`, posted before its
 design doc, and no escalation of its interview open. Every planned story has its *Technical criteria* in the body (or, on
 a story planned before and not re-planned, pointed to from it, in the latest `# Technical criteria` comment), and a
 *planned by* half on its Status line. Every story and task, and the Plan record, has a summary.

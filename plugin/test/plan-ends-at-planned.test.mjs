@@ -76,7 +76,7 @@ test('plan-project starts where shaping ends, moves a shaped story with no shapi
 
 // LWY-222.2 (TC-3): the shaped-step row keeps its move and its comment, and adds the round-trip clause after "then carry on".
 // Rewritten from the pin that matched the whole row ending at "then carry on |".
-test('plan-project\'s shaped-step row moves the story, posts `# Planning started`, and adds that in a round trip the PO\'s answers to shaping were the approval', { skip: 'red-test-TC-3: the shaped-step row has no round-trip clause' }, () => {
+test('plan-project\'s shaped-step row moves the story, posts `# Planning started`, and adds that in a round trip the PO\'s answers to shaping were the approval', () => {
   assert.match(start(), /\| the shaped step, with no shaping escalation open \| \`<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>\`, say so in the session, and post a comment opening \`# Planning started\` saying running plan-project was the approval of the body, then carry on[^|]*\bin a round trip\b[^|]*the PO's answers to shaping were the approval of the body[^|]*\|/);
 });
 
@@ -192,14 +192,14 @@ test('PROCESS.md tells the two gates apart, and records the gate as a step', () 
 
 // LWY-222.2 (TC-1): rewritten from the last sentence of the pin above, "A story it sends gaps back on goes back to `shape`.",
 // which said a story sent back to the PO stops there. Now it goes back to `shape` and, on *Hold*, shaping starts.
-test('PROCESS.md: a story planning sends gaps back on goes back to `shape`, and on *Hold* shaping starts', { skip: 'red-test-TC-1: PROCESS.md says a story sent back only goes back to `shape`' }, () => {
+test('PROCESS.md: a story planning sends gaps back on goes back to `shape`, and on *Hold* shaping starts', () => {
   const shapingPart = section(contract, '## Before the plan: shaping');
   assert.match(shapingPart, /gaps back[^.]*`shape`[^.]*\*Hold\*|\*Hold\*[^.]*gaps back[^.]*`shape`/);
 });
 
 // LWY-222.2 (AC-1): rewritten from the line of the pin below, "When the type has `shape`, set `--step shape` and post what the
 // rounds could not trace as a step 1 comment to the PO, with step 1's ending", which made Three RETURNs a comment with no escalation.
-test('Three RETURNs on a type with `shape` goes through step 1\'s gap path: the gap comment, `shape` and the tied escalation', { skip: 'red-test-AC-1: Three RETURNs on a type with `shape` is a comment with no escalation' }, () => {
+test('Three RETURNs on a type with `shape` goes through step 1\'s gap path: the gap comment, `shape` and the tied escalation', () => {
   const gate = section(skill, '### The QUESTIONs');
   assert.doesNotMatch(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
   assert.match(gate, /When the type has `shape`, [^.]*\bstep 1's\b[^.]*\bgap\b[^.]*`shape`[^.]*\bescalation\b/);
