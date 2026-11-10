@@ -32,10 +32,11 @@ call and yours are told apart without a marker. You never write one.
 wait: background
 
 Start `wait-answer.mjs` (run, "Wait, then carry on") with the shell tool in its background mode, as it is, with
-nothing appended: the completion notice reports the exit code, so an `; echo` after it would become that code. The
-turn ends with the command running; the session resumes by itself when it exits, on a notice that carries the
-command's output and its exit code, so no turn is spent per check. Do not poll for the output or sleep while it
-runs. When the notice comes, act on the exit code as run's table says. Exit 5 is a question, not the end: answer
+nothing appended. UNVERIFIED: whether appending to the command changes the reported exit code was not tried
+here. The turn ends with the command running; the session resumes by itself when it exits, on a notice that
+carries the command's output and its exit code, so no turn is spent per check. Do not poll for the output or
+sleep while it runs. When the notice comes, act on the exit code as run's table says. Exit 5 is a question,
+not the end: answer
 it, then start the wait again the same way, a new background command (`PROCESS.md`, "Questions to the human are
 escalations"). If the session ends first, the run has stopped as at the deadline: the escalation stays, and
 re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5). `plan-project`'s

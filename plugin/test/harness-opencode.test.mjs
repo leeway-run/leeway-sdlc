@@ -1,7 +1,8 @@
 // LWY-214.4: the OpenCode HARNESS's mechanisms, and the verified promise README and agent-setup make.
-// Every mechanism the harness states is one docs/targets/opencode.md records from a real 2.x session
-// (TC-4); the wait text mirrors plugin/HARNESS.md (Claude Code), and the exit-5 sentence is the
-// counterpart of the one plugin/test/run-waits.test.mjs pins there. Run:
+// Every mechanism the harness states is one docs/targets/opencode.md records from a real 2.x session, and one the
+// probe did not settle is marked UNVERIFIED rather than stated as fact (TC-4); the wait text mirrors
+// plugin/HARNESS.md (Claude Code), and the exit-5 sentence is the counterpart of the one
+// plugin/test/run-waits.test.mjs pins there. Run:
 // `node --test plugin/test/harness-opencode.test.mjs`.
 
 import { test } from 'node:test';
@@ -61,6 +62,21 @@ test('the generated harness carries the exit-5 sentence, the counterpart of Clau
   );
 });
 
+test('the harness marks the untried append mechanism UNVERIFIED, never stating it as fact', () => {
+  // The negative case (TC-4): a mechanism the probe did not settle is marked, never stated from docs alone. The page's
+  // "Not shown" says the `; echo $?` caveat was not tried here, so the harness must say so rather than transplant
+  // Claude Code's claim.
+  const wait = under(openHarness, 'Waiting for an answer');
+  assert.match(wait, /UNVERIFIED: whether appending to the command changes the reported exit code was not tried here\./);
+  // The instruction stays "with nothing appended".
+  assert.match(wait, /as it is, with nothing appended/);
+  // The transplant is gone: the harness does not assert the `; echo` clause, which only Claude Code's page measured.
+  assert.doesNotMatch(wait, /`; echo`/);
+  assert.doesNotMatch(wait, /the completion notice reports the exit code, so/);
+  // And the page backs the negative: the append question is exactly what it did not try.
+  assert.match(page, /whether appending to the command changes\s+the reported code \(the Claude Code page's `; echo \$\?` caveat was not tried here\)/);
+});
+
 test('the marker paragraph is not used for OpenCode, matching rule a on the page', () => {
   const marker = under(openHarness, 'Governed-agent marker');
   assert.match(marker, /governed-marker: not used/);
@@ -103,8 +119,17 @@ test('only OpenCode\'s harness takes the wait, marker and verified banner; the o
       assert.equal(t.wait, null, `${t.id} gained a wait`);
     }
   }
-  // The package's own harness stays the preview notice too.
-  assert.ok(anyHarness.includes(preview), 'the package harness banner changed');
+  // The package's own harness (targets/agents/HARNESS.md) serves every non-Claude-Code agent at once, so its
+  // banner is the package one: OpenCode verified alongside Claude Code, the rest a preview.
+  assert.match(
+    anyHarness,
+    /\*\*Claude Code and OpenCode 2\.x are verified; the other agents are a preview\.\*\*/,
+    'the package harness banner does not name OpenCode verified',
+  );
+  assert.doesNotMatch(anyHarness, /Tested with Claude Code only/, 'the package harness still claims OpenCode untested');
+  // The kit's copy of the same file (what sdlc-install writes to .sdlc/kit/HARNESS.md) carries the same banner.
+  const kitHarness = read(join('targets', 'agents', 'skills', 'sdlc-install', 'kit', 'HARNESS.md'));
+  assert.equal(kitHarness, anyHarness, "the kit's HARNESS.md and the package's are not the same any-agent file");
 });
 
 test('the package README names OpenCode 2.x verified and the other agents a preview', () => {

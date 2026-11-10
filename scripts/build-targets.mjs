@@ -51,6 +51,13 @@ const PACKAGE_NOTICE = `> **OpenCode 2.x is verified; the other agents are a pre
 > support for them will come later. If you run into an issue, let us know:
 > https://github.com/leeway-run/leeway-sdlc/issues`
 
+// The shared any-agent harness file (targets/agents/HARNESS.md and the kit's HARNESS.md) serves every agent but
+// Claude Code at once, so its banner matches the package README's, not the per-agent NOTICE. NOTICE stays for the
+// five per-agent harness files, which keep it byte for byte.
+const PACKAGE_HARNESS_NOTICE =
+  '> **Claude Code and OpenCode 2.x are verified; the other agents are a preview.** Support for the other agents is ' +
+  'built in but has not been verified yet. If you run into an issue, let us know: https://github.com/leeway-run/leeway-sdlc/issues'
+
 const version = JSON.parse(readFileSync(join(PLUGIN, '.claude-plugin', 'plugin.json'), 'utf8')).version
 const claudeHarnessVersion = /^version:\s*(\S+)/m.exec(readFileSync(join(PLUGIN, 'HARNESS.md'), 'utf8'))?.[1]
 if (claudeHarnessVersion !== version) {
@@ -100,7 +107,7 @@ const withHeader = (skillMd) => {
 
 const anyHarness = `# Harness: any agent other than Claude Code
 
-${NOTICE}
+${PACKAGE_HARNESS_NOTICE}
 
 version: ${version}
 agent: any
