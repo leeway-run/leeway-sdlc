@@ -30,7 +30,8 @@ entry that added `bin/`; it has been tried on 2.1.319 and on nothing older): cla
 Codex, GitHub Copilot (CLI and VS Code), Gemini CLI, Cursor, OpenCode and Grok Build install
 `targets/agents/`, a package generated from `plugin/` by `node scripts/build-targets.mjs`. It contains the same
 skills, plus a kit. `sdlc-install` copies the kit into the repo as `.sdlc/kit/`, together with that agent's
-subagents and a hook that runs the git and Leeway guards. The per-agent install commands are in
+subagents and a hook that runs the git and Leeway guards. For OpenCode that is **2.x**, the version it is verified
+against; 1.x is not offered and keeps whatever wiring it has. The per-agent install commands are in
 [agent-setup/prompt.md](agent-setup/prompt.md), which is also the page the onboarding snippet points an agent at:
 
 ```
@@ -41,9 +42,10 @@ https://leeway.run/agent-setup/prompt.md
 What differs per agent (how it delegates, how the guards tell a subagent's call from the orchestrator's, where
 its instructions live, how it updates) is in that agent's `HARNESS.md`. Claude Code's is
 [plugin/HARNESS.md](plugin/HARNESS.md). The rest are generated from [scripts/targets.mjs](scripts/targets.mjs).
-> **Tested with Claude Code only.** Support for the agents above is built in, but so far it has only been
-> tested with Claude Code. Verified support will come later. Until then, some details come from each agent's docs
-> and have not been measured. If you run into an issue, let us know:
+> **OpenCode 2.x is verified; the other agents are a preview.** OpenCode was tested from a real OpenCode 2.2.6
+> session, recorded in [docs/targets/opencode.md](docs/targets/opencode.md). Support for Codex, GitHub Copilot, Gemini
+> CLI, Cursor and Grok Build is built in but has not been verified yet. Verified support for them will come later.
+> Until then, some details come from each agent's docs and have not been measured. If you run into an issue, let us know:
 > [GitHub issues](https://github.com/leeway-run/leeway-sdlc/issues).
 >
 > [docs/targets/](docs/targets/README.md) is the check we will run for each agent before calling it verified.

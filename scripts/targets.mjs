@@ -141,9 +141,23 @@ export const TARGETS = [
     instructionsFile: 'AGENTS.md',
     floorImport: 'read-first',
     floorSetting: 'also add the ENGINEERING path to `instructions` in `opencode.json` (OpenCode does not follow `@` imports).',
-    delegate: 'Use the Task tool with `subagent_type` set to the agent name, for example `sdlc-implementer`. Agents are `.opencode/agents/<name>.md` with `mode: subagent`.',
+    delegate: 'Use the `subagent` tool, with `agent` set to the agent name, for example `sdlc-implementer`, and the brief in its `prompt` (measured — docs/targets/opencode.md). Agents are `.opencode/agents/<name>.md` with `mode: subagent`.',
     permissions: '`opencode.json` (`permission.bash`).',
-    wait: null,
+    // Rule a: the guard reads the agent from `event.agent`, which names the subagent on its own call
+    // (measured — docs/targets/opencode.md, "Hook payloads"), so the marker is not needed here.
+    marker: 'not used',
+    wait:
+      'Start `wait-answer.mjs` (run, "Wait, then carry on") with the shell tool in its background mode, as it is, with\n' +
+      'nothing appended: the completion notice reports the exit code, so an `; echo` after it would become that code. The\n' +
+      'turn ends with the command running; the session resumes by itself when it exits, on a notice that carries the\n' +
+      "command's output and its exit code, so no turn is spent per check. Do not poll for the output or sleep while it\n" +
+      "runs. When the notice comes, act on the exit code as run's table says. Exit 5 is a question, not the end: answer\n" +
+      'it, then start the wait again the same way, a new background command (`PROCESS.md`, "Questions to the human are\n' +
+      'escalations"). If the session ends first, the run has stopped as at the deadline: the escalation stays, and\n' +
+      're-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5). `plan-project`\'s\n' +
+      'developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it. Every other\n' +
+      'skill that raises an escalation starts and reads its waits the same way (`PROCESS.md`, "Questions to the human\n' +
+      'are escalations").',
     installed: '`npx skills list -a opencode`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
     update: `\`npx -y skills add ${REPO}/${SKILLS_PATH} -a opencode --yes\` again (measured: it copies the skills into \`./.agents/skills/\`; a \`tree/main/\` in the path exits 0 with "No skills found" and installs nothing — docs/targets/opencode.md).`,
@@ -229,7 +243,13 @@ ${t.delegate} Every delegation starts a **fresh** agent, and its final message i
 
 ## Governed-agent marker
 
-governed-marker: required
+${
+  t.marker === 'not used'
+    ? `governed-marker: not used
+
+The guards identify this plugin's agents from the \`agent\` the event carries with each call, so a subagent's shell
+call and yours are told apart without a marker. You never write one.`
+    : `governed-marker: required
 
 The guards cannot yet tell a subagent's shell call from yours in ${t.name} (docs/targets/${t.id}.md records what
 its hooks send). So mark the window: immediately before each delegation, from the repo root,
@@ -241,7 +261,8 @@ and as soon as the agent returns, **however it returns**,
     node .sdlc/kit/hooks/adapters/governed.mjs off <task-ref>
 
 While the marker is live every shell call is judged as the subagent's, yours included, so never commit, push or
-write to Leeway with it on. It expires on its own after two hours, so a crashed run cannot lock you out for longer.
+write to Leeway with it on. It expires on its own after two hours, so a crashed run cannot lock you out for longer.`
+}
 
 ## Waiting for an answer
 
