@@ -20,6 +20,11 @@ plugin-files: .sdlc/kit/
 
 Each agent in `.gemini/agents/` is a tool of the same name: call the `sdlc-implementer` tool with the prompt. A subagent cannot start another one. Every delegation starts a **fresh** agent, and its final message is what you gate.
 
+## Handing over to a skill
+
+Hand a story to another skill, for example `shape-project`, by invoking that skill in this session with the story's ref: in Google Gemini CLI, skills are invoked by name, for example "run the sync-repo skill".
+UNVERIFIED: no probe has shown in Google Gemini CLI that the invoked skill takes over the session for that story, that a wait or another story's planning carries on during the hand-over, or that handing the story back resumes the first run (docs/targets/gemini.md).
+
 ## Governed-agent marker
 
 governed-marker: required

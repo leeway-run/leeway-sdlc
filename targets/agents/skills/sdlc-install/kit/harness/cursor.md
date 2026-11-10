@@ -20,6 +20,11 @@ plugin-files: .sdlc/kit/
 
 Ask for the subagent by name ("use the sdlc-implementer subagent to …", or `/sdlc-implementer`). Agents are `.cursor/agents/<name>.md`. Every delegation starts a **fresh** agent, and its final message is what you gate.
 
+## Handing over to a skill
+
+Hand a story to another skill, for example `shape-project`, by invoking that skill in this session with the story's ref: in Cursor (agent and CLI), skills are invoked by name, for example "run the sync-repo skill".
+UNVERIFIED: no probe has shown in Cursor (agent and CLI) that the invoked skill takes over the session for that story, that a wait or another story's planning carries on during the hand-over, or that handing the story back resumes the first run (docs/targets/cursor.md).
+
 ## Governed-agent marker
 
 governed-marker: required
