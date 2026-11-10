@@ -1,6 +1,6 @@
 ---
 name: sync-repo
-description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, the new shaping and planning flow offered to a product process still on the old one, and a run budget left in .sdlc/CONFIG.md offered a move into the process, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
+description: Bring this repo's leeway-sdlc copies up to the plugin version this session runs - the ticket templates, the craft floor, the managed contract block in the agent's instructions file, the gitignore lines (the skills directory too), and for agents other than Claude Code the kit in .sdlc/kit and the agent and hook files - one diff and one question per copy, the new shaping and planning flow offered to a product process still on the old one, and a run budget left in .sdlc/CONFIG.md offered a move into the process, then one branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md. Run once per release per repo, by one person, after the update skill. Use when the session notice or update reports the repo's copies are behind, or the user asks to sync the repo with a new leeway-sdlc release.
 ---
 
 # Sync the repo with this release
@@ -61,7 +61,8 @@ flow (step 1), by `Sync process: to <this version>:`, and so is the budget move 
   **installed** command in `HARNESS.md` shows a newer `leeway-sdlc` installed, this session has not
   restarted since the update: say so and stop, or you would sync to the old release. (Where
   `HARNESS.md` says the plugin files are `.sdlc/kit/`, "this plugin" is the freshly installed
-  `sdlc-install` skill's `kit/` directory, and `.sdlc/kit/` is a copy being synced.)
+  `sdlc-install` skill's `kit/` directory, and `.sdlc/kit/` is a copy being synced, minus the
+  `harness/` and `wiring/` directories and `HARNESS.md`, which the kit row below compares apart.)
 - **Nobody is doing it already.** The Leeway CLI cannot list pull requests, so look in git:
   `git ls-remote --heads origin` for a branch named exactly as in step 4, and, where `gh` is
   installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. A branch whose
@@ -176,8 +177,8 @@ which and why in the summary, and the next release asks again. Like the new flow
 | `STORY.md`, `TASK.md` | the *Ticket templates* row of `.sdlc/CONFIG.md` | `skills/sdlc-install/scaffold/templates/STORY.md.tmpl`, `TASK.md.tmpl` |
 | the craft floor | the `@` import of `HOW-WE-CHANGE-CODE.md` in `ENGINEERING.md` | `craft/HOW-WE-CHANGE-CODE.md` |
 | the contract block | in the **instructions-file** `HARNESS.md` names (`CLAUDE.md`, `AGENTS.md` or `GEMINI.md`), from the line carrying `leeway-sdlc:begin` through the line carrying `leeway-sdlc:end`, **both marker lines included** | `skills/sdlc-install/scaffold/AGENT-BLOCK.md.tmpl`, the whole file, marker lines and their text included, filled in as sdlc-install fills it for this harness (`HARNESS.md`, "Instructions and local notes", and `{{RUN_SKILL}}` from its **commands**), `{{FILING_WORK_RULE}}` from the `filing-work:` line of `.sdlc/leeway.md`, and `{{IMPORT_FLOOR}}` as the read-first line when the instructions file already imports the floor outside the markers (sdlc-install, "Placeholders to fill with care") |
-| the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, and on `.sdlc/.governed/`, one at a time | one line each in `.gitignore` |
-| the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
+| the `.gitignore` lines | `git check-ignore -q` on `.worktrees/`, on the **local-notes-file** `HARNESS.md` names, on `.sdlc/.governed/`, and on the **skills-dir** path `HARNESS.md` names, when it is not `none`, one at a time | one line each in `.gitignore` |
+| the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill **minus `harness/`, `wiring/` and `HARNESS.md`**; compare with `diff -ru --strip-trailing-cr -x harness -x wiring -x HARNESS.md .sdlc/kit <the kit/ directory>`, whose three `-x` make the compare itself leave those out (each matches a file or directory by its basename, at any depth, and the built kit has no other path with one of those names), and compare `.sdlc/kit/HARNESS.md` with `kit/harness/<agent>.md` (the file for this agent, never the kit's generic `HARNESS.md`), still as **one** copy (one question). A repo installed before this release still has the `harness/` and `wiring/` directories inside `.sdlc/kit/`, which the compare leaves out and so does not report: on Take, remove the `harness/` and `wiring/` directories inside `.sdlc/kit/` when present, and say so in the question. Never offer them back |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
 
 **OpenCode's guard plugin is a copy like any other, and a repo installed before this release has the V1
@@ -234,17 +235,24 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
-  `.sdlc/kit/`, since a release can rename or drop a kit path; nothing outside `.sdlc/kit/` is removed. A second
-  compare then says "the same".
+  outside the span is untouched. For the kit, write the compared set, not the whole `kit/`: the `kit/`
+  directory minus `harness/`, `wiring/` and `HARNESS.md`, plus `kit/harness/<agent>.md` written as
+  `.sdlc/kit/HARNESS.md`. Also remove each file or directory the diff reports as only in `.sdlc/kit/`,
+  since a release can rename or drop a kit path (the `harness/` and `wiring/` directories are the kit
+  row's own step); nothing outside `.sdlc/kit/` is removed. A second compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy, before anything is written, since that question is open). Record a `Kept` row too, since the repo copy
   now differs on purpose.
 - **A `.gitignore` line missing** → offer the line. This is not a style choice: without
   the local-notes file, account ids and local paths the contract block sends there get committed; without
   `.worktrees/`, a worktree is staged by accident; without `.sdlc/.governed/`, a live marker is committed and
-  governs every clone. Declined → record it as `Kept` with the reason, and
+  governs every clone; without the skills-dir line, the installed skill files are committed as if the repo
+  wrote them. Declined → record it as `Kept` with the reason, and
   say so in the summary.
+- **The skills-dir line taken, and files tracked** → where `git ls-files <skills-dir>` lists files, the sync's
+  commit untracks them with `git rm -r --cached <skills-dir>`. `--cached` keeps the files on disk, so the install
+  that wrote them still finds them; without it the files would be deleted from disk. `skills-lock.json` stays tracked and is
+  never ignored or untracked.
 
 One question per differing copy and per missing line, step 1's `filing-work:` question when the
 binding lacks the line, step 1's friction migration for a legacy binding with a ref, step 1's budget move when a row is offered it,
