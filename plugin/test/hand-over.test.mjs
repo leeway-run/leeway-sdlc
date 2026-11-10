@@ -14,8 +14,9 @@
 //   - **Wait woke the session on exit:** yes | no
 //   - **Second story's planning carried on:** yes | no
 //   - **Hand-back resumed the first run:** yes | no
+//   - **Stories in flight:** the two story refs and what was open on the second (its interview wait)
 // HARNESS fails closed: a sentence on one of those topics claims it only if the record says yes; otherwise it is hedged
-// (UNVERIFIED, not shown, did not, ...). A topic the record says yes to is stated in HARNESS.
+// (UNVERIFIED, not shown, not verified, not seen, did not). A topic the record says yes to is stated in HARNESS.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
@@ -45,20 +46,39 @@ const generated = () => [
   ...readdirSync(join(root, KIT)).filter((f) => f.endsWith('.md')).map((f) => `${KIT}/${f}`),
 ];
 
+// claim: any wording that could assert the topic (so a sentence on it is checked against the record). says: what stating it as
+// shown looks like; every pattern must match one unhedged sentence. Broad claim, narrow says: the pin fails closed.
 const TOPICS = [
-  { label: 'Invoked skill took over', claim: /\b(takes?|took) over\b|\binstructions\b/i },
-  { label: 'Session kept its alias', claim: /\balias\b/i },
-  { label: 'Wait woke the session on exit', claim: /\b(waits?|waiting)\b/i },
-  { label: "Second story's planning carried on", claim: /\b(other|second) stor(y|ies)\b|\bplanning\b/i },
-  { label: 'Hand-back resumed the first run', claim: /\bhand-back\b|\bresumes?\b|\bsecond run\b/i },
+  { label: 'Invoked skill took over', claim: /\b(takes?|took) over\b|\binstructions\b/i, says: [/\b(takes?|took) over\b/i] },
+  { label: 'Session kept its alias', claim: /\balias\b|\bidentity\b|\b(keeps?|kept|retains?)\b/i, says: [/\b(keeps?|kept|retains?)\b.*\b(alias|identity)\b/i] },
+  { label: 'Wait woke the session on exit', claim: /\b(waits?|waiting|wakes?|woke|waking)\b|\bbackground (task|wait|job)s?\b/i, says: [/\b(wakes?|woke)\b.*\bexit/i] },
+  { label: "Second story's planning carried on", claim: /\b(other|second|another) stor(y|ies)\b|\bplanning\b|\bcarr(y|ies) on\b|\bsurvives?\b/i, says: [/\b(other|second|another) stor(y|ies)\b/i, /\b(carr(y|ies) on|survives?|keeps? planning|continues?)\b/i] },
+  { label: 'Hand-back resumed the first run', claim: /\bhand-back\b|\bhands? back\b|\b(resumes?|continues?|picks? up)\b|\b(first|second) run\b/i, says: [/\b(resumes?|continues?|picks? up|carries on)\b.*\b(first|same)\b.*\brun\b/i] },
 ];
-const HEDGE = /UNVERIFIED|\bnot (shown|known|verified|tried|seen)\b|\bdid not\b|\bdoes not\b|\bno (wake|wakes)\b|\bunknown\b/i;
+const HEDGE = /UNVERIFIED|\bnot (shown|verified|seen)\b|\bdid not\b/i;
+
+// Returns the failures: a claim sentence the record does not back, or a yes the section does not state.
+function disagreements(rec, section) {
+  const sents = sentences(section);
+  const out = [];
+  for (const { label, claim, says } of TOPICS) {
+    const yes = /^yes\b/i.test(bullet(rec, label) ?? '');
+    if (yes) {
+      if (!sents.some((s) => says.every((r) => r.test(s)) && !HEDGE.test(s))) out.push(`the record says yes to "${label}" and HARNESS does not state it`);
+    } else {
+      for (const s of sents.filter((t) => claim.test(t) && !HEDGE.test(t))) out.push(`the record does not show "${label}" and HARNESS claims it: ${s}`);
+    }
+  }
+  return out;
+}
 
 test('TC-2: plugin/HARNESS.md has "Handing over to a skill" after "Delegating to a named agent", naming leeway-sdlc:<skill>', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
   const doc = read('plugin/HARNESS.md');
   const at = doc.indexOf(`\n## ${HEADING}\n`);
   assert.ok(at > 0, `no "${HEADING}" heading in plugin/HARNESS.md`);
-  assert.ok(at > doc.indexOf('\n## Delegating to a named agent\n'), 'the section comes after "Delegating to a named agent"');
+  const delegating = doc.indexOf('\n## Delegating to a named agent\n');
+  assert.ok(delegating > 0, 'plugin/HARNESS.md has no "Delegating to a named agent" heading');
+  assert.ok(at > delegating, 'the section comes after "Delegating to a named agent"');
   const text = flat(rawUnder(doc, HEADING));
   assert.match(text, /Skill tool/);
   assert.ok(text.includes('leeway-sdlc:<skill>') || text.includes('leeway-sdlc:shape-project'), 'names leeway-sdlc:<skill>');
@@ -80,17 +100,15 @@ test('TC-2: claude.md has "Handing over to a skill" with the version, the date a
   assert.match(bullet(section, 'Claude Code version') ?? '', /\d+\.\d+\.\d+/);
   assert.match(bullet(section, 'Date') ?? '', /^\d{4}-\d{2}-\d{2}/);
   for (const { label } of TOPICS) assert.match(bullet(section, label) ?? '', /^(yes|no)\b.{10,}/i, `"${label}" is yes or no, then what was seen`);
+  const flight = bullet(section, 'Stories in flight') ?? '';
+  const refs = new Set(flight.match(/\b[A-Z][A-Z0-9]*-\d+(\.\d+)?\b/g) ?? []);
+  assert.ok(refs.size >= 2, `"Stories in flight" names two stories by ref: ${flight}`);
+  assert.match(flight, /\b(wait|interview)\b/i, '"Stories in flight" says what was open on the second story');
 });
 
 test('TC-2: HARNESS claims a topic only if the record says yes, and states each topic the record says yes to', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
   const rec = rawUnder(read('docs/targets/claude.md'), HEADING);
-  const sents = sentences(rawUnder(read('plugin/HARNESS.md'), HEADING));
-  for (const { label, claim } of TOPICS) {
-    const yes = /^yes\b/i.test(bullet(rec, label) ?? '');
-    const on = sents.filter((s) => claim.test(s));
-    if (yes) assert.ok(on.some((s) => !HEDGE.test(s)), `the record says yes to "${label}" and HARNESS does not state it`);
-    else for (const s of on) assert.match(s, HEDGE, `the record does not show "${label}" and HARNESS claims it: ${s}`);
-  }
+  assert.deepEqual(disagreements(rec, rawUnder(read('plugin/HARNESS.md'), HEADING)), []);
 });
 
 test('TC-2: the Claude line cites the record by its heading and path', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
