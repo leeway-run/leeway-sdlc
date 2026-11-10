@@ -67,7 +67,8 @@ flow (step 1), by `Sync process: to <this version>:`, and so is the budget move 
   **installed** command in `HARNESS.md` shows a newer `leeway-sdlc` installed, this session has not
   restarted since the update: say so and stop, or you would sync to the old release. (Where
   `HARNESS.md` says the plugin files are `.sdlc/kit/`, "this plugin" is the freshly installed
-  `sdlc-install` skill's `kit/` directory, and `.sdlc/kit/` is a copy being synced, minus the `harness/` and `wiring/` directories and `HARNESS.md`, which the kit row below compares apart.)
+  `sdlc-install` skill's `kit/` directory, and `.sdlc/kit/` is a copy being synced, minus the
+  `harness/` and `wiring/` directories and `HARNESS.md`, which the kit row below compares apart.)
 - **Nobody is doing it already.** The Leeway CLI cannot list pull requests, so look in git:
   `git ls-remote --heads origin` for a branch named exactly as in step 4, and, where `gh` is
   installed (it is optional), `gh pr list --search "chore: sync leeway-sdlc"`. A branch whose
@@ -240,9 +241,11 @@ Show each diff and ask: **take the release's copy, keep the repo's, or merge by 
 
 - **Take** → write the plugin's copy over the repo's. For the contract block, replace the span from the
   begin marker line through the end marker line, inclusive, with the filled-in template, whole; text
-  outside the span is untouched. For the kit, also remove each file or directory the diff reports as only in
-  `.sdlc/kit/`, since a release can rename or drop a kit path (the `harness/` and `wiring/` directories are the kit row's own step); nothing outside `.sdlc/kit/` is removed. A second
-  compare then says "the same".
+  outside the span is untouched. For the kit, write the compared set, not the whole `kit/`: the `kit/`
+  directory minus `harness/`, `wiring/` and `HARNESS.md`, plus `kit/harness/<agent>.md` written as
+  `.sdlc/kit/HARNESS.md`. Also remove each file or directory the diff reports as only in `.sdlc/kit/`,
+  since a release can rename or drop a kit path (the `harness/` and `wiring/` directories are the kit
+  row's own step); nothing outside `.sdlc/kit/` is removed. A second compare then says "the same".
 - **Keep** → ask for the reason in one line (in escalation mode the reason is the answer's note; an empty note is recorded as "kept, no reason given"). It goes in a `Kept` row with today's Kept hash, so the next sync does not ask again until the plugin's copy changes.
 - **Merge** → the user edits; you write their result (in escalation mode the answer's note carries the merged text, or names a comment on the issue that does, `cN`; with neither, treat Merge as unanswered, say so, and raise one follow-up escalation for that copy, before anything is written, since that question is open). Record a `Kept` row too, since the repo copy
   now differs on purpose.
