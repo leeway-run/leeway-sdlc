@@ -7,8 +7,9 @@
 - **Tested by:** the LWY-214.5 implementer, running the whole loop end to end on the **generated** wiring — the kit and
   wiring `node scripts/build-targets.mjs` produces and `sdlc-install` lays out, not the probe's — in a scratch git repo
   at `/tmp/opencode/lwy-214.5/scratch`, on Linux, on `azure/deepseek-v4.1-flash`. Raw outputs are under
-  `/tmp/opencode/lwy-214.5/` (`01-skills-add.out` … `10-plugin-load.log`). A fake `leeway` was first on `PATH`; no real
-  Leeway server was reached and no remote was written.
+  `/tmp/opencode/lwy-214.5/` (`01-skills-add.out` … `13-debug-agents.out`, including `06b-orchestrator-commit-allowed.out`,
+  `11-wait-notices.out` and `12-skills-replaced.out`). A fake `leeway` was first on `PATH`; no real Leeway server was
+  reached and no remote was written.
 
 ## Hook payloads
 
@@ -133,19 +134,30 @@ wait: background
 
 The whole loop, once, on the **generated** wiring rather than the probe's: a scratch repo at
 `/tmp/opencode/lwy-214.5/scratch` (one commit, no remote), a fake `leeway` first on `PATH`, and `opencode run --auto
---model azure/deepseek-v4.1-flash`. Raw outputs: `/tmp/opencode/lwy-214.5/01-skills-add.out` …
-`10-plugin-load.log`.
+--model azure/deepseek-v4.1-flash`. One exception to that model: the step-7 guard check inside `sdlc-install` ran
+`opencode run --auto` with **no** `--model`, so it used the default model `iceman-free` (`02-install-run.out`, whose
+transcript reads `build · iceman-free`); every other session ran on `deepseek-v4.1-flash`. Raw outputs:
+`/tmp/opencode/lwy-214.5/01-skills-add.out` … `13-debug-agents.out`.
 
-- **Install.** The measured command landed the seven skills: `npx -y skills add
-  leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes` printed "Found 7 skills" and copied them to
-  `./.agents/skills/` (`01-skills-add.out`). `sdlc-install` then ran end to end in the repo (invoked by name in the
-  scratch session) and wrote `.sdlc/kit/` (whole), `.opencode/plugins/leeway-sdlc.js`, `.opencode/agents/sdlc-*.md`, the
-  seven contract docs, `ENGINEERING.md`, `.sdlc/CONFIG.md` and the `AGENTS.md` block. The written plugin is the V2 shape
-  and the kit's `guard.mjs` is byte-identical to `plugin/hooks/adapters/guard.mjs` (`02-install-run.out`). **Its step-7
-  guard check passed live**, in a `cp -R` scratch copy with the governed marker live: a governed `git commit
-  --allow-empty -m check` came back `Blocked: \`git commit\` is not available to this subagent …` and no commit was made.
-  The server log shows `msg="loading plugin" id=…/scratch/.opencode/plugins/leeway-sdlc.js` with no `failed to load
-  plugin` for it (`10-plugin-load.log`), and `opencode debug agents` lists all three `sdlc-*` subagents.
+- **Install.** The measured command is `npx -y skills add
+  leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes`; it printed "Found 7 skills" and copied them to
+  `./.agents/skills/` (`01-skills-add.out`). **The fetched copy is stale V1** — `origin/main` still carries the V1
+  wiring, whose plugin is `export const LeewaySdlcGuard = async ({ directory }) => ({ 'tool.execute.before': … })`
+  checking `input?.tool !== 'bash'` — so the fetched skills were **replaced** by the worktree's generated ones
+  (`node scripts/build-targets.mjs`) before the install ran; the scratch's `.agents/skills/sdlc-install/kit` is
+  byte-identical to the worktree's `targets/agents/skills/sdlc-install/kit` (`12-skills-replaced.out`). The install ran
+  from that copy, so what this page certifies is the **generated** kit, not the V1 one `npx skills add` fetches today.
+  `sdlc-install` then ran end to end in the repo (invoked by name in the scratch session) and wrote `.sdlc/kit/`
+  (whole), `.opencode/plugins/leeway-sdlc.js`, `.opencode/agents/sdlc-*.md`, the seven contract docs, `ENGINEERING.md`,
+  `.sdlc/CONFIG.md` and the `AGENTS.md` block. The written plugin is the V2 shape and the kit's `guard.mjs` is
+  byte-identical to `plugin/hooks/adapters/guard.mjs` (`02-install-run.out`, `12-skills-replaced.out`). **Its step-7
+  guard check passed live**, in a `cp -R` scratch copy with the governed marker live and no `--model` (so on
+  `iceman-free`): a governed `git commit --allow-empty -m check` came back `Blocked: \`git commit\` is not available to
+  this subagent …` and no commit was made. The server log shows `msg="loading plugin"
+  id=…/scratch/.opencode/plugins/leeway-sdlc.js` with no `failed to load plugin` for it (`10-plugin-load.log`), and
+  `opencode debug agents` lists all three `sdlc-*` subagents — `sdlc-implementer`, `sdlc-reviewer` and
+  `sdlc-divergence-reviewer`, each `mode: subagent`, the read-only two carrying the legacy
+  `{"action":"edit","resource":"*","effect":"deny"}` (`13-debug-agents.out`).
 - **Delegate.** Asked to have `sdlc-implementer` run `git log -1`, the orchestrator called the `subagent` tool with
   `agent: "sdlc-implementer"` (the transcript's `✓ Run git log -1  Sdlc-Implementer Agent`); the fresh agent ran the
   command and its final message — the `git log -1` block — came back to the orchestrator (`03-delegate.out`).
@@ -156,15 +168,24 @@ The whole loop, once, on the **generated** wiring rather than the probe's: a scr
   `printf 'probe body' | leeway --server https://fake.test comment add PRB-1 --stdin --as probe/agent`, was **refused**
   the same way (`Blocked: \`comment add\` writes, and the orchestrator is the only writer to Leeway.`), and the fake
   `leeway` logged **no** `comment add` call: nothing reached even the fake, so nothing reached a server
-  (`05-guard-leeway-write.out`, `09-fake-calls.log`). The orchestrator's own `git status --short`, run directly, was
-  **not** refused (`06-orchestrator-allowed.out`). This settles the story's hazard "the guards are silently absent on
-  2.x": the plugin 2.x loads refuses a governed call, and the reason reaches the agent.
+  (`05-guard-leeway-write.out`, `09-fake-calls.log`). **The orchestrator's own `git commit --allow-empty -m allowed`,
+  run directly in the same scratch repo with no delegation and the marker off, was not refused** — it ran and made the
+  commit (`[main 615f826] allowed`, `git log --oneline -1` → `615f826 allowed`); that is the *same attack* as the
+  governed leg above, allowed when it does not come from the subagent (`06b-orchestrator-commit-allowed.out`). The
+  scratch was then reset to its one commit (`ed08ad4 initial`). This settles the story's hazard "the guards are
+  silently absent on 2.x": the plugin 2.x loads refuses a governed call, the reason reaches the agent, and the same
+  call from the orchestrator still goes through.
 - **Wait.** The README's fake-`leeway` wait probe, run by the main session as a background shell command. **Exit 0:**
   the model started the wait in the background, ended its turn, and the session **resumed on its own** with a
   "Background command finished. Output:" notice holding the wait's stdout `{"label":"Go ahead","note":"probe","by":{}}`
   (`07-wait-exit0.out`). **Exit 2:** with a fake that never answers (`--first 3 --cap 3 --deadline 9`), the resumed
   session was handed `wait-answer: no answer to PRB-1 e1 by …` and **exit code 2**, which the model read
-  (`08-wait-exit2.out`). The fake logged each check with its time in both runs (`09-fake-calls.log`).
+  (`08-wait-exit2.out`). The exit code reached the session in the notice's own metadata, which is what refutes the
+  story's hazard that "the wait's exit code never reaches the session": both synthetic `shell` notices in the session
+  DB (`~/.local/share/opencode/opencode.db`, `session_message` table) carry it — `"metadata":
+  {"source":"shell",…,"state":"completed","truncated":false,"exit":0}` for the exit-0 wait and `…"exit":2` for the
+  exit-2 one, with the text repeating `Exited with code 2` (`11-wait-notices.out`). The fake logged each check with its
+  time in both runs (`09-fake-calls.log`).
 
 - **Not shown here:** an exit-5 wait (measured on this page from LWY-214.1, not re-run in LWY-214.5); a wait of hours;
   the governed-marker *tamper* refusal (rule c, not used for OpenCode — rule a identifies the caller, so no marker is
