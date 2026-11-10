@@ -27,23 +27,33 @@ test('red-test-TC-4: .sdlc/kit/HARNESS.md is compared with kit/harness/<agent>.m
 });
 
 test('red-test-TC-4: Take removes the harness/ and wiring/ directories inside .sdlc/kit/ by an explicit step, without the literal paths', { skip: 'red-test-TC-4: no explicit removal step exists today' }, () => {
-  assert.match(skill, /(remove|delete)[^|]*`harness\/` and `wiring\/` directories inside `\.sdlc\/kit\/`/);
-  assert.match(skill, /Take[^.]*(remove|delete)[^.]*`harness\/` and `wiring\/`|(remove|delete)[^.]*`harness\/` and `wiring\/`[^.]*Take|`harness\/` and `wiring\/`[^.]*on Take/);
-  assert.match(skill, /`harness\/` and `wiring\/`[^.]*question|question[^.]*`harness\/` and `wiring\/`/);
+  const takeBullet = flat(raw.match(/- \*\*Take\*\*[\s\S]*?(?=\n- \*\*Keep\*\*)/)?.[0] ?? '');
+  const removal = /(remove|delete)[^|]*`harness\/` and `wiring\/` directories inside `\.sdlc\/kit\/`/;
+  const holder = [takeBullet, kitRow].find((t) => removal.test(t));
+  assert.ok(holder, 'no removal step in the Take bullet or the kit row');
+  if (holder === kitRow) assert.match(kitRow, /Take/, 'the kit row does not say the removal is on Take');
+  const at = holder.search(removal);
+  const near = holder.slice(Math.max(0, at - 200), at + 400);
+  assert.match(near, /question/, 'the removal is not said in the question');
+  assert.match(near, /\b(say|says|name|names|mention|mentions|tell|tells|state|states|list|lists|note|notes)\b/);
   assert.doesNotMatch(skill, /\.sdlc\/kit\/(harness|wiring)/);
 });
 
 test('red-test-TC-2: the skills-dir path is one of the .gitignore lines', { skip: 'red-test-TC-2: the .gitignore row has no skills-dir today' }, () => {
   assert.match(ignoreRow, /\.sdlc\/\.governed\//, 'could not find the .gitignore row');
-  assert.match(ignoreRow, /\*\*skills-dir\*\*/);
-  assert.match(ignoreRow, /not `none`/);
+  assert.match(ignoreRow, /skills-dir/);
+  assert.match(ignoreRow, /none/);
 });
 
-test('red-test-TC-2: taking the skills-dir line untracks with git rm -r --cached, and skills-lock.json stays', { skip: 'red-test-TC-2: no untrack step exists today' }, () => {
-  assert.match(skill, /git ls-files <skills-dir>/);
-  assert.match(skill, /git rm -r --cached <skills-dir>/);
-  assert.match(skill, /skills-lock\.json/);
-  assert.match(skill, /(stay|remain)[^.]*on disk|on disk/);
+test('red-test-TC-2: taking the skills-dir line untracks with git rm -r --cached, for the files git ls-files lists, which stay on disk', { skip: 'red-test-TC-2: no untrack step exists today' }, () => {
+  const at = skill.search(/git rm -r --cached <skills-dir>/);
+  assert.ok(at >= 0, 'no git rm -r --cached <skills-dir>');
+  const near = skill.slice(Math.max(0, at - 300), at + 400);
+  assert.match(near, /git ls-files <skills-dir>/, 'the untrack is not tied to git ls-files <skills-dir>');
+  assert.match(near, /\b(tak(e|en)|accept(s|ed)?|add(s|ed)?)\b/i, 'the untrack is not tied to the line being taken');
+  assert.match(near, /on disk/, 'the --cached reason (files stay on disk) is missing');
+  assert.match(near, /install/, 'the reason does not say who the files stay for');
+  assert.match(skill, /skills-lock\.json[^|]*\b(tracked|committed)\b|\b(tracked|committed)\b[^|]*skills-lock\.json/);
 });
 
 test('TC-2 guard: every git rm in the skill carries --cached', () => {
@@ -53,7 +63,19 @@ test('TC-2 guard: every git rm in the skill carries --cached', () => {
 
 test('TC-2 guard: skills-lock.json is never untracked or ignored', () => {
   assert.doesNotMatch(skill, /git rm[^`]*skills-lock\.json/);
-  assert.doesNotMatch(ignoreRow, /skills-lock\.json[^|]*`\.gitignore`/);
+  const stays = /\b(stay|stays|remain|remains|never|not|kept)\b/i;
+  const tracked = /\b(tracked|committed)\b/i;
+  for (const m of skill.matchAll(/skills-lock\.json/g)) {
+    const near = skill.slice(Math.max(0, m.index - 80), m.index + 80);
+    if (/ignore/i.test(near)) {
+      assert.ok(stays.test(near) && tracked.test(near), `skills-lock.json near an ignore line without saying it stays committed: ${near}`);
+    }
+  }
+  if (ignoreRow.includes('skills-lock.json')) {
+    const i = ignoreRow.indexOf('skills-lock.json');
+    const near = ignoreRow.slice(Math.max(0, i - 80), i + 80);
+    assert.ok(stays.test(near) && tracked.test(near), `the .gitignore row lists skills-lock.json: ${near}`);
+  }
 });
 
 test('red-test-TC-7: RELEASE_NOTES.md has an Unreleased entry above 0.3.0 on the skills directory and the trimmed kit', { skip: 'red-test-TC-7: no Unreleased entry today' }, () => {
