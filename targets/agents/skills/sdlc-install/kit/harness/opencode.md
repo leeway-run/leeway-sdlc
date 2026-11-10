@@ -76,7 +76,7 @@ sdlc-install writes these from `kit/wiring/opencode/`, and sync-repo keeps them 
 - `.opencode/plugins/leeway-sdlc.js`
 - `.opencode/agents/<agent>.md`
 
-After writing them: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.js`.
+After writing them: Nothing to restart for the plugin: OpenCode 2.x reloads `.opencode/plugins/leeway-sdlc.js` on save (measured — docs/targets/opencode.md), and a new session picks up the skills and agent files.
 
 ## Permissions for an unattended run
 
@@ -89,6 +89,6 @@ No form has been tried here, so a yes may still prompt.
 
 - **installed:** `npx skills list -a opencode`.
 - **refresh the source:** nothing to refresh: the update command fetches the latest.
-- **update:** `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a opencode --yes` again. UNVERIFIED: the subpath form; see docs/targets/opencode.md.
-- **restart:** restart OpenCode (plugins load at startup).
+- **update:** `npx -y skills add leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes` again (measured: it copies the skills into `./.agents/skills/`; a `tree/main/` in the path exits 0 with "No skills found" and installs nothing — docs/targets/opencode.md).
+- **restart:** no restart needed: the plugin reloads on save, and a new session picks up the skills and agent files.
 - **commands:** skills are invoked by name, for example "run the sync-repo skill".
