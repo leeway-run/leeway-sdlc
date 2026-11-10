@@ -279,7 +279,7 @@ checkout's branch `pr39`, which points at the same commit:
 
 ```
 $ git remote get-url origin
-/home/nick/Development/leeway/app            # the local checkout, not GitHub; no push is possible to GitHub
+<a local checkout of leeway-run/leeway>            # the local checkout, not GitHub; no push is possible to GitHub
 $ git rev-parse HEAD
 168a1ee5118c07a1d1188841ea7450fed4438293     # "Install leeway-sdlc's OpenCode wiring (LWY-218)"
 $ git ls-files | wc -l                      -> 1156
@@ -385,6 +385,12 @@ the kit the same.
   (`"sourceType": "local"`). That is an artefact of installing from a local path here, not of the text, but a
   sync commit made right after an update would carry that edit unless the committer leaves it out; the text neither
   mentions nor forbids it. Not fixed.
+- **Nothing says to refresh the installed skills before step 0, and a refresh breaks step 0's clean tree.**
+  sync-repo step 0 names "this plugin" as the freshly installed `sdlc-install` skill's `kit/` directory, but
+  never tells the agent to refresh the installed skills first. In an old install the refresh (`skills add`) rewrites
+  tracked skill files and `skills-lock.json`, so the tree is dirty before step 0's "**The working tree is clean**
+  (`git status --short`)" check can pass. Not fixed; for the story.
+
 ## Surprises
 
 - The shell tool is `shell`, not `bash`; the V1 plugin the wiring generated until LWY-214.2 checks `input.tool !== 'bash'`,
