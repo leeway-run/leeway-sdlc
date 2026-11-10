@@ -146,11 +146,11 @@ export const TARGETS = [
     wait: null,
     installed: '`npx skills list -a opencode`.',
     refresh: 'nothing to refresh: the update command fetches the latest.',
-    update: `\`npx -y skills add ${REPO}/tree/main/${SKILLS_PATH} -a opencode --yes\` again. UNVERIFIED: the subpath form; see docs/targets/opencode.md.`,
-    restart: 'restart OpenCode (plugins load at startup).',
+    update: `\`npx -y skills add ${REPO}/${SKILLS_PATH} -a opencode --yes\` again (measured: it copies the skills into \`./.agents/skills/\`; a \`tree/main/\` in the path exits 0 with "No skills found" and installs nothing — docs/targets/opencode.md).`,
+    restart: 'no restart needed: the plugin reloads on save, and a new session picks up the skills and agent files.',
     commands: 'skills are invoked by name, for example "run the sync-repo skill".',
-    install: [`\`npx -y skills add ${REPO}/tree/main/${SKILLS_PATH} -a opencode --yes\``],
-    after: 'Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.js`.',
+    install: [`\`npx -y skills add ${REPO}/${SKILLS_PATH} -a opencode --yes\``],
+    after: 'Nothing to restart for the plugin: OpenCode 2.x reloads `.opencode/plugins/leeway-sdlc.js` on save (measured — docs/targets/opencode.md), and a new session picks up the skills and agent files.',
     wiring: (agents) => ({
       // OpenCode 2.x loads a plugin as `Plugin.define({ id, setup })` and delivers the guards `setup`
       // registers with `ctx.tool.hook("execute.before", …)`; a V1 function returning `tool.execute.before`

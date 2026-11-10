@@ -56,9 +56,9 @@ After step 4: Nothing to trust. If your account was moved to Antigravity CLI, th
 After step 4: Nothing to trust: Cursor runs `.cursor/hooks.json` from the repo.
 
 ### OpenCode
-- `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a opencode --yes`
+- `npx -y skills add leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes`
 
-After step 4: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.js`.
+After step 4: Nothing to restart for the plugin: OpenCode 2.x reloads `.opencode/plugins/leeway-sdlc.js` on save (measured — docs/targets/opencode.md), and a new session picks up the skills and agent files.
 
 ### xAI Grok Build
 - `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a grok --yes`
