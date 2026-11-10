@@ -24,6 +24,7 @@ const step7 = (() => {
   const at = install.indexOf('confirm the guard works **as this agent loads it**');
   assert.ok(at >= 0, 'step 7 no longer has the wiring-check bullet');
   const end = install.indexOf('\n- Print what to do next', at);
+  assert.ok(end > at, 'step 7\'s wiring-check bullet is not before the "Print what to do next" bullet');
   return flat(install.slice(at, end));
 })();
 
@@ -85,6 +86,7 @@ test("the row's after text states the mechanism docs/targets/opencode.md records
   assert.match(page, /reload on save — editing `\.opencode\/plugins\/probe\.js` while the server\s+ran put the new code in force for the next session, no restart/);
   assert.match(opencode.after, /OpenCode 2\.x reloads `\.opencode\/plugins\/leeway-sdlc\.js` on save \(measured — docs\/targets\/opencode\.md\)/);
   assert.doesNotMatch(opencode.after, /[Rr]estart OpenCode so it loads/);
+  assert.match(opencode.restart, /reloads on save/);
   // The generated harness carries the same line, so plugin/ and targets/agents/ agree.
   assert.ok(flat(harness).includes(flat(opencode.after)), 'the generated harness does not carry the row\'s after text');
 });

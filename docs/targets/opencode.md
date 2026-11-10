@@ -73,8 +73,10 @@ call; a session driven through `opencode serve` + the API rather than `opencode 
 - **Install from git:** the command that worked:
   `npx -y skills add leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes` — 7 skills, copied into
   `./.agents/skills/<name>/` (project scope) plus `skills-lock.json`; `npx skills list -a opencode` then lists them.
-  The form in `scripts/targets.mjs` today, `leeway-run/leeway-sdlc/tree/main/targets/agents/skills`, exits 0 printing
-  "No skills found" and installs nothing. OpenCode discovers the skills: the `skill` tool loaded `sync-repo` from
+  The plain form, `leeway-run/leeway-sdlc/targets/agents/skills`, is what `scripts/targets.mjs` now ships for
+  OpenCode's `install` and `update`; the `tree/main` form it used to carry,
+  `leeway-run/leeway-sdlc/tree/main/targets/agents/skills`, exits 0 printing "No skills found" and installs nothing.
+  OpenCode discovers the skills: the `skill` tool loaded `sync-repo` from
   `.agents/skills/` (`21:43:27.038Z`) and `lwy-probe-skill` from `.opencode/skills/` (`21:43:16.746Z`), and the model
   quoted each body. The plugin and agents are not installed from git; `sdlc-install` writes them.
 - **Trust step the user must take:** none — `.opencode/plugins/*.js` loads automatically (no `opencode.json` entry, no
