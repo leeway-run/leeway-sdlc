@@ -16,17 +16,17 @@ const kitRow = flat(row('the kit'));
 const ignoreRow = flat(row('the `.gitignore` lines'));
 const notes = flat(readFileSync(join(root, 'RELEASE_NOTES.md'), 'utf8'));
 
-test('red-test-TC-4: the kit compare leaves out harness/, wiring/ and HARNESS.md', { skip: 'red-test-TC-4: the kit row compares the whole kit/ today' }, () => {
+test('red-test-TC-4: the kit compare leaves out harness/, wiring/ and HARNESS.md', () => {
   assert.match(kitRow, /the kit/, 'could not find the kit row');
   assert.match(kitRow, /(minus|except|excluding|leaving out|without)[^|]*`harness\/`[^|]*`wiring\/`[^|]*`HARNESS\.md`/);
 });
 
-test('red-test-TC-4: .sdlc/kit/HARNESS.md is compared with kit/harness/<agent>.md, never the generic HARNESS.md', { skip: 'red-test-TC-4: the kit row names no HARNESS.md compare today' }, () => {
+test('red-test-TC-4: .sdlc/kit/HARNESS.md is compared with kit/harness/<agent>.md, never the generic HARNESS.md', () => {
   assert.match(kitRow, /`\.sdlc\/kit\/HARNESS\.md`[^|]*`kit\/harness\/<agent>\.md`/);
   assert.match(kitRow, /one (copy|question)/);
 });
 
-test('red-test-TC-4: Take removes the harness/ and wiring/ directories inside .sdlc/kit/ by an explicit step, without the literal paths', { skip: 'red-test-TC-4: no explicit removal step exists today' }, () => {
+test('red-test-TC-4: Take removes the harness/ and wiring/ directories inside .sdlc/kit/ by an explicit step, without the literal paths', () => {
   const takeBullet = flat(raw.match(/- \*\*Take\*\*[\s\S]*?(?=\n- \*\*Keep\*\*)/)?.[0] ?? '');
   const removal = /(remove|delete)[^|]*`harness\/` and `wiring\/` directories inside `\.sdlc\/kit\/`/;
   const holder = [takeBullet, kitRow].find((t) => removal.test(t));
@@ -39,13 +39,13 @@ test('red-test-TC-4: Take removes the harness/ and wiring/ directories inside .s
   assert.doesNotMatch(skill, /\.sdlc\/kit\/(harness|wiring)/);
 });
 
-test('red-test-TC-2: the skills-dir path is one of the .gitignore lines', { skip: 'red-test-TC-2: the .gitignore row has no skills-dir today' }, () => {
+test('red-test-TC-2: the skills-dir path is one of the .gitignore lines', () => {
   assert.match(ignoreRow, /\.sdlc\/\.governed\//, 'could not find the .gitignore row');
   assert.match(ignoreRow, /skills-dir/);
   assert.match(ignoreRow, /none/);
 });
 
-test('red-test-TC-2: taking the skills-dir line untracks with git rm -r --cached, for the files git ls-files lists, which stay on disk', { skip: 'red-test-TC-2: no untrack step exists today' }, () => {
+test('red-test-TC-2: taking the skills-dir line untracks with git rm -r --cached, for the files git ls-files lists, which stay on disk', () => {
   const at = skill.search(/git rm -r --cached <skills-dir>/);
   assert.ok(at >= 0, 'no git rm -r --cached <skills-dir>');
   const near = skill.slice(Math.max(0, at - 300), at + 400);
@@ -78,7 +78,7 @@ test('TC-2 guard: skills-lock.json is never untracked or ignored', () => {
   }
 });
 
-test('red-test-TC-7: RELEASE_NOTES.md has an Unreleased entry above 0.3.0 on the skills directory and the trimmed kit', { skip: 'red-test-TC-7: no Unreleased entry today' }, () => {
+test('red-test-TC-7: RELEASE_NOTES.md has an Unreleased entry above 0.3.0 on the skills directory and the trimmed kit', () => {
   const at = notes.indexOf('## Unreleased');
   assert.ok(at >= 0, 'no ## Unreleased heading');
   assert.ok(at < notes.indexOf('## 0.3.0'), 'Unreleased must come before 0.3.0');

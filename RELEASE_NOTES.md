@@ -1,5 +1,14 @@
 # Release notes
 
+## Unreleased
+
+- **The skills directory is gitignored and untracked (LWY-220).** `sync-repo` offers the skills-dir path `HARNESS.md`
+  names as a `.gitignore` line and, where the files are tracked, untracks them with `git rm -r --cached`, so they stay
+  on disk. `skills-lock.json` stays tracked.
+- **A smaller kit (LWY-220).** `.sdlc/kit/` no longer holds `harness/` and `wiring/`. `sync-repo` removes them from a
+  repo installed before this release when its kit is taken, and compares `.sdlc/kit/HARNESS.md` with the agent's own
+  `kit/harness/<agent>.md`.
+
 ## 0.3.0
 
 The skills now use Leeway's words, and shaping and planning end at a step a person moves the story on from, instead
