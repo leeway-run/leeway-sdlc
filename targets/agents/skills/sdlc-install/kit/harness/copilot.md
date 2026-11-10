@@ -20,6 +20,11 @@ plugin-files: .sdlc/kit/
 
 Delegate to the custom agent by name: in Copilot CLI the `task` tool with the agent `sdlc-implementer` (or ask "use the sdlc-implementer agent to …"); in VS Code, `runSubagent` with that agent. Agents are `.github/agents/<name>.agent.md`. Every delegation starts a **fresh** agent, and its final message is what you gate.
 
+## Handing over to a skill
+
+Hand a story to another skill, for example `shape-project`, by invoking that skill in this session with the story's ref: in GitHub Copilot (CLI and VS Code agent mode), skills are invoked as `/<skill>`, for example `/sync-repo`.
+UNVERIFIED: no probe has shown in GitHub Copilot (CLI and VS Code agent mode) that the invoked skill takes over the session for that story, that a wait or another story's planning carries on during the hand-over, or that handing the story back resumes the first run (docs/targets/copilot.md).
+
 ## Governed-agent marker
 
 governed-marker: required

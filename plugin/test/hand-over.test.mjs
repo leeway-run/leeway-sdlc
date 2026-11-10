@@ -72,7 +72,7 @@ function disagreements(rec, section) {
   return out;
 }
 
-test('TC-2: plugin/HARNESS.md has "Handing over to a skill" after "Delegating to a named agent", naming leeway-sdlc:<skill>', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
+test('TC-2: plugin/HARNESS.md has "Handing over to a skill" after "Delegating to a named agent", naming leeway-sdlc:<skill>', () => {
   const doc = read('plugin/HARNESS.md');
   const at = doc.indexOf(`\n## ${HEADING}\n`);
   assert.ok(at > 0, `no "${HEADING}" heading in plugin/HARNESS.md`);
@@ -85,7 +85,7 @@ test('TC-2: plugin/HARNESS.md has "Handing over to a skill" after "Delegating to
   assert.ok(text.includes('leeway-sdlc:shape-project'), 'gives leeway-sdlc:shape-project as the example');
 });
 
-test('TC-2: every generated harness has "Handing over to a skill", naming shape-project and marked UNVERIFIED', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
+test('TC-2: every generated harness has "Handing over to a skill", naming shape-project and marked UNVERIFIED', () => {
   for (const f of generated()) {
     const doc = read(f);
     assert.ok(doc.includes(`\n## ${HEADING}\n`), `${f}: no "${HEADING}" heading`);
@@ -95,7 +95,7 @@ test('TC-2: every generated harness has "Handing over to a skill", naming shape-
   }
 });
 
-test('TC-2: claude.md has "Handing over to a skill" with the version, the date and one yes or no per question', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
+test('TC-2: claude.md has "Handing over to a skill" with the version, the date and one yes or no per question', () => {
   const section = rawUnder(read('docs/targets/claude.md'), HEADING);
   assert.match(bullet(section, 'Claude Code version') ?? '', /\d+\.\d+\.\d+/);
   assert.match(bullet(section, 'Date') ?? '', /^\d{4}-\d{2}-\d{2}/);
@@ -106,12 +106,12 @@ test('TC-2: claude.md has "Handing over to a skill" with the version, the date a
   assert.match(flight, /\b(wait|interview)\b/i, '"Stories in flight" says what was open on the second story');
 });
 
-test('TC-2: HARNESS claims a topic only if the record says yes, and states each topic the record says yes to', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
+test('TC-2: HARNESS claims a topic only if the record says yes, and states each topic the record says yes to', () => {
   const rec = rawUnder(read('docs/targets/claude.md'), HEADING);
   assert.deepEqual(disagreements(rec, rawUnder(read('plugin/HARNESS.md'), HEADING)), []);
 });
 
-test('TC-2: the Claude line cites the record by its heading and path', { skip: 'red-test-TC-2: the hand-over section and its probe record do not exist yet' }, () => {
+test('TC-2: the Claude line cites the record by its heading and path', () => {
   const text = flat(rawUnder(read('plugin/HARNESS.md'), HEADING));
   assert.match(text, /docs\/targets\/claude\.md/);
   assert.ok(text.includes(`"${HEADING}"`), `HARNESS does not cite the "${HEADING}" record`);

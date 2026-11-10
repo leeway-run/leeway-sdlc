@@ -124,5 +124,57 @@ directory `/dev/shm/lwy-189.6-probe` and `$WT` is its worktree `$S/repo/.worktre
   url`, made in the background during the session: a `gh` first on `PATH` is called by the harness too, so a probe's
   fake must be harmless to them.
 
+## Handing over to a skill
+Whether a skill invoked through the Skill tool from inside a running skill takes over, keeps the session's alias, and
+leaves a background wait and a second story's planning alive (LWY-222.1, TC-2 of LWY-222). Run headless in a scratch
+directory outside the repo, with a fake `leeway` and a fake wait first on `PATH`: no Leeway server and no GitHub were
+called, and nothing was pushed. `$S` below is `/dev/shm/lwy-222.1-probe`.
+
+The skills were **throwaway stand-ins**, not the plugin's: a scratch plugin (`$S/plug`) named `leeway-sdlc` with two
+skills, `probe-run` (a pretend `plan-project` run over two stories, PRB-1 and PRB-2) and a stand-in `shape-project`.
+Because the plugin was named `leeway-sdlc`, the Skill tool took the names `leeway-sdlc:probe-run` and
+`leeway-sdlc:shape-project`. `probe-run` chose the alias `probe-alias-7q`, opened a background wait for PRB-2's
+interview and handed PRB-1 to `leeway-sdlc:shape-project` (args `PRB-1`). The stand-in started its own background wait
+and, when that wait ended, handed PRB-1 back with the Skill tool: `leeway-sdlc:probe-run` (args `resume PRB-1`).
+
+- **Claude Code version:** 2.1.322
+- **Date:** 2026-11-10
+- **How it was started:** from `$S/repo` (a `.claude/settings.json` of `{}`), with `PATH=$S/bin:$PATH` and `TMPDIR=$S/tmp`:
+  `claude -p --plugin-dir $S/plug --permission-mode auto --setting-sources project --settings '{}' --verbose --output-format stream-json --max-turns 30 "<run leeway-sdlc:probe-run with start>"`.
+  Two sessions, both exit 0 with `permissionMode: "auto"` in the init line. The first (`$S/run1/`) had PRB-2's wait at 40
+  seconds and the shaping wait at 8, so PRB-2's wait ended after the hand-back. The second (`$S/transcript2.jsonl`,
+  `$S/fake-leeway.log`) had PRB-2's wait at 16 seconds and the shaping wait at 30, so PRB-2's wait ended during the
+  hand-over. Each line below was settled from the transcripts and the fake's log, not from the model's closing summary.
+- **Invoked skill took over:** yes. In both sessions the Skill tool answered "Launching skill: leeway-sdlc:shape-project" and the
+  skill's text came back as the next message; the next calls were the stand-in's own steps, `note SHAPE-TOOK-OVER
+  ref=PRB-1` and then its background wait, in that order, as the fake's log shows.
+- **Session kept its alias:** yes. `probe-run` wrote with `--as probe-alias-7q/planner`; the stand-in's text said to pass
+  `--as <alias>/shaper` if it knew the session's alias, and its write carried the same alias
+  (`--as probe-alias-7q/shaper note SHAPE-TOOK-OVER ref=PRB-1`), in both sessions. No new alias was chosen. **Limit:** the
+  stand-in's text told it to use the session's alias, so this does not show an alias carrying over where the invoked
+  skill's text does not mention one.
+- **Wait woke the session on exit:** yes. The shaping wait was started after the hand-over (`fakewait shape-PRB-1` in the
+  log, 22:39:13Z). The model had ended its turn (a `result` row in the stream), and the wait exited at 22:39:43Z. The
+  stream then carried a `task_notification` ("completed") and a new `init` row, and the next call, `--as
+  probe-alias-7q/shaper note SHAPE-WAIT-WOKE`, was logged at 22:39:45Z, two seconds after the exit, with no prompt from
+  outside.
+- **Second story's planning carried on:** yes. PRB-2's interview wait stayed open through the hand-over (both tasks are listed in
+  the stream's `background_tasks_changed` row). In the second session it exited at 22:39:21Z, while `shape-project` was in
+  control; the notification came and the session acted on it as `probe-run`'s standing rule said, `--as
+  probe-alias-7q/planner note PRB-2-INTERVIEW-ANSWERED-ACTED` at 22:39:23Z, then went on with the shaping wait. In the
+  first session the same wait ended after the hand-back and the session acknowledged it.
+- **Hand-back resumed the first run:** yes. After `leeway-sdlc:probe-run` was invoked again (the transcript labels it
+  "Re-invocation of /leeway-sdlc:probe-run ... the skill instructions were previously loaded"), the session said it was a
+  hand-back to the earlier run and made `note HANDBACK-RESUMED-FIRST-RUN`, then `RUN-CONTINUES holds=PRB-1,PRB-2`.
+  `RUN-START` appears once in the log and `NEW-RUN-STARTED` once, at the start: no second run began over the two
+  stories. **Limit:** `probe-run`'s text told it to continue an earlier run it found in the conversation, so this shows
+  the session can resume by that instruction, not that it does so unprompted.
+- **Stories in flight:** PRB-1, handed to `leeway-sdlc:shape-project`, and PRB-2, whose interview wait (`fakewait
+  B-interview-PRB-2`, a background Bash task) was open throughout the hand-over; both held by the one `probe-run` run.
+- **Not shown:** the plugin's real `shape-project` or `plan-project` (the skills were stand-ins, and no real wait script
+  ran); an interactive session (this was headless `-p`); a hand-over where the invoked skill's text does not say to use
+  the session's alias; a hand-back where the caller's text does not say to continue; waits longer than a minute; a
+  context compaction or a restart between hand-over and hand-back; any target but Claude Code.
+
 ## Surprises
 None beyond the appended-command one above.
