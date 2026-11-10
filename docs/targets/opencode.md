@@ -191,6 +191,200 @@ transcript reads `build · iceman-free`); every other session ran on `deepseek-v
   the governed-marker *tamper* refusal (rule c, not used for OpenCode — rule a identifies the caller, so no marker is
   written).
 
+## Install footprint (LWY-220.4)
+
+What a repo commits after an OpenCode install and after a sync, measured on real trees by following the story
+branch's skill text (`targets/agents/skills/`, head `bd3d457`, LWY-220.1 to .3) as an agent would. Scratch repos
+live outside both repos; nothing was pushed. "Duplicates" are the files whose `git hash-object` blob occurs more
+than once among the tracked files: `git ls-files | while read f; do echo "$(git hash-object -- "$f") $f"; done | sort`,
+then group on the hash.
+
+**A caveat on "commit".** The implementer's git guard refuses a commit (and `git config`, `git checkout`), so both
+runs end at `git add -A` / `git rm --cached`, and the counts are taken from the **index**, which is exactly the tree
+a commit would record.
+
+### 1. A fresh install
+
+```
+$ git init -q .                      # scratch repo, no remote
+$ npx -y skills add <worktree>/targets/agents/skills -a opencode --yes
+  ✓ sdlc-install (copied)  → ./.agents/skills/sdlc-install   (and the six others)
+$ ls -a                              # .agents  .git  skills-lock.json
+```
+
+`sdlc-install`'s file-writing step for OpenCode, as its text says ("Then write the wiring"), with the installed
+skill's `kit/` as the source (`K=.agents/skills/sdlc-install`):
+
+```
+printf '.worktrees/\n.sdlc/local.md\n.sdlc/.governed/\n.agents/skills/\n' >> .gitignore
+for e in $(ls -A $K/kit); do case $e in harness|wiring) ;; *) cp -r $K/kit/$e .sdlc/kit/$e;; esac; done
+cp $K/kit/harness/opencode.md .sdlc/kit/HARNESS.md
+cp -r $K/kit/wiring/opencode/. .
+cp $K/scaffold/templates/STORY.md.tmpl .sdlc/templates/STORY.md      # and TASK.md
+cp $K/kit/craft/HOW-WE-CHANGE-CODE.md docs/engineering/HOW-WE-CHANGE-CODE.md
+$ git check-ignore -q .sdlc/local.md && echo ignored || echo NOT ignored      -> ignored
+$ git check-ignore -q .agents/skills/ && echo ignored || echo NOT ignored     -> ignored
+$ git check-ignore -q skills-lock.json; echo $?                               -> 1
+$ git add -A; git ls-files | wc -l                                            -> 40
+```
+
+```
+$ git ls-files
+.gitignore
+.opencode/agents/sdlc-divergence-reviewer.md
+.opencode/agents/sdlc-implementer.md
+.opencode/agents/sdlc-reviewer.md
+.opencode/plugins/leeway-sdlc.js
+.sdlc/kit/HARNESS.md
+.sdlc/kit/PROCESS.md
+.sdlc/kit/agents/{sdlc-divergence-reviewer,sdlc-implementer,sdlc-reviewer}.md          (3)
+.sdlc/kit/craft/HOW-WE-CHANGE-CODE.md
+.sdlc/kit/hooks/{git-guard,leeway-guard}.mjs, hooks/adapters/{governed,guard}.mjs       (4)
+.sdlc/kit/scripts/{raise,session-tokens,wait-answer}.mjs                                (3)
+.sdlc/kit/skills/run/templates/{BRIEF,VERDICT}.md
+.sdlc/kit/skills/sdlc-install/references/detection.md
+.sdlc/kit/skills/sdlc-install/scaffold/**                                               (14 files)
+.sdlc/kit/skills/shape-project/references/gap-checklist.md
+.sdlc/templates/STORY.md
+.sdlc/templates/TASK.md
+docs/engineering/HOW-WE-CHANGE-CODE.md
+skills-lock.json
+$ git ls-files .agents/skills .sdlc/kit/harness .sdlc/kit/wiring
+                                                       (nothing)
+$ duplicates
+4a89d1dfb2 x2:  .sdlc/kit/craft/HOW-WE-CHANGE-CODE.md
+                docs/engineering/HOW-WE-CHANGE-CODE.md
+43e8e6bf97 x2:  .sdlc/kit/skills/sdlc-install/scaffold/templates/TASK.md.tmpl
+                .sdlc/templates/TASK.md
+ba234c2931 x2:  .sdlc/kit/skills/sdlc-install/scaffold/templates/STORY.md.tmpl
+                .sdlc/templates/STORY.md
+files with a duplicated blob: 6
+```
+
+**Result:** 40 files, 6 in duplicated blobs, which are exactly the three expected pairs (the craft doc against
+`.sdlc/kit/craft/`, `STORY.md` and `TASK.md` against the kit's scaffold templates, LWY-220 e4). Nothing under
+`.agents/skills/`, `.sdlc/kit/harness/` or `.sdlc/kit/wiring/`. The `.opencode/` wiring files are not duplicates:
+the `.sdlc/kit/agents/*.md` files differ from them.
+
+**Skipped, because the task named only these files:** `.sdlc/CONFIG.md`, `.sdlc/leeway.md`, `AGENTS.md` with the
+managed block, `ENGINEERING.md`, the seven contract docs, `opencode.json`, and the Leeway process steps. None is a
+copy of a kit file, so none changes the duplicate count.
+
+### 2. A sync of an old install
+
+**The target.** The task names the clone of leeway-run/leeway at PR #39's head. `git clone
+https://github.com/leeway-run/leeway.git` from the scratch directory failed (`Please make sure you have the correct
+access rights and the repository exists`: no git credentials there), so the scratch clone is of the local
+checkout's branch `pr39`, which points at the same commit:
+
+```
+$ git remote get-url origin
+/home/nick/Development/leeway/app            # the local checkout, not GitHub; no push is possible to GitHub
+$ git rev-parse HEAD
+168a1ee5118c07a1d1188841ea7450fed4438293     # "Install leeway-sdlc's OpenCode wiring (LWY-218)"
+$ git ls-files | wc -l                      -> 1156
+$ git ls-files .agents/skills | wc -l       -> 86
+$ git ls-files .sdlc/kit | wc -l            -> 61     (incl. harness/ and wiring/)
+$ git ls-files .agents/skills .sdlc/kit/harness .sdlc/kit/wiring | wc -l   -> 116
+.sdlc/kit/HARNESS.md: version 0.3.0, agent opencode, plugin-files .sdlc/kit/, no skills-dir line
+.gitignore: has .worktrees/, .sdlc/.governed/, .sdlc/local.md; lacks .agents/skills/
+$ git check-ignore -q skills-lock.json; echo $?    -> 1
+```
+
+**Duplicates before: 150 files** in duplicated blobs (of 1156 tracked). 146 are the `.agents/skills/` copy, the
+`.sdlc/kit/` copy and its `harness/`, `wiring/` and `.opencode/` copies of one another; the other 4 are unrelated
+(`docs/evidence/2026-10-09-d2-…/checks.json` against `…-d3-…/checks.json`, and
+`apps/app/src/server/tsconfig.json` against `apps/app/src/shared/tsconfig.json`).
+
+**Refresh the installed skills.** `sync-repo` compares against "the freshly installed `sdlc-install` skill's `kit/`",
+so the story branch's skills were installed over the tracked ones (`npx -y skills add <worktree>/targets/agents/skills
+-a opencode --yes`): 14 tracked files then differed, and `skills-lock.json` was rewritten (see the finding below).
+
+**The dry run (LWY-220 e5):**
+
+```
+$ git rm -r --cached -n .agents/skills/ | wc -l
+86
+$ git rm -r --cached -n .agents/skills/ | head -2
+rm '.agents/skills/plan-project/SKILL.md'
+rm '.agents/skills/run/SKILL.md'
+```
+
+**The rows, read as `sync-repo` step 2 says:**
+
+```
+$ for p in .worktrees/ .sdlc/local.md .sdlc/.governed/ .agents/skills/; do git check-ignore -q $p && … ; done
+.worktrees/ ignored   .sdlc/local.md ignored   .sdlc/.governed/ ignored   .agents/skills/ NOT ignored
+$ diff -ru --strip-trailing-cr -x harness -x wiring -x HARNESS.md .sdlc/kit .agents/skills/sdlc-install/kit
+                                                              (no output, exit 0)
+$ diff -u --strip-trailing-cr .sdlc/kit/HARNESS.md .agents/skills/sdlc-install/kit/harness/opencode.md
++- **skills-dir:** `.agents/skills/`, gitignored; `skills-lock.json` is committed.      (the only difference, exit 1)
+$ ls .sdlc/kit/harness .sdlc/kit/wiring            (both present: codex copilot cursor gemini grok opencode)
+```
+
+**Take, every offered change** (the `.gitignore` line, the kit including the old-directory removal, the untrack):
+
+```
+printf '.agents/skills/\n' >> .gitignore
+cp .agents/skills/sdlc-install/kit/harness/opencode.md .sdlc/kit/HARNESS.md
+rm -r .sdlc/kit/harness .sdlc/kit/wiring            (node fs.rmSync)
+git rm -r --cached -q .agents/skills/
+git add .gitignore .sdlc/kit                        -> git ls-files | wc -l: 1156 -> 1040
+$ git diff --cached --stat | tail -1
+ 118 files changed, 2 insertions(+), 19996 deletions(-)
+```
+
+**After:**
+
+```
+$ duplicates
+0233b83544 x2:  docs/evidence/2026-10-09-d2-full-height-panes/desktop/checks.json, …-d3-touch-panes/desktop/checks.json
+d0137afa35 x2:  apps/app/src/server/tsconfig.json, apps/app/src/shared/tsconfig.json
+4a89d1dfb2 x2:  .sdlc/kit/craft/HOW-WE-CHANGE-CODE.md, docs/HOW-WE-CHANGE-CODE.md
+43e8e6bf97 x2:  .sdlc/kit/skills/sdlc-install/scaffold/templates/TASK.md.tmpl, .sdlc/templates/TASK.md
+ba234c2931 x2:  .sdlc/kit/skills/sdlc-install/scaffold/templates/STORY.md.tmpl, .sdlc/templates/STORY.md
+files with a duplicated blob: 10
+$ git ls-files .agents/skills | wc -l                                  -> 0
+$ git ls-files .agents/skills .sdlc/kit/harness .sdlc/kit/wiring      (nothing)
+$ ls .agents/skills                      plan-project run sdlc-install sdlc-tune shape-project sync-repo update
+$ find .agents/skills -type f | wc -l    -> 86
+$ git ls-files skills-lock.json          -> skills-lock.json
+$ git check-ignore -q skills-lock.json; echo $?          -> 1
+$ git check-ignore -q .agents/skills/; echo $?           -> 0
+$ ls .sdlc/kit                           HARNESS.md PROCESS.md agents craft hooks scripts skills
+$ diff -ru --strip-trailing-cr -x harness -x wiring -x HARNESS.md .sdlc/kit .agents/skills/sdlc-install/kit ; echo $?    -> (no output) 0
+$ diff -u --strip-trailing-cr .sdlc/kit/HARNESS.md .agents/skills/sdlc-install/kit/harness/opencode.md ; echo $?          -> (no output) 0
+```
+
+**Result:** duplicates 150 to 10; the 10 are the three expected pairs plus the 4 unrelated files from the repo's own
+tree. The 116 files under `.agents/skills/`, `.sdlc/kit/harness/` and `.sdlc/kit/wiring/` left the index, the 86
+skill files are still on disk, `skills-lock.json` is still tracked and not ignored, and a second kit compare finds
+the kit the same.
+
+### What the text left open, and how it was read
+
+- **Fresh install, which files.** `sdlc-install`'s writing step also covers `CONFIG.md`, `leeway.md`, the block,
+  the floor and the docs; read as out of scope for the footprint (named above).
+- **`sync-repo` does not say to refresh the skills first.** Step 0 says "this plugin" is the "freshly installed
+  `sdlc-install` skill's `kit/`"; read as: run the skills install (the `update` command in `HARNESS.md`) before the
+  sync, which is what was done.
+- **The kit's `HARNESS.md` and `-x HARNESS.md`.** Read as `.sdlc/kit/HARNESS.md` compared on its own against
+  `kit/harness/opencode.md`, as the row says; the first diff, run with the three `-x`, showed nothing for it.
+- **Order of the three takes.** The text gives none: the `.gitignore` line, then the kit, then the untrack, so the
+  untrack follows the line it depends on.
+- **Where the install's kit copy is.** `.agents/skills/sdlc-install/kit/`: `skills add` copies the skill's
+  `kit/` whole, `harness/` and `wiring/` included.
+- **Skipped in the sync:** the contract block, the ticket templates, the craft floor, the wiring row, the Leeway
+  steps (the filing-work line, the process offer), the `Kept` rows and the `CONFIG.md` stamp. Only the kit and
+  `.gitignore` rows and the untrack were carried out.
+
+### Findings
+
+- **`skills-lock.json` is rewritten by the refresh.** After `skills add <local path>`, the sync clone's
+  `skills-lock.json` showed ` M` (unstaged) and its `source` was a relative path into the worktree
+  (`"sourceType": "local"`). That is an artefact of installing from a local path here, not of the text, but a
+  sync commit made right after an update would carry that edit unless the committer leaves it out; the text neither
+  mentions nor forbids it. Not fixed.
 ## Surprises
 
 - The shell tool is `shell`, not `bash`; the V1 plugin the wiring generated until LWY-214.2 checks `input.tool !== 'bash'`,
