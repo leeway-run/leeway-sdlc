@@ -4,6 +4,11 @@
 - **Date:** 2026-11-09
 - **Tested by:** the LWY-214.1 implementer (an OpenCode session driving `opencode run` from the shell), on Linux, in a
   scratch git repo at `/tmp/opencode/lwy-214.1/scratch`. The probe sessions ran on `azure/deepseek-v4.1-flash`.
+- **Tested by:** the LWY-214.5 implementer, running the whole loop end to end on the **generated** wiring — the kit and
+  wiring `node scripts/build-targets.mjs` produces and `sdlc-install` lays out, not the probe's — in a scratch git repo
+  at `/tmp/opencode/lwy-214.5/scratch`, on Linux, on `azure/deepseek-v4.1-flash`. Raw outputs are under
+  `/tmp/opencode/lwy-214.5/` (`01-skills-add.out` … `10-plugin-load.log`). A fake `leeway` was first on `PATH`; no real
+  Leeway server was reached and no remote was written.
 
 ## Hook payloads
 
@@ -123,6 +128,47 @@ was called; the fake logged every check):
   the reported code (the Claude Code page's `; echo $?` caveat was not tried here).
 
 wait: background
+
+## Live end-to-end run (LWY-214.5)
+
+The whole loop, once, on the **generated** wiring rather than the probe's: a scratch repo at
+`/tmp/opencode/lwy-214.5/scratch` (one commit, no remote), a fake `leeway` first on `PATH`, and `opencode run --auto
+--model azure/deepseek-v4.1-flash`. Raw outputs: `/tmp/opencode/lwy-214.5/01-skills-add.out` …
+`10-plugin-load.log`.
+
+- **Install.** The measured command landed the seven skills: `npx -y skills add
+  leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes` printed "Found 7 skills" and copied them to
+  `./.agents/skills/` (`01-skills-add.out`). `sdlc-install` then ran end to end in the repo (invoked by name in the
+  scratch session) and wrote `.sdlc/kit/` (whole), `.opencode/plugins/leeway-sdlc.js`, `.opencode/agents/sdlc-*.md`, the
+  seven contract docs, `ENGINEERING.md`, `.sdlc/CONFIG.md` and the `AGENTS.md` block. The written plugin is the V2 shape
+  and the kit's `guard.mjs` is byte-identical to `plugin/hooks/adapters/guard.mjs` (`02-install-run.out`). **Its step-7
+  guard check passed live**, in a `cp -R` scratch copy with the governed marker live: a governed `git commit
+  --allow-empty -m check` came back `Blocked: \`git commit\` is not available to this subagent …` and no commit was made.
+  The server log shows `msg="loading plugin" id=…/scratch/.opencode/plugins/leeway-sdlc.js` with no `failed to load
+  plugin` for it (`10-plugin-load.log`), and `opencode debug agents` lists all three `sdlc-*` subagents.
+- **Delegate.** Asked to have `sdlc-implementer` run `git log -1`, the orchestrator called the `subagent` tool with
+  `agent: "sdlc-implementer"` (the transcript's `✓ Run git log -1  Sdlc-Implementer Agent`); the fresh agent ran the
+  command and its final message — the `git log -1` block — came back to the orchestrator (`03-delegate.out`).
+- **Guards.** A governed `git commit --allow-empty -m probe`, delegated to `sdlc-implementer`, was **refused** with the
+  guard's reason returned to the orchestrator verbatim
+  (`{"error":{"type":"unknown","message":"Blocked: \`git commit\` is not available to this subagent …"}}`), and
+  `git log --oneline -1` still showed the one commit (`04-guard-commit.out`). A governed `leeway` write,
+  `printf 'probe body' | leeway --server https://fake.test comment add PRB-1 --stdin --as probe/agent`, was **refused**
+  the same way (`Blocked: \`comment add\` writes, and the orchestrator is the only writer to Leeway.`), and the fake
+  `leeway` logged **no** `comment add` call: nothing reached even the fake, so nothing reached a server
+  (`05-guard-leeway-write.out`, `09-fake-calls.log`). The orchestrator's own `git status --short`, run directly, was
+  **not** refused (`06-orchestrator-allowed.out`). This settles the story's hazard "the guards are silently absent on
+  2.x": the plugin 2.x loads refuses a governed call, and the reason reaches the agent.
+- **Wait.** The README's fake-`leeway` wait probe, run by the main session as a background shell command. **Exit 0:**
+  the model started the wait in the background, ended its turn, and the session **resumed on its own** with a
+  "Background command finished. Output:" notice holding the wait's stdout `{"label":"Go ahead","note":"probe","by":{}}`
+  (`07-wait-exit0.out`). **Exit 2:** with a fake that never answers (`--first 3 --cap 3 --deadline 9`), the resumed
+  session was handed `wait-answer: no answer to PRB-1 e1 by …` and **exit code 2**, which the model read
+  (`08-wait-exit2.out`). The fake logged each check with its time in both runs (`09-fake-calls.log`).
+
+- **Not shown here:** an exit-5 wait (measured on this page from LWY-214.1, not re-run in LWY-214.5); a wait of hours;
+  the governed-marker *tamper* refusal (rule c, not used for OpenCode — rule a identifies the caller, so no marker is
+  written).
 
 ## Surprises
 
