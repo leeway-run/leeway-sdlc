@@ -56,7 +56,7 @@ today.
 
 **`sync-repo`** compares `.sdlc/kit/` with the skill's `kit/` minus `harness/`, `wiring/` and `HARNESS.md`, and
 `.sdlc/kit/HARNESS.md` with `kit/harness/<agent>.md`. A repo installed before this release still has
-`.sdlc/kit/harness/` and `.sdlc/kit/wiring/`: they are "only in `.sdlc/kit/`", which the skill already removes on Take.
+`harness/` and `wiring/` directories inside its kit. The compare leaves them out, so the existing "only in `.sdlc/kit/`" removal would not see them; the kit row gets an explicit step that removes them on Take, worded without the literal paths, which the scan test of LWY-220.2 forbids anywhere under `plugin/` and `targets/agents/`.
 The `skills-dir:` path joins its `.gitignore` lines; where `git ls-files` lists files under it, the sync's commit
 untracks them with `git rm -r --cached`, so the files stay on disk for the person who installed them.
 
@@ -74,7 +74,13 @@ because the installed skill is the source `sdlc-install` and `sync-repo` read. T
   directory's `.gitignore` line and untracking; regenerated targets, tests, the release-notes entry. (TC-2, TC-4,
   TC-6, TC-7.) Blocked by .1 and .2.
 - **LWY-220.4: the proof.** An install into a scratch repo and a sync of a copy of the app repo's PR #39 tree, each
-  followed by the duplicate count. (TC-8.) Blocked by .3.
+  followed by the duplicate count; the sync preceded by a dry run of the untrack in the named target. (TC-8.) Blocked by .3.
+
+LWY-220.2 is blocked by .1: both edit `sdlc-install` and regenerate `targets/agents/`.
+
+**After the plan gate (LWY-220 c5):** LWY-220 e4 accepts the copies a fresh install still holds twice, the ticket
+templates and the craft doc, as the team's editable copies of the kit's reference; TC-8 names them. LWY-220 e5 keeps
+the untrack at R1, with a dry run and the named target in LWY-220.4.
 
 ## Hazard register
 
@@ -84,5 +90,6 @@ because the installed skill is the source `sdlc-install` and `sync-repo` read. T
 | The ignore line takes `skills-lock.json` with it (`.agents/` rather than `.agents/skills/`) | LWY-220.1 | test: the line is exactly the `skills-dir:` path; live in .4: `git check-ignore -q skills-lock.json` exits 1 | R1 |
 | An agent whose skills live outside the repo gets an ignore line for a directory nobody writes | LWY-220.1 | test: codex, copilot and gemini harnesses say `skills-dir: none`, and sdlc-install writes no line for `none` | R1 |
 | `sync-repo` reports the absent `harness/` and `wiring/` as "only in the plugin" and offers them back on every sync | LWY-220.3 | test: the compare excludes `harness/`, `wiring/` and `HARNESS.md`; live in .4: a second sync finds the kit the same | R1 |
+| Excluding `harness/` and `wiring/` from the compare hides an old repo's copies from the "only in `.sdlc/kit/`" removal, so they stay for ever | LWY-220.3 | test: the kit row has an explicit removal step for them; live in .4: `ls .sdlc/kit` shows neither | R1 |
 | A skill still resolves a path under `.sdlc/kit/harness/` or `.sdlc/kit/wiring/`, which no longer exists | LWY-220.2 | test: no file under `plugin/` or `targets/agents/` names `.sdlc/kit/harness` or `.sdlc/kit/wiring` | R1 |
 | Generated `targets/agents/` not regenerated after a change to `plugin/` or `targets.mjs` | every task | `node scripts/build-targets.mjs --check` passes in each task's lanes | R0 |
