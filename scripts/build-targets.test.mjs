@@ -161,7 +161,7 @@ const stubOpenCodePlugin = (repo) => {
   writeFileSync(join(dir, 'index.js'), 'export const Plugin = { define: (definition) => definition }\n')
 }
 
-test.skip('red-test-AC-3: opencode: the V2 plugin refuses a governed bash call by throwing', async () => {
+test('red-test-AC-3: opencode: the V2 plugin refuses a governed bash call by throwing', async () => {
   const repo = installInto('opencode')
   try {
     const fixture = JSON.parse(readFileSync(join(ROOT, 'plugin', 'hooks', 'adapters', 'fixtures', 'opencode.json'), 'utf8'))
@@ -201,7 +201,7 @@ test.skip('red-test-AC-3: opencode: the V2 plugin refuses a governed bash call b
   }
 })
 
-test.skip('red-test-TC-2: opencode: the generated plugin judges only through the guard adapter', () => {
+test('red-test-TC-2: opencode: the generated plugin judges only through the guard adapter', () => {
   const repo = installInto('opencode')
   try {
     const source = readFileSync(join(repo, '.opencode', 'plugins', 'leeway-sdlc.js'), 'utf8')
@@ -221,7 +221,7 @@ test.skip('red-test-TC-2: opencode: the generated plugin judges only through the
   }
 })
 
-test.skip('red-test-AC-2: opencode: the reviewer agents deny edits and the implementer does not', () => {
+test('red-test-AC-2: opencode: the reviewer agents deny edits and the implementer does not', () => {
   const repo = installInto('opencode')
   try {
     const agent = (name) => readFileSync(join(repo, '.opencode', 'agents', `${name}.md`), 'utf8')
