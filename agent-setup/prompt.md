@@ -81,7 +81,7 @@ Show:
 Leeway agent setup complete
   ✓ leeway CLI        <leeway --version>
   ✓ signed in         <account from leeway whoami>
-  ✓ leeway-sdlc       0.3.0 for <agent>
+  ✓ leeway-sdlc       0.3.1 for <agent>
   ✓ repo bound to     <product key>
 ```
 

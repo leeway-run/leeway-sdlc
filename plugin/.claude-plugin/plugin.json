@@ -1,6 +1,6 @@
 {
   "name": "leeway-sdlc",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "An agent SDLC on Leeway: roles, a plan gate, the implement-review loop, the gates, and the evidence ladder, with the process read from Leeway at runtime. Claude Code 2.1.91 or later only: claude.ai and Cowork don't install a plugin with a top-level bin/.",
   "keywords": [
     "sdlc",
