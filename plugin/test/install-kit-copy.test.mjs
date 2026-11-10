@@ -22,7 +22,7 @@ function files(dir) {
   });
 }
 
-test('red-test-TC-3: sdlc-install copies kit/ to .sdlc/kit/ except harness/ and wiring/, and says why', { skip: 'red-test-TC-3: the paragraph still says to copy kit/ whole' }, () => {
+test('red-test-TC-3: sdlc-install copies kit/ to .sdlc/kit/ except harness/ and wiring/, and says why', () => {
   assert.match(bullet, /copy this skill's `kit\/`/, 'could not find the plugin-files bullet');
   assert.match(bullet, /except `harness\/` and `wiring\/`/);
   assert.doesNotMatch(bullet, /`\.sdlc\/kit\/` whole/);
@@ -64,7 +64,7 @@ test('TC-5: the built kit still holds harness/ and wiring/ for every target (gua
   }
 });
 
-test('red-test-TC-3: the generated skills tell a skill what .sdlc/kit/ holds, without harness/ or wiring/', { skip: 'red-test-TC-3: the generated header does not yet say .sdlc/kit/ holds no harness/ or wiring/' }, () => {
+test('red-test-TC-3: the generated skills tell a skill what .sdlc/kit/ holds, without harness/ or wiring/', () => {
   const text = flat(readFileSync(join(root, 'targets', 'agents', 'skills', 'sdlc-install', 'SKILL.md'), 'utf8'));
   assert.match(text, /not `?harness\/`? or `?wiring\/`?/);
 });

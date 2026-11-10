@@ -4,7 +4,7 @@ description: Set up this repo to use the leeway-sdlc loop - detect what is alrea
 ---
 
 > **leeway-sdlc for agents other than Claude Code.** This plugin's files (`PROCESS.md`, `HARNESS.md`, `craft/`,
-> `agents/`, `hooks/`, `scripts/` and the skills' own files) are in **`.sdlc/kit/`** at the repo root once `sdlc-install` has
+> `agents/`, `hooks/`, `scripts/` and `skills/`, not `harness/` or `wiring/`) are in **`.sdlc/kit/`** at the repo root once `sdlc-install` has
 > run: "in this plugin" below means there, except that `skills/<name>/SKILL.md` is the `<name>` skill itself
 > (load it as a skill; its other files are in `.sdlc/kit/skills/<name>/`). Read `.sdlc/kit/HARNESS.md` for how this agent delegates, marks a
 > subagent's run and updates. With no `.sdlc/kit/` yet, run `sdlc-install` first; it reads them from its own `kit/`.
@@ -371,8 +371,10 @@ Those three ship as stubs. The others are filled from detection:
   that directory, never its parent and never a pattern), each only if absent; a skills-dir that is not `none` is added, and `none` adds nothing for it.
   `skills-lock.json` stays committed: it is never ignored, moved or deleted.
 - **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
-  directory to `.sdlc/kit/` whole, then copy `kit/harness/<agent>.md` over `.sdlc/kit/HARNESS.md`, so every
-  other skill finds the plugin's files and this harness there. **It is committed**: a teammate who installs
+  directory to `.sdlc/kit/` except `harness/` and `wiring/`, then copy `kit/harness/<agent>.md` over
+  `.sdlc/kit/HARNESS.md`, so every other skill finds the plugin's files and this harness there. The two
+  directories stay out because nothing reads them there, the wiring lives at its repo paths, and `sync-repo`
+  compares against the installed skill. **It is committed**: a teammate who installs
   the skills gets the loop from the repo. Then write the agent's **wiring**: every file under
   `kit/wiring/<agent>/` to the same path from the repo root (the subagents and the hook that runs
   `.sdlc/kit/hooks/adapters/guard.mjs`). A wiring file that already exists is a merge, never an overwrite: for
