@@ -124,7 +124,7 @@ wait: background
 
 ## Surprises
 
-- The shell tool is `shell`, not `bash`; the V1 plugin the wiring generates today checks `input.tool !== 'bash'`,
+- The shell tool is `shell`, not `bash`; the V1 plugin the wiring generated until LWY-214.2 checks `input.tool !== 'bash'`,
   which can never match, and 2.x rejects that plugin at load anyway.
 - The V1 plugin does not merely fail to fire: the file is *rejected* at load (`Plugin must export a default definition
   with an id and an effect or setup function`), and the previously loaded instance keeps serving.
