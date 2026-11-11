@@ -174,7 +174,9 @@ and, when that wait ended, handed PRB-1 back with the Skill tool: `leeway-sdlc:p
 - **Not shown:** the plugin's real `shape-project` or `plan-project` (the skills were stand-ins, and no real wait script
   ran); an interactive session (this was headless `-p`); a hand-over where the invoked skill's text does not say to use
   the session's alias; a hand-back where the caller's text does not say to continue; waits longer than a minute; a
-  context compaction or a restart between hand-over and hand-back; any target but Claude Code.
+  context compaction or a restart between hand-over and hand-back; any target but Claude Code; `plan-project` planning
+  its other stories while `shape-project` runs (what the probe showed there was only another story's wait being acted on
+  during the hand-over, by a stand-in's standing rule).
 
 ## Surprises
 None beyond the appended-command one above.

@@ -194,3 +194,18 @@ test('the restatement pin fails the reviewer\'s wording and a rewording of it, a
   ]) assert.ok(sentenceWith(bad, ...RESTATES), bad);
   assert.equal(sentenceWith('| `shape`, with its latest gap comment\'s escalation open | wait on it at once |', ...RESTATES), undefined);
 });
+
+// LWY-222 AC-3 (round 4): step 1 instructs the session to keep planning its other stories while a held one is shaped, and does not disclaim it.
+const keepsPlanningOthers = (text) => {
+  const hold = flat(section(text, '## 1.'));
+  return /keep planning the session's other stories while the held one is shaped/.test(hold) && !/not promised to keep planning/.test(hold);
+};
+test('plan-project step 1 tells the session to keep planning its other stories during a hand-over, not that it is not promised', () => {
+  assert.ok(keepsPlanningOthers(planProject), 'step 1 lacks the instruction to keep planning the other stories');
+});
+test('the other-stories pin fails round 3\'s negated sentence and passes the instruction', () => {
+  const round3 = planProject.replace(/Meanwhile, keep planning the session's other stories while the held one is shaped, and act on/, 'The other stories are not promised to keep planning while the held one is shaped; the probe showed only that another story\'s wait that exits is acted on at once, whichever skill the session is in. Act on');
+  assert.notEqual(round3, planProject);
+  assert.equal(keepsPlanningOthers(round3), false);
+  assert.equal(keepsPlanningOthers(planProject), true);
+});
