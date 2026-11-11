@@ -209,3 +209,69 @@ test('the other-stories pin fails round 3\'s negated sentence and passes the ins
   assert.equal(keepsPlanningOthers(round3), false);
   assert.equal(keepsPlanningOthers(planProject), true);
 });
+
+// --- LWY-222.3, round 1 (TC-6): shape-project's hand-over pins that round-trip.test.mjs leaves open (c2, c3, c4, c5) -------
+// Each reads only plugin/skills/shape-project/SKILL.md: step 0 item "Start." (its `A story in a round trip` bullet) and step 5 up to
+// "### When the approval round stays". Each is run on fixtures that break it.
+
+const HAND_OVER = /\bhand(?:s|ed)? (?:the story |it )?over to (?:the )?`?plan-project`?/i;
+const NEGATED_BEFORE = /\b(?:do not|does not|don't|never|not|no)\b(?:\s+\S+){0,2}\s*$/i;
+const shapeStep0 = (text) => section(text, '## 0. ');
+const shapeStep5 = (text) => section(text, '## 5. ').split('### When the approval round stays')[0];
+
+// The first sentence of `text` that matches `re` and every `lead`, and whether the words just before the match are negated.
+const negatedMatch = (text, re) => sentences(text).filter((s) => re.test(s)).some((s) => NEGATED_BEFORE.test(s.slice(0, s.search(re))));
+
+// c2: the hand-over names the story it is for, so it cannot start a second plan-project run for another.
+const namesTheStory = (text) => {
+  const hand = sentences(text).filter((s) => HAND_OVER.test(s));
+  return hand.length > 0 && hand.every((s) => /\bfor that story\b|\bon `<ref>`/.test(s));
+};
+test('shape-project steps 0 and 5: every sentence that hands over to plan-project says "for that story" (or on `<ref>`)', () => {
+  assert.ok(namesTheStory(shapeStep0(shapeProject)), 'a step 0 hand-over does not say "for that story"');
+  assert.ok(namesTheStory(shapeStep5(shapeProject)), 'step 5\'s hand-over does not say "for that story"');
+});
+test('the "for that story" pin fails a hand-over that names no story and passes one that does', () => {
+  assert.equal(namesTheStory('Once the shaped step is set hand over to `plan-project` as `HARNESS.md`, "Handing over to a skill", says.'), false);
+  assert.equal(namesTheStory('Once the shaped step is set hand over to `plan-project` for that story as `HARNESS.md`, "Handing over to a skill", says.'), true);
+  assert.equal(namesTheStory('Hand over to `plan-project` on `<ref>` as `HARNESS.md`, "Handing over to a skill", says.'), true);
+});
+
+// c5: the hand-over and the *Hold* "shape it" are instructions, not refusals.
+const SHAPE_IT = /\bshape it\b/i;
+const affirmative = (text) => !negatedMatch(text, HAND_OVER) && !negatedMatch(sentences(text).filter((s) => /\*Hold\*/.test(s)).join(' '), SHAPE_IT);
+test('shape-project steps 0 and 5: the hand-over to plan-project and "on *Hold* shape it" are not negated', () => {
+  assert.ok(sentences(shapeStep0(shapeProject)).some((s) => /\*Hold\*/.test(s) && SHAPE_IT.test(s)), 'no sentence with *Hold* and "shape it"');
+  assert.equal(affirmative(shapeStep0(shapeProject)), true, 'step 0 negates the hand-over or the *Hold* shaping');
+  assert.equal(affirmative(shapeStep5(shapeProject)), true, 'step 5 negates the hand-over');
+});
+test('the affirmative pin fails "do not hand over to plan-project" and "on *Hold* do not shape it"', () => {
+  assert.equal(affirmative('At the shaped step do not hand over to `plan-project` for that story.'), false);
+  assert.equal(affirmative('At the shaped step never hand over to `plan-project` for that story.'), false);
+  assert.equal(affirmative('On *Hold* do not shape it, and on *Split* say so and stop.'), false);
+  assert.equal(affirmative('At the shaped step hand over to `plan-project` for that story. On *Hold* shape it, and on *Split* say so and stop.'), true);
+});
+
+// c3: another story's wait that exits is acted on when it exits, whichever skill the session is in (plan-project says it in step 1 and in "Wait, then carry on").
+const actsOnOtherWaits = (text) => sentenceWith(text, /\banother story's wait\b/i, /\bexits\b/, /\bacted on\b/, /\bwhichever skill the session is in\b/) !== undefined;
+test('shape-project step 5: another story\'s wait that exits is acted on when it exits, whichever skill the session is in', () => {
+  assert.ok(actsOnOtherWaits(shapeStep5(shapeProject)), 'no sentence saying another story\'s wait that exits is acted on, whichever skill the session is in');
+});
+test('the other-stories\' wait pin fails a text without it and one that leaves out "whichever skill"', () => {
+  assert.equal(actsOnOtherWaits('Hand over to `plan-project` for that story.'), false);
+  assert.equal(actsOnOtherWaits("Another story's wait that exits is acted on when it exits."), false);
+  assert.equal(actsOnOtherWaits("Another story's wait that exits is acted on when it exits, whichever skill the session is in."), true);
+});
+
+// c4: a block that hands over to plan-project names a round trip, or says it is outside one. A bare `no`, `not`, `never` or `nothing` does not exempt it.
+const unconditionalHandOversStrict = (text) =>
+  text.split(/\n\s*\n|\n(?=\s*- )/).map(flat).filter((b) => HAND_OVER.test(b) && !/\bround trip\b|\boutside\b/i.test(b));
+test('shape-project: every block that hands over to plan-project names a round trip or says "outside"; a bare "not" or "never" does not exempt it', () => {
+  assert.deepEqual(unconditionalHandOversStrict(shapeProject), []);
+});
+test('the strict hand-over guard fails "Hand over to plan-project for every story, do not wait" and passes a block naming a round trip', () => {
+  assert.equal(unconditionalHandOversStrict('Hand over to `plan-project` for every story, do not wait.').length, 1);
+  assert.equal(unconditionalHandOversStrict('Never wait: hand over to `plan-project` for every story.').length, 1);
+  assert.equal(unconditionalHandOversStrict('In a round trip, hand over to `plan-project` for that story.').length, 0);
+  assert.equal(unconditionalHandOversStrict('Outside a round trip, do not hand over to `plan-project`.').length, 0);
+});

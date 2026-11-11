@@ -363,3 +363,258 @@ test('plan-project "Done when": a story whose gaps went back to the PO is handed
 test('plan-project\'s description says a held story is handed to shaping and planning resumes', () => {
   assert.match(description, /\bhands? [^.,-]{0,50}\bto (?:`?shape-project`?|shaping)\b/i);
 });
+
+// =====================================================================================================================
+// LWY-222.3 (TC-1, TC-3, TC-5, TC-6, AC-2, AC-4, AC-6): shape-project's half of the round trip, and the condition from
+// LWY-222.1's probe (docs/targets/claude.md, "Handing over to a skill"). Each pin names the phrase it matches and reads only
+// plugin/skills/shape-project/SKILL.md (step 0 item "Start.", step 5, "A reply to the gaps sent back") and plugin/PROCESS.md,
+// "Before the plan: shaping". A pin with a `red-test-<criterion>` skip is red until the text exists; LWY-222.3's implementer
+// removes the skip and changes the text, and nothing else. Pins with no skip pass today and guard what must not change.
+// =====================================================================================================================
+
+const APPROVAL_ROUND = '### When the approval round stays';
+const HARNESS_SAYS = /as `HARNESS\.md`, "Handing over to a skill", says/;
+// "hand over to `plan-project`", "hands it over to plan-project", "handed over to plan-project"
+const HAND_TO_PLAN = /\bhand(?:s|ed)? (?:the story |it )?over to (?:the )?`?plan-project`?/i;
+
+// The four parts of shape-project a pin reads, as text: step 0's "Start." item, its `Unplanned` bullet, step 5 up to the
+// approval-round exceptions, and "A reply to the gaps sent back".
+function shapeParts(text) {
+  const zero = section(text, '## 0. ');
+  const m = /^\d+\. \*\*Start\.\*\*/m.exec(zero);
+  assert.ok(m, 'no item "Start." in step 0');
+  const rest = zero.slice(m.index);
+  const end = rest.indexOf('**Where the human is asked.**');
+  const start = end > 0 ? rest.slice(0, end) : rest;
+  const bullet = /- \*\*Unplanned[\s\S]*?(?=\n\s*- \*\*|$)/.exec(start);
+  assert.ok(bullet, 'no `Unplanned` bullet in step 0 item "Start."');
+  return {
+    start,
+    unplanned: bullet[0],
+    step5: section(text, '## 5. ').split(APPROVAL_ROUND)[0],
+    reply: section(text, '### A reply to the gaps sent back'),
+  };
+}
+const shapeReal = shapeParts(shaping);
+
+// One entry per pin. `run(parts)` throws when the text does not say it.
+const SHAPE_CHECKS = [
+  {
+    id: 'start-hand-over-shaped', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": a story in a round trip at the shaped step is handed over to plan-project',
+    why: 'says nothing of a round trip at the shaped step; it is shaped again or told it is planned',
+    run: (p) => found(p.start, 'handing over to plan-project a story at the shaped step', /\bshaped step\b/, HAND_TO_PLAN),
+  },
+  {
+    id: 'start-hand-over-plan-step', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": a story at the plan step with a `# Planning started` after the gap comment is handed over to plan-project',
+    why: 'a story at the plan step is not recognised as a round trip whose shaping half is done',
+    run: (p) => found(p.start, 'handing over a story at the plan step with a `# Planning started` after the gap comment',
+      /\bplan step\b/, /`# Planning started`/, /\bgap comment\b/, HAND_TO_PLAN),
+  },
+  {
+    id: 'start-hand-over-harness', crit: 'TC-3',
+    name: 'shape-project step 0 "Start.": it hands over to plan-project as `HARNESS.md`, "Handing over to a skill", says',
+    why: 'no hand-over to plan-project in step 0',
+    run: (p) => found(p.start, 'handing over to plan-project as `HARNESS.md`, "Handing over to a skill", says', HAND_TO_PLAN, HARNESS_SAYS),
+  },
+  {
+    id: 'start-before-unplanned', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": the round-trip hand-over is written before the `Unplanned` rule, so the first rule that fits decides',
+    why: 'no round-trip hand-over in step 0 at all',
+    run: (p) => {
+      const text = flat(p.start);
+      const hand = text.search(HAND_TO_PLAN);
+      const unplanned = text.search(/\*\*Unplanned/);
+      assert.ok(hand >= 0, 'no "hand over to plan-project" in step 0 item "Start."');
+      assert.ok(unplanned >= 0, 'no `Unplanned` bullet');
+      assert.ok(hand < unplanned, 'the hand-over to plan-project comes after the `Unplanned` rule');
+    },
+  },
+  {
+    id: 'start-never-shape-at-plan-step', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": `--step shape` is never set on a story in a round trip at the plan step',
+    why: 'nothing stops the `Unplanned` rule setting `--step shape` on a round trip at the plan step, pulling it back',
+    run: (p) => found(p.start, 'saying `--step shape` is never set on a story in a round trip at the plan step',
+      /\bround trip\b/, /\bplan step\b/, /--step shape/, /\bnever\b/),
+  },
+  {
+    id: 'unplanned-excludes-round-trip', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": the `Unplanned` bullet itself excludes a story in a round trip',
+    why: 'the `Unplanned` bullet says nothing of a round trip',
+    run: (p) => {
+      assert.match(p.unplanned, /\bround trip\b/, 'the `Unplanned` bullet does not name a round trip');
+      assert.match(p.unplanned, /\b(?:not|never|except|unless|outside)\b/, 'the `Unplanned` bullet does not exclude it');
+    },
+  },
+  {
+    id: 'start-wait-open-gap-escalation', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": a story at `shape` whose latest gap comment\'s escalation is open is waited on',
+    why: 'a story at `shape` is only ever set to `shape` again; an open gap escalation is not waited on',
+    run: (p) => found(p.start, 'saying a story at `shape` whose latest gap comment\'s escalation is open is waited on',
+      /\bat `shape`/i, /\blatest gap comment\b/, /\bescalation\b/, /\bopen\b/, /\bwait(?:ed)? on\b/),
+  },
+  {
+    id: 'start-hold-shapes', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": on *Hold* the waited-on story is shaped',
+    why: 'no *Hold* branch in step 0',
+    run: (p) => found(p.start, 'saying that on *Hold* the story is shaped', /\*Hold\*/, /\bshape it\b|\bshapes it\b|\bshape the story\b/),
+  },
+  {
+    id: 'start-split-accept-stop', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": on *Split* or *Accept* it says so and stops, shaping nothing',
+    why: 'no *Split* or *Accept* branch in step 0',
+    run: (p) => found(p.start, 'saying that on *Split* or *Accept* it says so and stops', /\*Split\b/, /\*Accept\b/, /\bsay so\b/, /\bstop\b/),
+  },
+  {
+    id: 'start-answered-hold-shapes', crit: 'AC-4',
+    name: 'shape-project step 0 "Start.": a story at `shape` with *Hold* given is shaped as today',
+    why: 'no row for a story at `shape` with *Hold* given',
+    run: (p) => found(p.start, 'saying a story at `shape` with *Hold* given is shaped as today', /\bat `shape`/i, /\*Hold\*/, /\bas today\b/),
+  },
+  {
+    id: 'start-cites-process', crit: 'TC-1',
+    name: 'shape-project step 0 "Start.": it cites `PROCESS.md`, "Before the plan: shaping" for what a round trip is, and that section exists',
+    why: 'no citation of the round-trip definition in step 0',
+    run: (p) => {
+      found(p.start, 'citing `PROCESS.md`, "Before the plan: shaping" for what a round trip is', /\bround trip\b/, /`PROCESS\.md`, "Before the plan: shaping"/);
+      assert.ok(section(contract, '## Before the plan: shaping').includes('A round trip'), 'PROCESS.md has no definition to cite');
+    },
+  },
+  {
+    id: 'step5-session', crit: 'TC-3',
+    name: 'shape-project step 5: in a round trip it says in the session that the story goes back to planning',
+    why: 'step 5 stops at the shaped step with no word of planning resuming',
+    run: (p) => found(p.step5, 'saying in the session, in a round trip, that the story goes back to planning',
+      /\bround trip\b/, /\bin the session\b/, /\bback to planning\b/),
+  },
+  {
+    id: 'step5-inference-comment', crit: 'AC-2',
+    name: 'shape-project step 5: in a round trip the inference comment says the story goes back to planning',
+    why: 'the inference comment is described with no word of a round trip',
+    run: (p) => found(p.step5, 'saying the inference comment, in a round trip, says the story goes back to planning',
+      /\bround trip\b/, /\binference comment\b/, /\bback to planning\b/),
+  },
+  {
+    id: 'step5-hand-over', crit: 'AC-2',
+    name: 'shape-project step 5: in a round trip it hands over to plan-project as `HARNESS.md`, "Handing over to a skill", says',
+    why: 'step 5 never hands over to plan-project',
+    run: (p) => found(p.step5, 'handing over to plan-project, in a round trip, as `HARNESS.md`, "Handing over to a skill", says',
+      /\bround trip\b/, HAND_TO_PLAN, HARNESS_SAYS),
+  },
+  {
+    id: 'step5-hand-over-after-shaped-step', crit: 'AC-2',
+    name: 'shape-project step 5: the hand-over comes after the shaped step is set, not before',
+    why: 'no hand-over in step 5',
+    run: (p) => {
+      const text = flat(p.step5);
+      const set = text.indexOf("issue update <ref> --step <the shaped step's id>`");
+      const hand = text.search(HAND_TO_PLAN);
+      assert.ok(set >= 0, 'step 5 does not set the shaped step');
+      assert.ok(hand >= 0, 'no "hand over to plan-project" in step 5');
+      assert.ok(set < hand, 'step 5 hands over before it sets the shaped step');
+    },
+  },
+  {
+    id: 'step5-outside-stops', crit: 'AC-6',
+    name: 'shape-project step 5: outside a round trip it still ends at the shaped step and stops',
+    why: 'step 5 does not say where a story outside a round trip ends once step 5 hands over in one',
+    run: (p) => found(p.step5, 'saying that outside a round trip shaping ends at the shaped step and stops',
+      /\b(?:outside|not in|no) (?:a )?round trip\b/i, /\bshaped step\b/, /\bstops?\b/),
+  },
+  {
+    id: 'from-scratch-hands-nothing-over', crit: 'AC-6',
+    name: 'shape-project: a story shaped from scratch (no gap comment, or its escalation answered *Split* or *Accept*) hands nothing over',
+    why: 'nothing says that a story shaped from scratch is not handed to planning',
+    run: (p) => found(`${p.start}\n${p.step5}`, 'saying a story shaped from scratch (no gap comment, or *Split* or *Accept*) hands nothing over',
+      /\bno gap comment\b/, /\*Split\b/, /\*Accept\b/, /\bhands? nothing over\b|\bnever hands? over\b|\bdoes not hand over\b|\bnot handed over\b|\bno hand-over\b/),
+  },
+  {
+    id: 'reply-planning-resumes', crit: 'AC-2',
+    name: 'shape-project "A reply to the gaps sent back": in a round trip planning resumes by itself',
+    why: 'the reply says the story goes back to plan-project only when someone runs it',
+    run: (p) => found(p.reply, 'saying that in a round trip planning resumes by itself', /\bround trip\b/, /\bplanning resumes\b/, /\bby itself\b|\bon its own\b/),
+  },
+  {
+    id: 'alias', crit: 'AC-2',
+    name: 'shape-project says the hand-over to plan-project uses the session\'s alias',
+    why: 'nothing says which alias plan-project runs under after the hand-back',
+    run: (p) => found(`${p.start}\n${p.step5}`, 'saying plan-project, handed back to, uses the session\'s alias',
+      /\bplan-project\b/, /\bthe session's alias\b/, /\b(?:use|uses|keep|keeps|under)\b/i),
+  },
+  {
+    id: 'continue-earlier-run', crit: 'AC-2',
+    name: 'shape-project says that on the hand-back plan-project continues the earlier run, not a new one',
+    why: 'nothing says the hand-back resumes the earlier plan-project run',
+    run: (p) => found(`${p.start}\n${p.step5}`, 'saying plan-project continues the earlier run rather than starting a new one',
+      /\bplan-project\b/, /\bcontinue(?:s)? (?:the |this |its )?earlier (?:`?plan-project`? )?run\b/,
+      /\b(?:not|never|rather than)\b[^.]*\b(?:new|second|another)\b[^.]*\brun\b/),
+  },
+];
+
+for (const c of SHAPE_CHECKS) {
+  test(c.name, () => c.run(shapeReal));
+}
+
+// Guards: no skip, they pass today and must keep passing.
+
+// The blocks (paragraphs and list items) that hand over to plan-project without naming a round trip or saying they do not.
+const unconditionalHandOvers = (text) =>
+  text.split(/\n\s*\n|\n(?=\s*- )/).map(flat).filter((b) => HAND_TO_PLAN.test(b) && !/\bround trip\b|\b(?:not|never|nothing|no)\b/.test(b));
+
+test('shape-project hands over to plan-project only in a round trip: every paragraph or list item that does names one, or says it does not', () => {
+  assert.deepEqual(unconditionalHandOvers(shaping), []);
+});
+
+test('shape-project does not restate the definition of a round trip: none of the four conditions is said as `PROCESS.md` says it', () => {
+  for (const [condition, res] of Object.entries(DEFINITION)) {
+    assert.equal(sentenceWith(shaping, ...res), undefined, `shape-project restates: ${condition}`);
+  }
+});
+
+test('shape-project step 5 still never sets a step called shaped by id, and "A reply to the gaps sent back" still says running plan-project approves the body', () => {
+  assert.doesNotMatch(shapeReal.step5, /--step shaped\b/);
+  assert.match(flat(shapeReal.reply), /Running `plan-project` on the story approves the body\./);
+});
+
+// The checks above, run on fixtures: the right text passes all of them, and each wrong text fails the checks it should.
+// This runs today: it tests the matchers, not the plugin's text.
+const FX = {
+  rt: "   - **A story in a round trip** (`PROCESS.md`, \"Before the plan: shaping\", says what that is): never set `--step shape` on it, which would pull a story at the plan step back. At the shaped step, or at the plan step with a `# Planning started` after the gap comment, its shaping half is done: hand over to `plan-project` for that story as `HARNESS.md`, \"Handing over to a skill\", says, and stop. At `shape`, with its latest gap comment's escalation open, wait on it (\"Wait, then carry on\"): on *Hold* shape it, and on *Split* or *Accept* say so and stop. At `shape` with *Hold* given, shape it as today.\n",
+  unplanned: "   - **Unplanned, and not in a round trip:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.\n   - **Done or cancelled:** say so and stop. Change nothing.\n",
+  step5: "Set the shaped step, `<cli> --server <server> --as <alias>/agent issue update <ref> --step <the shaped step's id>`, and stop. The story\nwaits there until `plan-project` is run on it, and running it approves the body: say so to the PO. **In a round trip** (`PROCESS.md`, \"Before the plan: shaping\"), the story does not wait there: say in the session, and in the inference comment, that the story goes back to planning, and once the shaped step is set hand over to `plan-project` for that story as `HARNESS.md`, \"Handing over to a skill\", says. It uses the session's alias: `plan-project` continues the earlier `plan-project` run, not a new run. Outside a round trip, shaping ends at the shaped step and stops, as above, and a story shaped from scratch (no gap comment, or one whose escalation was answered *Split* or *Accept*) hands nothing over.",
+  reply: "If this round answered gaps a developer sent back, reply to that comment. Running `plan-project` on the story approves the body. In a round trip planning resumes by itself once the body is written, so the reply is the PO's record only.",
+};
+const fx = (over = {}) => {
+  const q = { ...FX, ...over };
+  return { start: `5. **Start.** Decide:\n${q.rt}${q.unplanned}`, unplanned: q.unplanned.split('\n')[0], step5: q.step5, reply: q.reply };
+};
+const failingChecks = (p) => SHAPE_CHECKS.filter((c) => { try { c.run(p); return false; } catch { return true; } }).map((c) => c.id);
+
+test('the shape-project round-trip pins pass on a good wording and fail on each plausible wrong one', () => {
+  assert.deepEqual(failingChecks(fx()), []);
+  const wrong = {
+    'sets --step shape on a round trip': [{ rt: FX.rt.replace('never set', 'set') }, ['start-never-shape-at-plan-step']],
+    'the round-trip clause comes after the `Unplanned` rule': [{ rt: '', unplanned: FX.unplanned + FX.rt }, ['start-before-unplanned']],
+    'the `Unplanned` bullet does not exclude a round trip': [{ unplanned: FX.unplanned.replace('Unplanned, and not in a round trip', 'Unplanned') }, ['unplanned-excludes-round-trip']],
+    '*Split* or *Accept* shapes it too': [{ rt: FX.rt.replace('say so and stop', 'shape it too') }, ['start-split-accept-stop']],
+    'only the shaped step is handed over': [{ rt: FX.rt.replace(', or at the plan step with a `# Planning started` after the gap comment,', ',') }, ['start-hand-over-plan-step']],
+    'an open gap escalation of any comment is waited on': [{ rt: FX.rt.replace("its latest gap comment's escalation", 'any escalation') }, ['start-wait-open-gap-escalation']],
+    'the hand-over is not said in the session': [{ step5: FX.step5.replace('say in the session, and in the inference comment,', 'say in the inference comment') }, ['step5-session']],
+    'the inference comment is not told': [{ step5: FX.step5.replace(', and in the inference comment,', ',') }, ['step5-inference-comment']],
+    'step 5 hands over for every story': [{ step5: FX.step5.replace('**In a round trip** (`PROCESS.md`, "Before the plan: shaping"), the story does not wait there: say in the session, and in the inference comment, that the story goes back to planning, and once the shaped step is set hand', 'Then hand') }, ['step5-session', 'step5-inference-comment', 'step5-hand-over']],
+    'step 5 hands over before it sets the shaped step': [{ step5: 'In a round trip hand over to `plan-project` as `HARNESS.md`, "Handing over to a skill", says. ' + FX.step5 }, ['step5-hand-over-after-shaped-step']],
+    'plan-project runs under its own alias': [{ step5: FX.step5.replace("the session's alias", 'its own alias') }, ['alias']],
+    'plan-project starts a new run': [{ step5: FX.step5.replace('continues the earlier `plan-project` run, not a new run', 'starts a new run') }, ['continue-earlier-run']],
+    'a from-scratch story is handed over': [{ step5: FX.step5.replace(', and a story shaped from scratch (no gap comment, or one whose escalation was answered *Split* or *Accept*) hands nothing over', '') }, ['from-scratch-hands-nothing-over']],
+    'the reply says planning waits to be run': [{ reply: FX.reply.replace('planning resumes by itself', 'planning waits for a developer') }, ['reply-planning-resumes']],
+  };
+  for (const [what, [over, expected]] of Object.entries(wrong)) {
+    const failing = failingChecks(fx(over));
+    for (const id of expected) assert.ok(failing.includes(id), `"${what}" does not fail ${id}; fails: ${failing.join(', ') || 'nothing'}`);
+  }
+  const restating = `${FX.rt} A story is in a round trip when its latest gap comment has its escalation answered *Hold*, and the story is at \`shape\`, the shaped step or the plan step.`;
+  assert.ok(Object.values(DEFINITION).some((res) => sentenceWith(restating, ...res)), 'a restatement of the definition is not caught');
+  assert.equal(unconditionalHandOvers(`${FX.rt}${FX.unplanned}\n${FX.step5}`).length, 0);
+  assert.equal(unconditionalHandOvers('Set the shaped step. Then hand over to `plan-project` for that story.').length, 1);
+});
