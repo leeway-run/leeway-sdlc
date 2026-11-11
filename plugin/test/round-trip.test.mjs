@@ -553,7 +553,7 @@ const SHAPE_CHECKS = [
 ];
 
 for (const c of SHAPE_CHECKS) {
-  test(c.name, { skip: `red-test-${c.crit}: ${c.why}` }, () => c.run(shapeReal));
+  test(c.name, () => c.run(shapeReal));
 }
 
 // Guards: no skip, they pass today and must keep passing.

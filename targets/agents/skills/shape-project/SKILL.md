@@ -44,7 +44,8 @@ shaping", "How the plugin reaches Leeway" and "Questions to the human are escala
    no sub-issues (`subIssues` empty), no comment opening `# Technical criteria`, its `issue.status` is `backlog`,
    and `issue.step.id` is empty or names the type's `plan` step or a step before it (`shape`, `shaped` or `plan` in
    the presets; a story `plan-project` sent back lands on `shape`).
-   - **Unplanned:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.
+   - **A story in a round trip** (`PROCESS.md`, "Before the plan: shaping", says what that is): never set `--step shape` on it, which would pull a story at the plan step back. At the shaped step, or at the plan step with a `# Planning started` after the gap comment, its shaping half is done: hand over to `plan-project` for that story as `HARNESS.md`, "Handing over to a skill", says, and stop. At `shape`, with its latest gap comment's escalation open, wait on it ("Wait, then carry on"): on *Hold* shape it, and on *Split* or *Accept* say so and stop. At `shape` with *Hold* given, shape it as today.
+   - **Unplanned, and not in a round trip:** run `<cli> --as <alias>/agent issue update <ref> --step shape`; the step's status comes with it.
    - **Done or cancelled:** say so and stop. Change nothing.
    - **Anything else** (tasks, a technical-criteria comment, a step past `plan`, or a status other than `backlog`,
      for example a planned story at `ready` with no step): keep its step and status, and tell the PO what state it
@@ -210,7 +211,7 @@ reviewer and the divergence reviewer all read.
 Then post **one** comment on the story: what the body says beyond the PO's answers (each thing you inferred,
 worded or left out, one line each), what is still `OPEN:`, and the summary if you wrote one. Set the shaped step,
 `<cli> --server <server> --as <alias>/agent issue update <ref> --step <the shaped step's id>`, and stop. The story
-waits there until `plan-project` is run on it, and running it approves the body: say so to the PO.
+waits there until `plan-project` is run on it, and running it approves the body: say so to the PO. **In a round trip** (`PROCESS.md`, "Before the plan: shaping"), the story does not wait there: say in the session, and in the inference comment, that the story goes back to planning, and once the shaped step is set hand over to `plan-project` for that story as `HARNESS.md`, "Handing over to a skill", says. It uses the session's alias: `plan-project` continues the earlier `plan-project` run, not a new run. Another story's wait that exits is acted on when it exits, whichever skill the session is in. Outside a round trip, shaping ends at the shaped step and stops, as above, and a story shaped from scratch (no gap comment, or one whose escalation was answered *Split* or *Accept*) hands nothing over.
 
 ### When the approval round stays
 
@@ -240,7 +241,7 @@ serve it.
 If this round answered gaps a developer sent back, **reply to that comment** (`comment add <ref> --parent cN
 --stdin body`) with one line per gap: answered in the body, or still `OPEN:`. The story goes back to `plan-project`
 when it is run on the story at the shaped step, or, on a type with no shaped step, when the developer
-re-runs it; the reply tells them whether that is worth doing yet. Running `plan-project` on the story approves the body.
+re-runs it; the reply tells them whether that is worth doing yet. Running `plan-project` on the story approves the body. In a round trip planning resumes by itself once the body is written, so the reply is the PO's record only.
 
 ## 6. A new story, or several
 
