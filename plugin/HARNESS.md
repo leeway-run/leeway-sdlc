@@ -24,6 +24,19 @@ Start a subagent with the Agent tool, `subagent_type` set to the agent's namespa
 `leeway-sdlc:sdlc-implementer`, `leeway-sdlc:sdlc-reviewer` or `leeway-sdlc:sdlc-divergence-reviewer`. Every
 delegation starts a **fresh** agent. Its final message comes back to you as the tool result.
 
+## Handing over to a skill
+
+Invoke the Skill tool with the skill's namespaced name, `leeway-sdlc:<skill>`, for example `leeway-sdlc:shape-project`,
+and the story's ref as its argument. The invoked skill takes over the session for that story. It keeps the session's
+alias when its text says to use it. A background wait started after the hand-over wakes the session when it exits.
+Another story's planning carries on during the hand-over: its interview wait, open when the hand-over started, was acted
+on when it exited. Invoking the first skill again on the hand-back resumes the first run when its text says to continue an
+earlier run.
+
+All of this is what `docs/targets/claude.md`, "Handing over to a skill", records, from throwaway stand-in skills in a
+headless session. Not shown: the plugin's own `shape-project` or `plan-project`, an interactive session, a skill whose
+text says nothing of the alias, and a caller whose text says nothing of continuing its run.
+
 ## Governed-agent marker
 
 governed-marker: not used

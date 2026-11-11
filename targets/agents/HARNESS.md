@@ -15,6 +15,13 @@ plugin-files: .sdlc/kit/
 This is the package's own harness file. The repo's is `.sdlc/kit/HARNESS.md`, which `sdlc-install` writes from
 `kit/harness/<agent>.md` for the agent you use. Until then, run `sdlc-install`.
 
+## Handing over to a skill
+
+Hand a story to another skill, for example `shape-project`, by invoking that skill in this session with the story's ref, the way
+your agent invokes skills (`.sdlc/kit/HARNESS.md` says how for yours). UNVERIFIED: no probe has shown in any agent but Claude
+Code that the invoked skill takes over the session for that story, that a wait or another story's planning carries on
+during the hand-over, or that handing the story back resumes the first run.
+
 ## Waiting for an answer
 
 wait: stop
