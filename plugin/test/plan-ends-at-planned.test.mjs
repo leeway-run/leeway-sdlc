@@ -69,10 +69,15 @@ test('plan-project starts where shaping ends, moves a shaped story with no shapi
   assert.match(text, /the first row that fits decides/);
   assert.match(text, /\| the plan step \| carry on \|/);
   assert.match(text, /\| no step at `backlog`, on a type with no `shape` step \| `<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>`, then carry on \|/);
-  assert.match(text, /\| the shaped step, with no shaping escalation open \| \`<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>\`, say so in the session, and post a comment opening \`# Planning started\` saying running plan-project was the approval of the body, then carry on \|/);
   assert.match(text, /\| the plan gate \| \*\*say it waits on the gate, and stop\*\*: it was returned, or its session ended before step 8 moved it\. Write nothing, and move it only if the person asks \(step 7\) \|/);
   assert.match(text, /\| anywhere else \(a step after the plan gate, \`ready\` or later\) \|/);
   assert.doesNotMatch(text, /--step plan\b/);
+});
+
+// LWY-222.2 (TC-3): the shaped-step row keeps its move and its comment, and adds the round-trip clause after "then carry on".
+// Rewritten from the pin that matched the whole row ending at "then carry on |".
+test('plan-project\'s shaped-step row moves the story, posts `# Planning started`, and adds that in a round trip the PO\'s answers to shaping were the approval', () => {
+  assert.match(start(), /\| the shaped step, with no shaping escalation open \| \`<cli> --as <alias>\/planner issue update <story> --step <the plan step's id>\`, say so in the session, and post a comment opening \`# Planning started\` saying running plan-project was the approval of the body, then carry on[^|]*\bin a round trip\b[^|]*the PO's answers to shaping were the approval of the body[^|]*\|/);
 });
 
 test('on a type with shape but no shaped step, plan-project starts from shape after the approval escalation', () => {
@@ -150,7 +155,6 @@ test('returned and three or more RETURNs count only the reports since the latest
   assert.match(text, /None in the window: plan it afresh;.* One or two: it was returned from the gate\..* Three or more: do not re-plan; step 8, "Three RETURNs"\./);
   const gate = section(skill, '### The QUESTIONs');
   assert.match(gate, /\*\*Three RETURNs mean the story is wrong, not the plan\.\*\* Step 0 counts them, before any re-planning: three or more coverage reports in its window\. Then stop re-planning\./);
-  assert.match(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
   assert.match(gate, /When it has no `shape`, \*\*raise one escalation on the story\*\*, tied to the latest report with `"comment"` its `cN`, asking the person how to go on/);
   assert.match(gate, /how do we go on\?"\* The reviewer is tracing a story that does not say what anyone means by it\. Wait on it \(step 0\)\. Give two options, each naming what plan-project does next: - \*Re-plan once more\*: plan-project re-plans it, this session on the answer or the next one\. The answer starts a fresh window \(step 0\), so the count starts again\. - \*Stop planning it\*: plan-project says the story is stopped and stops, this session on the answer or the next one, writing and raising nothing\. To plan it again, the person rewrites the story if they want to, then asks plan-project to plan it again\. To drop it, they close it\./);
   assert.doesNotMatch(gate, /moves it on by hand/);
@@ -177,11 +181,26 @@ test('PROCESS.md tells the two gates apart, and records the gate as a step', () 
   assert.doesNotMatch(runtime, /After a gate passes the orchestrator sets `--status ready`/);
   const shapingPart = section(contract, '## Before the plan: shaping');
   assert.match(shapingPart, /\*\*Planning starts at the plan step\.\*\* Running \`plan-project\` on a story at the shaped step, with no shaping escalation open, is the approval of the body: it moves the story to the plan step itself and posts \`# Planning started\`, saying the run was the approval\. Where shaping ends on a type with no shaped step, it starts from \`shape\` or from no step at \`backlog\`, setting the plan step itself, since the approval escalation was the approval\./);
-  assert.match(shapingPart, /On a type with a shaped step, a story at \`shape\`, or one at the shaped step with a shaping escalation open, is not moved: \`plan-project\` says shaping is not finished and stops, writing nothing\. A story it sends gaps back on goes back to \`shape\`\./);
+  assert.match(shapingPart, /On a type with a shaped step, a story at \`shape\`, or one at the shaped step with a shaping escalation open, is not moved: \`plan-project\` says shaping is not finished and stops, writing nothing\./);
   const gatePart = section(contract, '## The plan gate');
   assert.match(gatePart, /posts each QUESTION as its own top-level comment opening \`# QUESTION <n> of c<report>\` \(\`c<report>\` the report's first comment\) with one escalation on it, and waits on them\. A report's QUESTIONs are the escalations on those comments\./);
   assert.match(gatePart, /No escalation asks for the gate decision: \*\*the verdict decides, and \`plan-project\` makes the move, per story\.\*\* \`plan-project\` moves the story from the plan gate to \`ready\` on a PASS, with a \`# Moved to ready\` comment naming the report's \`cN\` and its verdict\. A RETURN stays at the plan gate: moving it back to the plan step returns it to planning\./);
   assert.match(gatePart, /With QUESTIONs, the order is: answer them, and \`plan-project\` applies the answers \(the session waiting on them does, or a re-invoke once it has ended; it replies \`# QUESTIONs applied\` to the report\) and then moves the story to \`ready\` on PASS WITH DECISIONS, with the same comment\./);
   assert.match(gatePart, /it refuses a story with no coverage report, one still at the plan gate, and one whose latest report has a QUESTION open, or answered and not applied\./);
   assert.match(section(contract, '## Records'), /\| plan gate \| .* each QUESTION in it a top-level comment of its own opening \`# QUESTION <n> of c<report>\` \(\`c<report>\` the report's first comment\), with one escalation tied to that comment with \`--comment cN\`, and the answers applied as a reply to it opening \`# QUESTIONs applied\`; the story at the plan gate step, then \`--status ready\` by \`plan-project\` on a PASS \(on PASS WITH DECISIONS after \`# QUESTIONs applied\`\), with a comment opening \`# Moved to ready\` that names the report's \`cN\` and its verdict; a RETURN stays at the plan gate, and moving it back to the plan step returns it \|/);
+});
+
+// LWY-222.2 (TC-1): rewritten from the last sentence of the pin above, "A story it sends gaps back on goes back to `shape`.",
+// which said a story sent back to the PO stops there. Now it goes back to `shape` and, on *Hold*, shaping starts.
+test('PROCESS.md: a story planning sends gaps back on goes back to `shape`, and on *Hold* shaping starts', () => {
+  const shapingPart = section(contract, '## Before the plan: shaping');
+  assert.match(shapingPart, /gaps back[^.]*`shape`[^.]*\*Hold\*|\*Hold\*[^.]*gaps back[^.]*`shape`/);
+});
+
+// LWY-222.2 (AC-1): rewritten from the line of the pin below, "When the type has `shape`, set `--step shape` and post what the
+// rounds could not trace as a step 1 comment to the PO, with step 1's ending", which made Three RETURNs a comment with no escalation.
+test('Three RETURNs on a type with `shape` goes through step 1\'s gap path: the gap comment, `shape` and the tied escalation', () => {
+  const gate = section(skill, '### The QUESTIONs');
+  assert.doesNotMatch(gate, /When the type has `shape`, set `--step shape` and post what the rounds could not trace as a step 1 comment to the PO, with step 1's ending\./);
+  assert.match(gate, /When the type has `shape`, [^.]*\bstep 1's\b[^.]*\bgap\b[^.]*`shape`[^.]*\bescalation\b/);
 });
