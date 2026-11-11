@@ -1,6 +1,6 @@
 # Harness: OpenCode
 
-> **Tested with Claude Code only.** Support for other agents is built in but has not been verified yet. Verified support will come later. If you run into an issue, let us know: https://github.com/leeway-run/leeway-sdlc/issues
+> **Verified with OpenCode 2.x.** Tested from a real OpenCode 2.2.6 session; see docs/targets/opencode.md. If you run into an issue, let us know: https://github.com/leeway-run/leeway-sdlc/issues
 
 The skills and `PROCESS.md` describe the loop in terms any coding agent can follow; this file supplies what
 depends on the agent running it. Read it alongside `PROCESS.md`; where the two disagree on a mechanism, this file
@@ -18,7 +18,7 @@ plugin-files: .sdlc/kit/
 
 ## Delegating to a named agent
 
-Use the Task tool with `subagent_type` set to the agent name, for example `sdlc-implementer`. Agents are `.opencode/agents/<name>.md` with `mode: subagent`. Every delegation starts a **fresh** agent, and its final message is what you gate.
+Use the `subagent` tool, with `agent` set to the agent name, for example `sdlc-implementer`, and the brief in its `prompt` (measured — docs/targets/opencode.md). Agents are `.opencode/agents/<name>.md` with `mode: subagent`. Every delegation starts a **fresh** agent, and its final message is what you gate.
 
 ## Handing over to a skill
 
@@ -27,35 +27,27 @@ UNVERIFIED: no probe has shown in OpenCode that the invoked skill takes over the
 
 ## Governed-agent marker
 
-governed-marker: required
+governed-marker: not used
 
-The guards cannot yet tell a subagent's shell call from yours in OpenCode (docs/targets/opencode.md records what
-its hooks send). So mark the window: immediately before each delegation, from the repo root,
-
-    node .sdlc/kit/hooks/adapters/governed.mjs on <task-ref>
-
-and as soon as the agent returns, **however it returns**,
-
-    node .sdlc/kit/hooks/adapters/governed.mjs off <task-ref>
-
-While the marker is live every shell call is judged as the subagent's, yours included, so never commit, push or
-write to Leeway with it on. It expires on its own after two hours, so a crashed run cannot lock you out for longer.
+The guards identify this plugin's agents from the `agent` the event carries with each call, so a subagent's shell
+call and yours are told apart without a marker. You never write one.
 
 ## Waiting for an answer
 
-wait: stop
+wait: background
 
-A run in OpenCode does not wait for an escalation's answer. UNVERIFIED: whether OpenCode can run a long command
-without spending a turn per check and resume the session when it exits; no probe has shown it (docs/targets/opencode.md).
-Until one does, skip steps 2 and 3 of run's "Wait, then carry on" and act at once as its step 4 says for exit 2. A
-wait that blocks nothing, such as a sub-issue run's debt proposal ("Land the task", step 5), carries on. Any other
-posts what the path posts, says which escalation on which issue it stopped on, and stops the turn. The escalation and
-any `# Run status` comment stay, and re-invoking `run` once it is answered resumes where there is work left to
-resume (run, "Land the task", step 5). `plan-project`'s developer interview does not wait either: it stops the turn
-the same way, and re-invoking `plan-project` once it is answered resumes it. Nor does any other skill that raises
-one (`PROCESS.md`, "Questions to the human are escalations"): each stops the turn the same way. Nobody is listening
-once a skill stops, so a question a person asks of the agent on its escalation is handed back to them after 30
-minutes.
+Start `wait-answer.mjs` (run, "Wait, then carry on") with the shell tool in its background mode, as it is, with
+nothing appended. UNVERIFIED: whether appending to the command changes the reported exit code was not tried
+here. The turn ends with the command running; the session resumes by itself when it exits, on a notice that
+carries the command's output and its exit code, so no turn is spent per check. Do not poll for the output or
+sleep while it runs. When the notice comes, act on the exit code as run's table says. Exit 5 is a question,
+not the end: answer
+it, then start the wait again the same way, a new background command (`PROCESS.md`, "Questions to the human are
+escalations"). If the session ends first, the run has stopped as at the deadline: the escalation stays, and
+re-invoking `run` resumes where there is work left to resume (run, "Land the task", step 5). `plan-project`'s
+developer interview starts and reads its waits the same way; re-invoking `plan-project` resumes it. Every other
+skill that raises an escalation starts and reads its waits the same way (`PROCESS.md`, "Questions to the human
+are escalations"). docs/targets/opencode.md records the probe.
 
 ## Counting tokens
 
@@ -81,7 +73,7 @@ sdlc-install writes these from `kit/wiring/opencode/`, and sync-repo keeps them 
 - `.opencode/plugins/leeway-sdlc.js`
 - `.opencode/agents/<agent>.md`
 
-After writing them: Restart OpenCode so it loads `.opencode/plugins/leeway-sdlc.js`.
+After writing them: Nothing to restart for the plugin: OpenCode 2.x reloads `.opencode/plugins/leeway-sdlc.js` on save (measured — docs/targets/opencode.md), and a new session picks up the skills and agent files.
 
 ## Permissions for an unattended run
 
@@ -95,6 +87,6 @@ UNVERIFIED: no mode has been tried here for OpenCode, and none is named.
 
 - **installed:** `npx skills list -a opencode`.
 - **refresh the source:** nothing to refresh: the update command fetches the latest.
-- **update:** `npx -y skills add leeway-run/leeway-sdlc/tree/main/targets/agents/skills -a opencode --yes` again. UNVERIFIED: the subpath form; see docs/targets/opencode.md.
-- **restart:** restart OpenCode (plugins load at startup).
+- **update:** `npx -y skills add leeway-run/leeway-sdlc/targets/agents/skills -a opencode --yes` again (measured: it copies the skills into `./.agents/skills/`; a `tree/main/` in the path exits 0 with "No skills found" and installs nothing — docs/targets/opencode.md).
+- **restart:** no restart needed: the plugin reloads on save, and a new session picks up the skills and agent files.
 - **commands:** skills are invoked by name, for example "run the sync-repo skill".

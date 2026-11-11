@@ -187,6 +187,19 @@ which and why in the summary, and the next release asks again. Like the new flow
 | the kit | `.sdlc/kit/`, only where `HARNESS.md` says `plugin-files: .sdlc/kit/` | the `kit/` directory of the `sdlc-install` skill; compare with `diff -ru --strip-trailing-cr`, and treat the kit as **one** copy (one question) |
 | the agent and hook files | each file under the kit's `wiring/<agent>/`, at the same path from the repo root, only where `HARNESS.md` names that wiring | the kit's `wiring/<agent>/` file; a JSON settings file (`.gemini/settings.json`, `.cursor/hooks.json`) is compared on the `leeway-sdlc` entries only |
 
+**OpenCode's guard plugin is a copy like any other, and a repo installed before this release has the V1
+file.** `.opencode/plugins/leeway-sdlc.js` in the repo is the V1 shape — a function returning a
+`tool.execute.before` key — which OpenCode 2.x **refuses at load** (`Plugin must export a default
+definition with an id and an effect or setup function`), so its guards are silently absent while the file
+sits there. The kit's `wiring/opencode/` copy is the V2 one (`Plugin.define({ id, setup })`, the guard on
+`ctx.tool.hook('execute.before', …)`). Compare the repo file against the kit's with the same
+`diff -u --strip-trailing-cr`, and refresh it by the ordinary rule: **Take replaces the V1 file with the
+V2 one**; a file the team modified is **different otherwise** and gets the diff and the question, never a
+silent overwrite. The agent files (`.opencode/agents/<agent>.md`) refresh the same way, and the trailing
+`permission:\n  edit: deny` on the two reviewers is the declaration 2.2.6 reads
+(docs/targets/opencode.md, "Surprises"). Finish as step 4 does: after the sync, the check that the plugin
+loads is `sdlc-install`'s step 7, not anything in this skill.
+
 Compare with `diff -u --strip-trailing-cr <repo copy> <plugin copy>`, so a CRLF checkout does not show every
 line changed; for the contract block, the repo's span (`sed -n '/leeway-sdlc:begin/,/leeway-sdlc:end/p' <instructions-file>`)
 against the filled-in template. Each copy is one of:

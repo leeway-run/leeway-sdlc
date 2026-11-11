@@ -1,0 +1,21 @@
+{
+  "rule": "a",
+  "main": {
+    "tool": "shell",
+    "sessionID": "ses_lwy2141runA2",
+    "agent": "build",
+    "args": {
+      "command": "git status --short"
+    },
+    "cwd": "/tmp/opencode/lwy-214.1/scratch"
+  },
+  "subagent": {
+    "tool": "shell",
+    "sessionID": "ses_e3dbfbcb6ffe5vq0iT9ZqC0P1I",
+    "agent": "sdlc-implementer",
+    "args": {
+      "command": "git log -1 --oneline"
+    },
+    "cwd": "/tmp/opencode/lwy-214.1/scratch"
+  }
+}
