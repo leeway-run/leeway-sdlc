@@ -330,10 +330,14 @@ Those three ship as stubs. The others are filled from detection:
 - The managed block from `scaffold/AGENT-BLOCK.md.tmpl` into the instructions file, between `leeway-sdlc:begin`
   and `leeway-sdlc:end`, `{{FILING_WORK_RULE}}` filled from the `filing-work:` just written. If the block is already there, show the diff and replace only the text between the
   markers; if the human chose to paste (question 10), print it and write nothing.
-- `.gitignore` lines `.worktrees/`, the local-notes file and `.sdlc/.governed/`, each only if absent.
+- `.gitignore` lines `.worktrees/`, the local-notes file, `.sdlc/.governed/` and the **skills-dir** path `HARNESS.md` names (exactly
+  that directory, never its parent and never a pattern), each only if absent; a skills-dir that is not `none` is added, and `none` adds nothing for it.
+  `skills-lock.json` stays committed: it is never ignored, moved or deleted.
 - **Where `HARNESS.md` says `plugin-files: .sdlc/kit/`** (every agent but Claude Code): copy this skill's `kit/`
-  directory to `.sdlc/kit/` whole, then copy `kit/harness/<agent>.md` over `.sdlc/kit/HARNESS.md`, so every
-  other skill finds the plugin's files and this harness there. **It is committed**: a teammate who installs
+  directory to `.sdlc/kit/` except `harness/` and `wiring/`, then copy `kit/harness/<agent>.md` over
+  `.sdlc/kit/HARNESS.md`, so every other skill finds the plugin's files and this harness there. The two
+  directories stay out because nothing reads them there, the wiring lives at its repo paths, and `sync-repo`
+  compares against the installed skill. **It is committed**: a teammate who installs
   the skills gets the loop from the repo. Then write the agent's **wiring**: every file under
   `kit/wiring/<agent>/` to the same path from the repo root (the subagents and the hook that runs
   `.sdlc/kit/hooks/adapters/guard.mjs`). A wiring file that already exists is a merge, never an overwrite: for
@@ -403,8 +407,8 @@ because it differs gets a *Kept* row with the human's reason and `git hash-objec
   `HARNESS.md` also names a settings entry (OpenCode's `instructions` in `opencode.json`), add the path there
   too.
 - **`{{LOCAL_NOTES_FILE}}`** — `HARNESS.md`'s **local-notes-file**. Run `git check-ignore -q <it> && echo
-  ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Never claim it is ignored
-  when it is not.
+  ignored || echo NOT ignored` after the `.gitignore` write and print the answer. Do the same for the **skills-dir**
+  when it is not `none`. Never claim a path is ignored when it is not.
 
 ## Step 7 — verify, and say what you did not do
 

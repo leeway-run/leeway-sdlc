@@ -294,3 +294,23 @@ test('red-test-AC-2: opencode: the reviewer agents deny edits and the implemente
     rmSync(repo, { recursive: true, force: true })
   }
 })
+
+// LWY-220.1, TC-1: each harness names where its agent's skills are installed, and says `none` where they live outside the repo.
+const SKILLS_DIRS = { opencode: '.agents/skills/', cursor: '.agents/skills/', grok: '.grok/skills/', gemini: null, codex: null, copilot: null }
+const skillsDirLine = (text) => /^- \*\*skills-dir:\*\* (.*)$/m.exec(text)?.[1]
+
+test('red-test-TC-1: every HARNESS.md names its skills-dir, and none where the skills live outside the repo', () => {
+  assert.deepEqual(TARGETS.map((t) => t.id).sort(), Object.keys(SKILLS_DIRS).sort())
+  for (const t of TARGETS) {
+    const want = SKILLS_DIRS[t.id]
+    assert.equal(t.skillsDir, want, `${t.id}: skillsDir`)
+    const expected = want ? `\`${want}\`, gitignored; \`skills-lock.json\` is committed.` : 'none (the skills are installed outside the repo).'
+    for (const [where, text] of [['harness()', harness(t, 'x', '')], ['generated', readFileSync(join(KIT, 'harness', `${t.id}.md`), 'utf8')]]) {
+      assert.equal(skillsDirLine(text), expected, `${t.id} ${where}`)
+      // The ignore line is the directory itself: never its parent, and never a pattern that takes skills-lock.json with it.
+      if (want) assert.doesNotMatch(text, /^- \*\*skills-dir:\*\* `(?:\.agents\/?|\.grok\/?|\*+[^`]*)`/m, `${t.id} ignores more than its skills directory`)
+      else assert.doesNotMatch(skillsDirLine(text), /`/, `${t.id} renders a path for a null skillsDir`)
+    }
+  }
+  assert.equal(skillsDirLine(readFileSync(join(ROOT, 'plugin', 'HARNESS.md'), 'utf8')), 'none (the skills are installed outside the repo).')
+})

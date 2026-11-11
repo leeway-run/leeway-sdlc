@@ -95,6 +95,7 @@ The brief carries them as well (run, "Delegate to the implementer"), so the hook
 
 - **instructions-file:** `CLAUDE.md`. The managed block imports the floor with an `@` line.
 - **local-notes-file:** `CLAUDE.local.md`, which is gitignored.
+- **skills-dir:** none (the skills are installed outside the repo).
 
 ## Permissions for an unattended run
 

@@ -29,7 +29,7 @@ entry that added `bin/`; it has been tried on 2.1.319 and on nothing older): cla
 
 Codex, GitHub Copilot (CLI and VS Code), Gemini CLI, Cursor, OpenCode and Grok Build install
 `targets/agents/`, a package generated from `plugin/` by `node scripts/build-targets.mjs`. It contains the same
-skills, plus a kit. `sdlc-install` copies the kit into the repo as `.sdlc/kit/`, together with that agent's
+skills, plus a kit. `sdlc-install` copies the shared kit into the repo as `.sdlc/kit/` (not its `harness/` and `wiring/` directories), together with that agent's
 subagents and a hook that runs the git and Leeway guards. For OpenCode that is **2.x**, the version it is verified
 against; 1.x is not offered and keeps whatever wiring it has. The per-agent install commands are in
 [agent-setup/prompt.md](agent-setup/prompt.md), which is also the page the onboarding snippet points an agent at:

@@ -76,7 +76,7 @@ test('no skill, agent or contract reads or writes a budget in .sdlc/CONFIG.md', 
       'it into the process.',
     'skills/sync-repo/SKILL.md: --- name: sync-repo description: Bring this repo\'s leeway-sdlc copies up to the plugin ' +
       'version this session runs - the ticket templates, the craft floor, the managed contract block in the agent\'s ' +
-      'instructions file, the gitignore lines, and for agents other than Claude Code the kit in .sdlc/kit and the agent ' +
+      'instructions file, the gitignore lines (the skills directory too), and for agents other than Claude Code the kit in .sdlc/kit and the agent ' +
       'and hook files - one diff and one question per copy, the new shaping and planning flow offered to a product ' +
       'process still on the old one, and a run budget left in .sdlc/CONFIG.md offered a move into the process, then one ' +
       'branch and one pull request, with the decisions recorded in .sdlc/CONFIG.md.',

@@ -74,6 +74,7 @@ run pastes the *Required reading* rows into each brief; no hook injects them her
 - **instructions-file:** `AGENTS.md`.
 - **floor-import:** read-first (this agent does not expand `@` imports: the block tells the agent to read the floor).
 - **local-notes-file:** `.sdlc/local.md`, gitignored.
+- **skills-dir:** none (the skills are installed outside the repo).
 
 ## Wiring
 

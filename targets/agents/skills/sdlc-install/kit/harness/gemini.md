@@ -74,6 +74,7 @@ run pastes the *Required reading* rows into each brief; no hook injects them her
 - **instructions-file:** `GEMINI.md`.
 - **floor-import:** `@` (the managed block imports the floor with an `@` line).
 - **local-notes-file:** `.sdlc/local.md`, gitignored.
+- **skills-dir:** none (the skills are installed outside the repo).
 
 ## Wiring
 

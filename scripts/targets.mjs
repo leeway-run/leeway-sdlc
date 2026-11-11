@@ -3,7 +3,9 @@
 // three never disagree. Facts marked UNVERIFIED come from the agent's docs (2026-11) and are confirmed
 // or corrected by the Phase 0 spike in docs/targets/<id>.md. `wait` is how a run waits for an escalation's answer, or
 // null when no probe has shown the agent can, so a run there stops instead; set it only with a probe record in
-// docs/targets/<id>.md that says `wait: background`.
+// docs/targets/<id>.md that says `wait: background`. `skillsDir` is where the agent's skills are installed in the repo, or null
+// when they live outside it: opencode's is measured (docs/targets/opencode.md); cursor's and grok's are UNVERIFIED, from the
+// `skills` CLI 1.7.6 agents table.
 
 const GUARD = (agent, extra = '') => `node .sdlc/kit/hooks/adapters/guard.mjs ${agent}${extra}`
 const REPO = 'leeway-run/leeway-sdlc'
@@ -20,6 +22,7 @@ export const TARGETS = [
     id: 'codex',
     name: 'OpenAI Codex CLI',
     instructionsFile: 'AGENTS.md',
+    skillsDir: null,
     floorImport: 'read-first',
     delegate:
       'Ask for the named agent explicitly, for example "spawn the `sdlc-implementer` agent with this prompt: …". Custom agents are `.codex/agents/<name>.toml`. UNVERIFIED: that the main agent selects a custom agent by name; if it starts a generic one instead, stop and say so rather than running the loop without the agent\'s instructions.',
@@ -48,6 +51,7 @@ export const TARGETS = [
     id: 'copilot',
     name: 'GitHub Copilot (CLI and VS Code agent mode)',
     instructionsFile: 'AGENTS.md',
+    skillsDir: null,
     floorImport: 'read-first',
     delegate:
       'Delegate to the custom agent by name: in Copilot CLI the `task` tool with the agent `sdlc-implementer` (or ask "use the sdlc-implementer agent to …"); in VS Code, `runSubagent` with that agent. Agents are `.github/agents/<name>.agent.md`.',
@@ -87,6 +91,7 @@ export const TARGETS = [
     id: 'gemini',
     name: 'Google Gemini CLI',
     instructionsFile: 'GEMINI.md',
+    skillsDir: null,
     floorImport: '@',
     delegate:
       'Each agent in `.gemini/agents/` is a tool of the same name: call the `sdlc-implementer` tool with the prompt. A subagent cannot start another one.',
@@ -111,6 +116,7 @@ export const TARGETS = [
     id: 'cursor',
     name: 'Cursor (agent and CLI)',
     instructionsFile: 'AGENTS.md',
+    skillsDir: '.agents/skills/',
     floorImport: 'read-first',
     delegate: 'Ask for the subagent by name ("use the sdlc-implementer subagent to …", or `/sdlc-implementer`). Agents are `.cursor/agents/<name>.md`.',
     wait: null,
@@ -135,6 +141,7 @@ export const TARGETS = [
     id: 'opencode',
     name: 'OpenCode',
     instructionsFile: 'AGENTS.md',
+    skillsDir: '.agents/skills/',
     floorImport: 'read-first',
     floorSetting: 'also add the ENGINEERING path to `instructions` in `opencode.json` (OpenCode does not follow `@` imports).',
     delegate: 'Use the `subagent` tool, with `agent` set to the agent name, for example `sdlc-implementer`, and the brief in its `prompt` (measured — docs/targets/opencode.md). Agents are `.opencode/agents/<name>.md` with `mode: subagent`.',
@@ -194,6 +201,7 @@ export default Plugin.define({
     id: 'grok',
     name: 'xAI Grok Build',
     instructionsFile: 'AGENTS.md',
+    skillsDir: '.grok/skills/',
     floorImport: 'read-first',
     delegate: 'Delegate to the custom subagent by name ("use the sdlc-implementer subagent to …"). Agents are `.grok/agents/<name>.md`. UNVERIFIED: the delegation tool\'s name.',
     wait: null,
@@ -301,6 +309,7 @@ run pastes the *Required reading* rows into each brief; no hook injects them her
 - **instructions-file:** \`${t.instructionsFile}\`.
 - **floor-import:** ${t.floorImport === '@' ? '`@` (the managed block imports the floor with an `@` line)' : 'read-first (this agent does not expand `@` imports: the block tells the agent to read the floor)'}${t.floorSetting ? `; ${t.floorSetting}` : ''}.
 - **local-notes-file:** \`.sdlc/local.md\`, gitignored.
+${t.skillsDir ? `- **skills-dir:** \`${t.skillsDir}\`, gitignored; \`skills-lock.json\` is committed.` : '- **skills-dir:** none (the skills are installed outside the repo).'}
 
 ## Wiring
 
