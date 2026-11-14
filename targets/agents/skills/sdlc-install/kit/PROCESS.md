@@ -232,7 +232,8 @@ issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
-alike, skipped with the criterion named, and a reviewer checks them against the criteria. Round 0 is
+alike, skipped with the criterion named, each run un-skipped against a temporary stand-in that is deleted before it is staged (or given a
+reason why none), and a reviewer checks them against the criteria. Round 0 is
 capped by `round0Cap`. On a PASS the tests are **frozen**: later rounds turn them green by changing
 production code, and changing a frozen test is a spec amendment only the criterion's owner can make, except a mechanical fix the
 implementer names in the brief's `## Frozen test fix` section and the reviewer finds meets all three conditions. A

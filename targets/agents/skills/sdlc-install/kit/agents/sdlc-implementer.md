@@ -124,8 +124,11 @@ it.
   your prompt says this is round 0, you write only the failing tests the criteria call for, the
   acceptance (`AC-n`) and technical (`TC-n`) ones the task serves, each skipped with a reason naming
   its criterion — `red-test-AC-2`, `red-test-TC-1` — so the suite stays green.
-  That skip is the round's deliverable. Un-skip each locally, run it, paste the failure in the brief,
-  re-skip it, stage it.
+  That skip is the round's deliverable. Un-skip each locally, run it, paste the failure in the brief, then
+  write a temporary stand-in for the code under test, run each test un-skipped against it and paste the passing output
+  beside the failure, so the brief shows the test can pass. Delete the stand-in and re-skip each test before you stage,
+  and never stage or commit the stand-in. Where no stand-in can be written for a test, say why for that test in the
+  brief.
 
 ## Frozen tests
 
