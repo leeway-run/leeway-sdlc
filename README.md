@@ -60,8 +60,8 @@ node scripts/build-targets.mjs --check
 node .github/scripts/check-manifests.mjs
 ```
 
-The tap reporter is what makes piped output greppable: off a terminal, `node --test` does not print `ok` / `not ok`
-lines by default, so `| grep '^not ok'` finds nothing without it.
+The tap reporter is pinned so that piped output has `ok` / `not ok` lines, whatever Node's default reporter is. On
+Node 26, off a terminal, the default prints none, so `| grep '^not ok'` finds nothing without the flag.
 
 ## Status
 
