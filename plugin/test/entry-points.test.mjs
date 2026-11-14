@@ -55,3 +55,12 @@ test('the gap checklist Hidden scope names a removed or replaced capability entr
 test('plan-project step 1 hidden scope row flags an entry point to a removed or replaced capability the body does not name', () => {
   assert.match(hiddenScopeRow(), /an entry point to a removed or replaced capability that the body does not name/);
 });
+
+// Pin 5, redirected (LWY-239.1, TC-3): the same assertion on the checklist's **hidden scope** row.
+// The code round replaces pin 5 above with this one.
+test('the gap checklist product check hidden scope row flags an entry point to a removed or replaced capability the body does not name', { skip: 'red-test-TC-3: the checklist has no "## The product check" section yet' }, () => {
+  const body = section(checklist, '## The product check', 2);
+  const row = body.split('\n').find((line) => line.startsWith('| **hidden scope** |'));
+  assert.ok(row, 'no **hidden scope** row');
+  assert.match(oneLine(row), /an entry point to a removed or replaced capability that the body does not name/);
+});
