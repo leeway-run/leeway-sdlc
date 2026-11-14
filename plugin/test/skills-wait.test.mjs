@@ -95,6 +95,18 @@ const notRaises = [
 // "raise a new one", "raise a held QUESTION", "raises its own" and the rest.
 const RAISE_AT = /escalation raise|\b[Rr]aises? (it|them|one|each|every|that|this|its|the|an|a|all)\b/g;
 
+// What a skill author sees when RAISE_AT matches text with no checked wait: the cause and each way out.
+const noWaitMessage = (skillName, phrase, around) =>
+  `${skillName}: "${phrase}" reads as a raise with no wait checked here, in "${around}". If it is not a raise, word it in the passive ("is raised"); ` +
+  'if it is, pair it with its wait through a `sites` or `inRound` entry; if another party raises it, add a `notRaises` entry.';
+
+test('the no-wait failure names the skill and the phrase, and says to use the passive or pair it with a wait', () => {
+  const text = 'then raise the flag on the story';
+  const m = text.match(RAISE_AT);
+  const message = noWaitMessage('sample-skill', m[0], 'the flag on the story');
+  for (const part of ['sample-skill', '"raise the"', 'is raised', '`sites`', '`inRound`', '`notRaises`']) assert.ok(message.includes(part), part);
+});
+
 // LWY-160.4 c4: the wordings LWY-160.3's c9 widened RAISE_AT for, so narrowing it again goes red.
 test('RAISE_AT finds each wording of a raise the skills use, and a word that only looks like one', () => {
   const hits = (text) => [...text.matchAll(RAISE_AT)].length;
@@ -129,7 +141,7 @@ test('every raise in a skill that waits is a site above, in a round a site waits
     }
     for (const m of text.matchAll(RAISE_AT)) {
       const ok = covered.some(([a, b]) => a <= m.index && m.index < b);
-      assert.ok(ok, `${s} raises with no wait checked here: "${text.slice(Math.max(0, m.index - 40), m.index + 80)}"`);
+      assert.ok(ok, noWaitMessage(s, m[0], text.slice(Math.max(0, m.index - 40), m.index + 80)));
     }
   }
 });
