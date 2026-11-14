@@ -79,7 +79,7 @@ escalations: re-invoking `shape-project` resumes from step 1, reading the answer
 writing nothing twice: step 1 reads the answers, a follow-up goes out as step 3 says and is waited on the same way,
 and with none, steps 4 and 5 propose and write the body and set the shaped step; an answer to the approval
 escalation is acted on as "When the approval round stays" says. No answer moves the story out of the shaped step:
-running `plan-project` on it does, and is the approval of the body.
+running `plan-project` on it does, and is the approval of the body. A held story waits on the escalation its `Held on` names, beside the round's own waits, and `<ref>` is that escalation's issue.
 
 ## The line you do not cross
 
@@ -96,17 +96,19 @@ line, or becomes a fallback the PO chose. An invented answer looks exactly like 
 ## 1. Read before asking
 
 - **The intent doc** from the doc map, for the product rules this story could cut against. A
-  tension with one is a product decision: name the rule to the PO and write down what they decide.
-  Marked `stub` or `absent` → skip it.
+  tension with one is a product decision: step 2 asks it. Marked `stub` or `absent` → skip it.
 - **The issue, if it exists**: the description and every comment. A comment from `plan-project` addressed to the
-  PO lists the gaps a developer sent back. **The latest one is this round's agenda**: start there, and do not
-  reopen what the body already answers. Where it proposes wording for a criterion, that is a suggestion: show
+  PO lists the gaps a developer sent back. **The latest one is this round's agenda**: start there. **Any body
+  already there when shaping starts**, whoever wrote it, is read line by line against the product check, and its
+  gaps go into the first round. In later rounds, do not reopen what the body already answers. Where it proposes wording for a criterion, that is a suggestion: show
   it to the PO, who accepts it, changes it or rejects it. It goes in the body only in the PO's version.
 - **The story template**: `STORY.md` in the directory the *Ticket templates* row names (`.sdlc/templates/`).
   Without that row, read `skills/sdlc-install/scaffold/templates/STORY.md.tmpl` in this plugin. **Read it now —
   this skill does not repeat it.** The block above its `---` rule ("Notes for the writer") is never written to
   Leeway; the body starts after the rule.
-- **The gap checklist**: `references/gap-checklist.md` next to this skill.
+- **The gap checklist**: `references/gap-checklist.md` next to this skill, with its `## The product check`.
+- **Every line under *Open questions for dev*, including one drafted before shaping**: would the user see the
+  answer? One that passes the test is asked in the round and leaves that section.
 
 ## 2. Check what exists today, read-only
 
@@ -123,12 +125,17 @@ silent about a rule the code enforces either breaks it or inherits it without an
 
 **Look for every way in to what the story takes away.** When a story removes or replaces a capability, search the code for every caller and entry point to it: a function or component's callers, the routes, the UI controls that open it, the commands, the links. Each entry point the story does not already cover goes into the round as a choice: cover it in a criterion, or leave it under *Out of scope*. Raise it in step 3's round as the hidden scope it is, merged with any question one answer would settle (the round rule there). A story that only changes how something behaves, removing or replacing nothing, is shaped as today: this search does not run.
 
+**Look for the intent-doc rules the story could cut against.** For each, search the code for its id (`R1`) and
+its words. The question names the rule, quotes it, and says where the code cites it. Its options are *The rule
+holds, the story changes*, *The rule changes, and the story says so* and *Leave it OPEN*. On *The rule changes*,
+the body gets a criterion that the intent doc is updated with the story's work. No advice and no suggested option.
+
 You change nothing in the repo. This session writes only to Leeway.
 
 ## 3. Walk the gaps with the PO
 
 First decide which checklist rows apply to this story, by their *Applies when*. Then go through
-those rows, the *What must not happen* rule and hidden scope, **area by area, and only the
+those rows, the gap kinds of `## The product check`, the *What must not happen* rule and hidden scope, **area by area, and only the
 ones the story leaves open**. Never ask a row that does not apply. Say what exists today, then ask. Take the PO's
 answer as given; where they are unsure, it is an `OPEN:` line, not a nudge toward an answer.
 
@@ -142,6 +149,8 @@ latest round's quote is what step 5 checks before it writes.
 
 Hidden scope the PO can decide becomes a criterion, a fallback, or a line under *Out of scope*.
 Whether something exists in the code, or how to build it, is a line under *Open questions for dev*.
+
+**Stories that share a rule.** When stories shaped in one session cut against the same rule, the rule question is raised once, on the first of them, in the order the session shapes them. Each other story gets a comment holding `Held on <ref> eN`, the form `plan-project` uses, posted once that escalation is raised so `eN` exists, and quoting the description under `Description at this round:` as the first comment does; it has no escalation of its own for that rule: the question is never raised a second time on another story.
 
 ## 4. Propose the body
 
@@ -176,10 +185,14 @@ what the work is checked against, not its background.
 ## 5. Write the body, then stop at the shaped step
 
 **Write once every escalation on the story is answered and no answer leaves something new unclear.** An answer
-that does is a follow-up: raise it as in step 3 and wait. A later round drops what an answer settled: it is not asked
+that does is a follow-up: raise it as in step 3 and wait. Before writing, run the product check on the proposed
+body. A gap other than an `OPEN:` line the PO chose to leave is a follow-up round, not a write. `OPEN:` lines
+the PO chose to leave do not stop the write. A later round drops what an answer settled: it is not asked
 again, and it is not raised for confirmation. No escalation asks whether to write the body: the PO's
 answers are the shaping, and running `plan-project` on the story at the shaped step is the approval of the body. The two exceptions are under
 "When the approval round stays" below.
+
+Under step 5's first rule, "every escalation on the story is answered", the escalations the story holds on count as its own toward it. A follow-up on the shared question is raised on the same first story, and each held story gets a new `Held on` for it. A held story's Status-line name is the answerer of the escalation it holds on, and its baseline for the description check is the `Description at this round:` quote its `Held on` comment carries. The shared answer is written into each story's body. A story holding on another's escalation writes no body and sets no shaped step while that escalation is open. Re-invoking shaping reads the `Held on` comment and the escalation it names.
 
 **The shaped step** is the type's first step of kind `gate` after its `shape` step, with no `plan` step between
 them (`shaped` in the presets). Find it in `process get` by kind and position, never by id.
@@ -209,7 +222,8 @@ Read it back with `issue get` and check that `issue.description` is the body.
 reviewer and the divergence reviewer all read.
 
 Then post **one** comment on the story: what the body says beyond the PO's answers (each thing you inferred,
-worded or left out, one line each), what is still `OPEN:`, and the summary if you wrote one. Set the shaped step,
+worded or left out, one line each), what is still `OPEN:`, and the summary if you wrote one. With `OPEN:` lines
+left, the inference comment and the session tell the PO that planning will send them back. Set the shaped step,
 `<cli> --server <server> --as <alias>/agent issue update <ref> --step <the shaped step's id>`, and stop. The story
 waits there until `plan-project` is run on it, and running it approves the body: say so to the PO. **In a round trip** (`PROCESS.md`, "Before the plan: shaping"), the story does not wait there: say in the session, and in the inference comment, that the story goes back to planning, and once the shaped step is set hand over to `plan-project` for that story as `HARNESS.md`, "Handing over to a skill", says. It uses the session's alias: `plan-project` continues the earlier `plan-project` run, not a new run. Another story's wait that exits is acted on when it exits, whichever skill the session is in. Outside a round trip, shaping ends at the shaped step and stops, as above, and a story shaped from scratch (no gap comment, or one whose escalation was answered *Split* or *Accept*) hands nothing over.
 
@@ -257,6 +271,8 @@ list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most
 description`); `plan-project` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
 
+**Stories that share a rule.** When stories shaped in one session cut against the same rule, the rule question is raised once, on the first of them, in the order the session shapes them. Each other story gets a comment holding `Held on <ref> eN`, the form `plan-project` uses, posted once that escalation is raised so `eN` exists, and quoting the description under `Description at this round:` as the first comment does; it has no escalation of its own for that rule: the question is never raised a second time on another story.
+
 **You never create tasks, branches or a design doc**, and the only steps you set are `shape`, in step 0, and the shaped step, in step 5, and
 only for an unplanned story, besides a move the person asks for in the session (`PROCESS.md`, "The cast"). A status
 is set by `--step` or `--status` and nothing else: no comment and no escalation moves a story.
@@ -265,7 +281,7 @@ is set by `--step` or `--status` and nothing else: no comment and no escalation 
 
 Every story body is in the template's shape, every heading filled or `n/a: <why>`, at least one rule
 says what must not happen where the gap checklist requires one, every undecided answer is an
-`OPEN:` line, the Status line names the PO and today's date, and the description read back is the body.
+`OPEN:` line, the product check found no gap except the PO's chosen `OPEN:` lines, the Status line names the PO and today's date, and the description read back is the body.
 The PO has the inference comment (on the approval round, saw the body before it was written), and an
 unplanned story sits at the shaped step (at `shape` where its type has no shaped step; a planned one keeps
 the step and status it had).

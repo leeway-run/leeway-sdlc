@@ -150,18 +150,8 @@ Read the description and every comment, the intent doc, and the surfaces the sto
 
 ### List the gaps
 
-| Gap | What it looks like |
-|---|---|
-| **missing** | no numbered acceptance criteria; a heading of the PO's part that is absent or empty. `n/a: <why>` is an answer |
-| **hollow** | "TBD", "standard error handling", "as usual", the title restated as a criterion |
-| **open** | any `OPEN:` line |
-| **no negative** | a story the checklist's *What must not happen* applies to — data scope, roles, permissions or isolation; or data it moves, copies, deletes or replaces — without the rule it requires |
-| **stale** | a criterion that contradicts the intent doc, or what the code does today. If the Status line has a date, `git log --since=<date>` on the intent doc shows what changed since shaping |
-| **hidden scope** | a capability the story assumes and the code shows is not there, **when it needs a scope decision**: build it here, a fallback, or out of scope. One the criterion obviously needs and you just build is a task, not a gap. Also an entry point to a removed or replaced capability that the body does not name, in a criterion or under *Out of scope* |
-| **too big** | the story should be two. Name the split you would suggest; the PO decides it |
-
-A checklist row the story leaves open is **missing** only when it applies, by its *Applies when*. **Not gaps:**
-*Open questions for dev*, which are your input for the interview and step 3, and a missing Status line.
+The gap kinds, and which rows of the checklist count as **missing**, are in the checklist's `## The product check`, which
+you read above. Check the story against them.
 
 ### No gaps → plan it
 
