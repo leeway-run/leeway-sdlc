@@ -1,7 +1,8 @@
 # The gap checklist
 
 The questions a story must answer before anyone plans it. `shape-project` walks them with the PO;
-`plan-project` step 0 checks a story against them. One source, two readers: edit it here.
+`plan-project` step 0 checks a story against them. Both also read *The product check* below, which names the gaps
+a story can have. One source, two readers: edit it here.
 
 **Not every row applies to every story.** First decide which rows apply, from what the story is —
 a list, a form, a single setting, an API change, a background job — using *Applies when*. Only
@@ -61,3 +62,20 @@ is the developer's question — it goes under *Open questions for dev*, and plan
 question, asked now, however technical it sounds. "Should the queue remember which case a file came
 from?" decides whether the user gets a link back to the case: product. "How do we detect the same
 file?" changes nothing the user sees: the developer's.
+
+## The product check
+
+The seven kinds of gap a story can have.
+
+| Gap | What it looks like |
+|---|---|
+| **missing** | no numbered acceptance criteria; a heading of the PO's part that is absent or empty. `n/a: <why>` is an answer |
+| **hollow** | "TBD", "standard error handling", "as usual", the title restated as a criterion |
+| **open** | any `OPEN:` line |
+| **no negative** | a story the checklist's *What must not happen* applies to — data scope, roles, permissions or isolation; or data it moves, copies, deletes or replaces — without the rule it requires |
+| **stale** | a criterion that contradicts the intent doc, or what the code does today. If the Status line has a date, `git log --since=<date>` on the intent doc shows what changed since shaping; a criterion that changes an intent-doc rule and says the intent doc is updated with the story's work is a decided change, not stale |
+| **hidden scope** | a capability the story assumes and the code shows is not there, **when it needs a scope decision**: build it here, a fallback, or out of scope. One the criterion obviously needs and you just build is a task, not a gap. Also an entry point to a removed or replaced capability that the body does not name, in a criterion or under *Out of scope* |
+| **too big** | the story should be two. Name the split you would suggest; the PO decides it |
+
+A checklist row the story leaves open is **missing** only when it applies, by its *Applies when*. **Not gaps:**
+*Open questions for dev*, which are your input for the interview and step 3, and a missing Status line.
