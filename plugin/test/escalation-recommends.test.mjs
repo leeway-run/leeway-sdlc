@@ -101,7 +101,7 @@ test('TC-4, TC-5: the contract names the fields and where the pick goes', () => 
   assert.match(process_, /```json \{"type":"<type>","question":"…","context":"…","tradeoff":"…","advice":"…","options":\[\{"label":"…","argument":"…","suggested":true\},\{"label":"…","argument":"…"\}\],"meanwhile":"…","comment":"cN"\} ``` ```sh <raise> --server <server> --as <alias>\/<role> <ref> <fields file> -- <cli> ```/);
   assert.match(process_, /\*\*2 to 5 options\*\*, each a `label` and an `argument` that says what happens if it is picked/);
   assert.match(process_, /\*\*The pick comes first and is marked `"suggested": true`\*\*, the only option so marked, and Advice says why\. Where the agent truly has no pick it invents none: no option is suggested, and Advice says there is no pick and why\./);
-  assert.match(process_, /An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block passes its fields through unchanged and keeps its order and its pick\./);
+  assert.match(process_, /An orchestrator raising an implementer's `## Question` or a reviewer's `Escalates` block first does the triage \(`run`, "Before raising a block: do the criteria decide it\?"\) and, for what it does not decide, passes its fields through unchanged and keeps its order and its pick\./);
 });
 
 // Round 1's c5: a type is a kind of question, not whether something has stopped yet.
@@ -140,7 +140,7 @@ test('TC-7: a server without the fields stops the raise with a line naming LWY-1
 
 test('TC-4: run names the type of each of its raises in its table', () => {
   assert.match(run, /\| a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story \| `blocker` \|/);
-  assert.match(run, /\| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block \| the block's own `Type:` line, unedited \|/);
+  assert.match(run, /\| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block, after the triage \("Before raising a block: do the criteria decide it\?"\) \| the block's own `Type:` line, unedited \|/);
   assert.match(run, /\| a debt proposal \("What a deferred finding becomes"\) \| `debt` \|/);
   assert.match(run, /\| a friction proposal \("Land the task", step 6; "The friction harvest"\) \| `nit` \|/);
 });
@@ -196,8 +196,8 @@ test('TC-5: the implementer\'s ## Question and the reviewer\'s Escalates carry t
   assert.match(implementer, /its Type, the Context behind it in plain lines, the Trade-off and your Advice/);
   assert.match(implementer, /your pick first and marked `\(suggested\)`, or none marked and Advice saying why/);
   assert.match(reviewer, /\*\*Type\*\* .*\*\*Context\*\* \(the finding or dispute behind it in plain lines, never only its `F<n>` or `cN`\), \*\*Trade-off\*\*, \*\*Advice\*\*/);
-  assert.match(run, /Raise its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
-  assert.match(run, /Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it marks/);
+  assert.match(run, /Run the triage \("Before raising a block: do the criteria decide it\?"\) on each `## Question` block\..*Otherwise raise its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
+  assert.match(run, /run the triage first.*Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it marks/);
 });
 
 // The server's own rule (LWY-159, `onlyReference`): strip URLs, refs and the pointer words; nothing left is refused.
