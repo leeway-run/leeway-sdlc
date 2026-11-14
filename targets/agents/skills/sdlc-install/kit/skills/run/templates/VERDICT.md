@@ -9,7 +9,7 @@
 - **Review depth:** light | standard | adversarial, as your prompt names it.
 - **Lanes run:** which, and why those. Name any you did not run and why not.
 - **Red tests:** the freeze checked (`git -C <worktree> diff <round-0 commit> -- <frozen paths>` shows removed skip markers
-  and nothing else), or "no round 0 for this task" when your prompt says no red tests ran.
+  and nothing else, or each change beyond that named in the brief's Frozen test fix section and judged against its three conditions), or "no round 0 for this task" when your prompt says no red tests ran.
 - **Verified:** yes, read directly | partially — say which findings were not confirmed by reading
 - **Not examined:** paths not read, lanes not run, behaviour not reachable from here. **A review
   with no stated limits reads as exhaustive, and none of them are.**

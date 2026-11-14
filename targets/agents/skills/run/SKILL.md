@@ -447,10 +447,26 @@ removing the skip marker, nothing else.
   rule.
 - **The gate checks it.** `git -C <task worktree> diff --cached <round-0 commit> -- <frozen paths>` shows removed
   skip markers and nothing else. Against the round-0 commit, not `HEAD`, so a change an earlier round committed is
-  still caught. Anything more stops the round before it reaches the record.
+  still caught. Every frozen file whose diff goes beyond removed skip markers must be named in the brief's
+  `## Frozen test fix` section; one not named stops the round before the record. The gate does not judge the
+  conditions: that is the reviewer's.
+- **The section is cumulative.** The gate diffs against the round-0 commit, so a fix from an earlier round shows in
+  every later diff, and every later brief re-lists each fix since round 0, an unchanged one marked `unchanged since
+  round <N>`, with the round whose reviewer judged it. Every later implementer prompt says the section is
+  cumulative. A round whose brief does not re-list an earlier fix stops at the gate. The reviewer judges an entry new
+  or changed since the last judged round: an entry whose diff changed is judged again, and one marked unchanged is
+  left as judged only once the reviewer has verified the marker: `git -C <worktree> diff <sha of round N> -- <file>`
+  is empty, or only the un-skip, where the sha is that round's iteration commit (`iterations[]` in the JSON of
+  `leeway issue get <ref> --json`, or the Head sha of that round's brief). A false marker is an unmet condition, a
+  `freeze` BLOCKER. The gate stays mechanical: it checks names, not markers.
+- **The iteration's `--note` names the fix**: `frozen test fix: <paths>`.
 - **Every later reviewer prompt says** that red tests ran, lists the frozen tests and the round-0 commit, and that
-  any diff to one beyond un-skipping is a BLOCKER unless the prompt carries a human's approval for it. A task that
+  any diff to one beyond un-skipping is a BLOCKER unless the prompt carries a human's approval for it. When the
+  gate found a frozen test changed beyond its skip marker and named, the prompt also says a frozen test was
+  changed, lists the files, and that the reviewer judges each against the three conditions. A task that
   ran no round 0 says "no red tests ran", and the reviewer raises no freeze finding.
+- **A `freeze` BLOCKER is hard stop 8**, the spec amendment raised as the next point says, with `"type": "blocker"`:
+  to the product owner for an `AC-n`, the developer for a `TC-n`.
 - **A frozen test that is wrong is a spec amendment.** Stop. Show the criterion's owner the test, the criterion,
   and why one of them is wrong: **the product owner for an `AC-n`, the developer for a `TC-n`**. That is an
   escalation on the sub-issue, and you wait on it ("Wait, then carry on"); their decision goes into the thread before
@@ -614,8 +630,9 @@ the lane commands and the known-red list, and:
 
 - **The depth and the rungs**: the line `review: <depth>` exactly as the process sets it, and the rungs in
   `blockingRungs` (an unproven claim at one of them is a BLOCKER; at any other it is a finding, never a BLOCKER).
-- **The freeze, or its absence**: the frozen list and round-0 commit, or "no red tests ran" (see "The freeze"); and
-  "this is round 0" when it is.
+- **The freeze, or its absence**: the frozen list and round-0 commit, or "no red tests ran" (see "The freeze"); when a frozen test
+  was changed beyond its skip marker and named, that a frozen test was changed, that the prompt lists the files, and that the reviewer
+  judges each against the three conditions; and "this is round 0" when it is.
 - **The round's commit.** Nothing is staged: the reviewer's definition speaks of the working state, and this prompt
   names the sha. The round's diff is `git -C <task worktree> diff <base>..<sha>`, where `<base>` is the previous iteration's sha or,
   for the first, `git -C <task worktree> merge-base <story branch> <sha>`.

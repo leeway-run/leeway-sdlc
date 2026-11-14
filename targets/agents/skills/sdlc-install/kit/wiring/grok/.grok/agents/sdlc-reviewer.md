@@ -75,7 +75,7 @@ you look through and how you rate a missing test, never how you rate a bug, and 
 | A missing or weak test | **MINOR** | **MAJOR** if it leaves a criterion the brief or task states unguarded, else **MINOR** | as `standard` |
 | Skipped, disabled or deleted tests, unjustified in the brief (step 4) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
 | New test not registered in a runner array (step 4) | **MAJOR** | **MAJOR** | **MAJOR** |
-| The freeze, after a round 0 | **BLOCKER** on any change beyond removing a skip marker, only when your prompt says red tests ran | same | same |
+| The freeze, after a round 0 | **BLOCKER** on any change beyond removing a skip marker, unless it is named in the brief's `## Frozen test fix` and meets all three conditions; only when your prompt says red tests ran | same | same |
 | Conventions: the docs in your map, and comments the diff adds | not checked | checked | checked |
 | The rung the brief claims (step 6) | stated | checked against the change | checked against the change |
 | Missing proof at a rung in `blockingRungs` (step 6) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
@@ -153,7 +153,15 @@ apply to the stubs only.
 task ran red tests (`redTests`), lists the frozen tests and names the round-0 commit. When it says
 they ran, run `git -C <worktree> diff <round-0 commit> -- <frozen paths>` over the working state you review. **Any
 change beyond removing a skip marker is a BLOCKER**, unless your prompt carries a human's approval for
-that exact change. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
+that exact change. **The exception is a mechanical fix:** a change named in the brief's `## Frozen test fix` section
+and meeting all three conditions is not a BLOCKER. Those are the implementer's three: the criterion it serves is
+unchanged; no assertion is removed or weakened; the change only lets the test observe the behaviour it already
+names. Judge each entry against them; a change that removes or weakens an assertion is a BLOCKER. An unmet
+condition is a **BLOCKER** tagged `freeze`. The section is cumulative: judge an entry new or changed since the last
+judged round, and leave one marked `unchanged since round <N>` as judged only after you verify the marker: run
+`git -C <worktree> diff <sha of round N> -- <file>`, where the sha is that round's iteration commit (`iterations[]` in
+the JSON of `leeway issue get <ref> --json`, or the Head sha of that round's brief). The output must be empty, or only the
+removed skip marker. A false marker is an unmet condition: a **BLOCKER** tagged `freeze`. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
 says no red tests ran, or lists no frozen tests, there is no freeze: raise no freeze finding, and
 say "no round 0 for this task" in the verdict.
 
