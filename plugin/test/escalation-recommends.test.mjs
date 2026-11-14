@@ -8,7 +8,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const plugin = join(dirname(fileURLToPath(import.meta.url)), '..');
+const plugin = process.env.PLUGIN_DIR || join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(plugin, path), 'utf8').replace(/\r\n/g, '\n');
 const flat = (text) => text.replace(/\s+/g, ' ');
 

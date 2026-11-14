@@ -607,7 +607,10 @@ criteria are not the human's to answer twice, and a real choice still reaches th
 
 - **Decided** when one option follows from the story's `AC-n` and `TC-n` and every other leaves one unmet or contradicts
   one. Adding a field to an existing op's response that a criterion needs counts as decided.
-- **Always raised, unedited**, however the criteria read: the criteria allow more than one answer; a product or scope choice; a new op or whether something is an op; removing or renaming a response field; the schema; auth; an ownership boundary; a rule in the intent doc. When you cannot tell, raise it.
+- **Always raised, unedited**, however the criteria read:
+  the criteria allow more than one answer; a product or scope choice;
+  a new op or whether something is an op; removing or renaming a response field; the schema; auth; an ownership boundary;
+  a rule in the intent doc. When you cannot tell, raise it.
 - **A spec amendment never reaches this check.** A frozen test that needs one, a `freeze` BLOCKER included, goes to hard
   stop 8 ("The freeze") and never comes here.
 - **On decided**, the block raises no escalation. Post one comment as `<alias>/agent` opening
@@ -615,9 +618,11 @@ criteria are not the human's to answer twice, and a real choice still reaches th
   option taken. Then:
   - a `## Question`: run the next round with the decision in the prompt, the step set back as "A BLOCKED brief" says on
     resume, and the sub-issue not set `blocked`.
-  - an `Escalates:` block: the decision is a live finding for the next round. Its `F<n>` comment exists already; for a block
-    about the round as a whole the decision comment is that finding. Add its `cN` to the live findings by hand, since its
-    author is `agent`, not `reviewer`. A PASS verdict with a decided block runs one more round for it ("Then"), counted against
+  - an `Escalates:` block: the decision is a live finding for the next round. An `F<n>` block's finding comment exists already
+    and is live. For a block about the round as a whole the decision comment is that finding: add the decision comment's `cN` to
+    the live findings by hand, since its author is `agent`, not `reviewer`. If the server refuses the verdict post because of
+    that `cN` (`fate_conflict` or `invalid_review`), post the verdict without it and record the decision's outcome in a comment
+    from `<alias>/agent`. The next reviewer's prompt then says to report the decision's outcome in its verdict body, not under *Settles*. A PASS verdict with a decided block runs one more round for it ("Then"), counted against
     `roundCap` like any round. A round that would pass the cap is not run: hard stop 1 fires ("The caps").
 
 Each block of a round is judged on its own. A raised one waits as before, and the decisions go into the next round's prompt
@@ -670,7 +675,8 @@ the lane commands and the known-red list, and:
   `comments` (top level) with `kind` `comment`, `by.actor.role` `reviewer` and `fate` `open` or `addressed`. The
   `kind` and `role` filters matter: every top-level comment starts `open`, so the briefs and the verdicts would
   otherwise match (`review get <ref>` shows verdicts as `open` for ever). Do not filter on `anchor`. It decides, for
-  each, `Settles` or `Disputes`, and names only these.
+  each, `Settles` or `Disputes`, and names only these. When a decision comment was left out of the verdict because the server
+  refused it, the prompt says to report that decision's outcome in the verdict body, not under *Settles*.
 - **How it reaches Leeway**: the implementer's read-only paragraph minus its git and brief sentences, and that it
   never asks the user: a decision for the human goes in the verdict's `Escalates:` block. A gap the criteria decide is a
   finding, with its fix, not an `Escalates:` block.
@@ -765,7 +771,7 @@ edit to its body.
 (or round-0 attempts at `round0Cap`, see Round 0) is a stop: leave the sub-issue as it is and raise an escalation
 on it as `<alias>/agent`, `"type": "blocker"`, whose context gives each outstanding finding in a line of its own, what it
 says and its `cN`, and whose options are the human's real choices (for example "Re-scope the task", "Allow one more round", "Cancel it"), each with its argument, and wait on
-it ("Wait, then carry on"). A decided block's extra round that would pass `roundCap` is not run: the stop is hard stop 1, and its escalation's context names the decided block
+it ("Wait, then carry on"). A decided block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided block
  and its `# Decided from the criteria` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
 pattern the cap exists to prevent.
 
@@ -1111,7 +1117,7 @@ further question for one stop); otherwise the issue run raises it on the story.
 
 | # | Condition | Detected | The stop's escalation |
 |---|---|---|---|
-| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided block that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
+| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided block, or a `BLOCKED` brief whose `## Question` is decided, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
 | 3 | **A verdict carries a `security` follow-up** | "What a deferred finding becomes" | the issue run's, on the story |
 | 4 | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
