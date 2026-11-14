@@ -32,11 +32,13 @@ const stepThree = () => section(shape, '## 3. Walk the gaps with the PO', 2);
 const stepFive = () => section(shape, '## 5. Write the body, then stop at the shaped step', 2);
 const stepSix = () => section(shape, '## 6. A new story, or several', 2);
 
+// The passive ("is raised once") is deliberate: skills-wait.test.mjs's RAISE_AT rejects an imperative raise without a wait.
 // AC-2 (last rule): raise once on the first story, the others hold with a comment and raise nothing.
 for (const [name, step] of [['3', stepThree], ['6', stepSix]]) {
   test(`shape-project step ${name} raises a rule question shared by stories of one session once, on the first of them`, { skip: 'red-test-AC-2: step text absent until LWY-239.3 is built' }, () => {
     assert.match(step(), /stories shaped in one session cut against the same rule/);
     assert.match(step(), /the rule question is raised once, on the first of them/);
+    assert.doesNotMatch(step(), /raised on every story/);
   });
 
   test(`shape-project step ${name} gives each other story a Held on comment and no escalation of its own for that rule`, { skip: 'red-test-TC-4: step text absent until LWY-239.3 is built' }, () => {
@@ -61,11 +63,13 @@ test('shape-project "Wait, then carry on" has a held story wait on the escalatio
 test('shape-project step 5 counts the escalations a story holds on toward "every escalation on the story is answered"', { skip: 'red-test-TC-4: step 5 does not count held escalations until LWY-239.3 is built' }, () => {
   const step = stepFive();
   assert.match(step, /every escalation on the story is answered and no answer leaves something new unclear/);
-  assert.match(step, /the escalations the story holds on[^.]*(?:count|counts)[^.]*(?:own|answered)/i);
+  assert.match(step, /the escalations the story holds on (?:count|counts) (?:as its own|toward|towards) /);
+  assert.doesNotMatch(step, /holds on[^.]*(?:do not|does not|never|not) count/);
 });
 
 test('shape-project step 5 writes the shared answer into each story\'s body', { skip: 'red-test-AC-2: step 5 text absent until LWY-239.3 is built' }, () => {
   assert.match(stepFive(), /answer[^.]*is written into each story's body/);
+  assert.doesNotMatch(stepFive(), /writes? (?:its|the) body before/);
 });
 
 test('shape-project step 5 has a re-invoked shaping read the Held on comment and the escalation it names', { skip: 'red-test-TC-4: step 5 text absent until LWY-239.3 is built' }, () => {
