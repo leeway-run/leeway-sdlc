@@ -50,6 +50,19 @@ its instructions live, how it updates) is in that agent's `HARNESS.md`. Claude C
 >
 > [docs/targets/](docs/targets/README.md) is the check we will run for each agent before calling it verified.
 
+## Developing
+
+The lanes are CI's (`.github/workflows/release.yml`), run from the repo root:
+
+```sh
+node --test --test-reporter=tap "plugin/hooks/*.test.mjs" "plugin/hooks/adapters/*.test.mjs" "plugin/test/*.test.mjs" "scripts/*.test.mjs"
+node scripts/build-targets.mjs --check
+node .github/scripts/check-manifests.mjs
+```
+
+The tap reporter is pinned so that piped output has `ok` / `not ok` lines, whatever Node's default reporter is. On
+Node 26, off a terminal, the default prints none, so `| grep '^not ok'` finds nothing without the flag.
+
 ## Status
 
 The manifests, `plugin/PROCESS.md`, the craft doc, the hooks, the agents, the templates and the skills (including

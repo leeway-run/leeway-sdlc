@@ -31,6 +31,10 @@ test('every check runs in the job with the matrix, so each runs on both versions
   }
 })
 
+test('the tests step pins the tap reporter, so piped output has ok / not ok lines', () => {
+  assert.match(jobs.verify, /^ {8}run: node --test --test-reporter=tap "plugin\/hooks\/\*\.test\.mjs" /m)
+})
+
 test('release waits for verify, and only a tag push reaches it', () => {
   assert.match(jobs.release, /^ {4}needs: verify$/m)
   assert.match(jobs.release, /^ {4}if: github\.event_name == 'push'$/m)
