@@ -129,7 +129,8 @@ it.
   That skip is the round's deliverable. Un-skip each locally, run it, paste the failure in the brief, then
   write a temporary stand-in for the code under test, run each test un-skipped against it and paste the passing output
   beside the failure, so the brief shows the test can pass. Delete the stand-in and re-skip each test before you stage,
-  and never stage or commit the stand-in. Where no stand-in can be written for a test, say why for that test in the
+  and never stage or commit the stand-in. A stub the stand-in was written over goes back to a bare
+  signature. Where no stand-in can be written for a test, say why for that test in the
   brief.
 
 ## Frozen tests

@@ -410,9 +410,11 @@ Round 0 runs "Delegate to the implementer" to "Gate again, record, act" below, w
   that throws), every stub listed in the brief. Its brief's *Red tests* table carries, per test, the verbatim failure
   from running it un-skipped and a passing run per test against a temporary stand-in it writes, or why none can be
   written; it deletes the stand-in and re-skips before staging.
-- **The gate also checks** that the staged set is tests plus listed stubs and nothing else (the staged set check already refuses a stand-in left
-  staged, so there is no second check for it), that every new test carries a skip marker naming an `AC-n` or `TC-n`,
-  that each row of the Red tests table carries a passing run against the stand-in or a reason why none, and that each pasted failure is the **right** one: the behaviour
+- **The gate also checks** that the staged set is tests plus listed stubs and nothing else (the staged set check
+  already refuses a stand-in left staged at any path but a listed stub's, and one written over a stub fails the
+  reviewer's check that every stub is a signature and nothing more, so there is no second check for it), that every
+  new test carries a skip marker naming an `AC-n` or `TC-n`, that each row of the Red tests table carries a passing
+  run against the stand-in or a reason why none, and that each pasted failure is the **right** one: the behaviour
   is absent, not the harness broken. A compile error elsewhere, a missing fixture or a refused connection proves
   nothing about the criterion.
 - **The reviewer reviews tests against criteria, not code.** Its prompt says this is round 0 and carries the
