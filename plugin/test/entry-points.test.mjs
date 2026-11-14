@@ -59,7 +59,10 @@ test('plan-project step 1 hidden scope row flags an entry point to a removed or 
 // Pin 5, redirected (LWY-239.1, TC-3): the same assertion on the checklist's **hidden scope** row.
 // The code round replaces pin 5 above with this one.
 test('the gap checklist product check hidden scope row flags an entry point to a removed or replaced capability the body does not name', { skip: 'red-test-TC-3: the checklist has no "## The product check" section yet' }, () => {
-  const body = section(checklist, '## The product check', 2);
+  // The raw section keeps its line breaks: section() flattens to one line, which has no row to find.
+  const chunks = checklist.split(/\n(?=#{1,2} )/);
+  const body = chunks.find((chunk) => chunk.startsWith('## The product check'));
+  assert.ok(body, 'no "## The product check" section');
   const row = body.split('\n').find((line) => line.startsWith('| **hidden scope** |'));
   assert.ok(row, 'no **hidden scope** row');
   assert.match(oneLine(row), /an entry point to a removed or replaced capability that the body does not name/);
