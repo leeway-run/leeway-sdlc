@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- **The product check lives in the gap checklist (LWY-239).** The seven gap kinds are defined once, under `## The product
+  check` in `gap-checklist.md`, which shaping and planning both read; `plan-project` step 1 points to it.
 - **The skills directory is gitignored and untracked (LWY-220).** `sync-repo` offers the skills-dir path `HARNESS.md`
   names as a `.gitignore` line and, where the files are tracked, untracks them with `git rm -r --cached`, so they stay
   on disk. `skills-lock.json` stays tracked.
