@@ -455,7 +455,10 @@ removing the skip marker, nothing else.
   round <N>`, with the round whose reviewer judged it. Every later implementer prompt says the section is
   cumulative. A round whose brief does not re-list an earlier fix stops at the gate. The reviewer judges an entry new
   or changed since the last judged round: an entry whose diff changed is judged again, and one marked unchanged is
-  left as judged.
+  left as judged only once the reviewer has verified the marker: `git -C <worktree> diff <sha of round N> -- <file>`
+  is empty, or only the un-skip, where the sha is that round's iteration commit (`iterations[]` in the JSON of
+  `leeway issue get <ref> --json`, or the Head sha of that round's brief). A false marker is an unmet condition, a
+  `freeze` BLOCKER. The gate stays mechanical: it checks names, not markers.
 - **The iteration's `--note` names the fix**: `frozen test fix: <paths>`.
 - **Every later reviewer prompt says** that red tests ran, lists the frozen tests and the round-0 commit, and that
   any diff to one beyond un-skipping is a BLOCKER unless the prompt carries a human's approval for it. When the

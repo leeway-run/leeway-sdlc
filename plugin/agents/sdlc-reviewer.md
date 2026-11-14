@@ -160,7 +160,10 @@ and meeting all three conditions is not a BLOCKER. Those are the implementer's t
 unchanged; no assertion is removed or weakened; the change only lets the test observe the behaviour it already
 names. Judge each entry against them; a change that removes or weakens an assertion is a BLOCKER. An unmet
 condition is a **BLOCKER** tagged `freeze`. The section is cumulative: judge an entry new or changed since the last
-judged round, and leave one marked `unchanged since round <N>` as judged. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
+judged round, and leave one marked `unchanged since round <N>` as judged only after you verify the marker: run
+`git -C <worktree> diff <sha of round N> -- <file>`, where the sha is that round's iteration commit (`iterations[]` in
+the JSON of `leeway issue get <ref> --json`, or the Head sha of that round's brief). The output must be empty, or only the
+removed skip marker. A false marker is an unmet condition: a **BLOCKER** tagged `freeze`. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
 says no red tests ran, or lists no frozen tests, there is no freeze: raise no freeze finding, and
 say "no round 0 for this task" in the verdict.
 

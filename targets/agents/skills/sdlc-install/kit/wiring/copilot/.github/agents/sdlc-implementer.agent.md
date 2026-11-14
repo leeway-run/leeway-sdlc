@@ -148,7 +148,8 @@ match, a smaller set, a dropped negative case); and the change only lets the tes
 already names (a fixture, a query, a lookup, a setup step). Then report each changed file in the brief's
 `## Frozen test fix` section: the file, the criterion it serves, its diff against the round-0 commit
 verbatim, and why each condition holds. If any one fails, it is the spec amendment above, and you return
-`BLOCKED`.
+`BLOCKED`. The section is cumulative: every later brief re-lists each fix since round 0, an unchanged one marked
+`unchanged since round <N>`, and the marker must be true, since the reviewer checks it against that round's diff.
 
 ## Every factual claim must be settled, and reading is not always how
 
