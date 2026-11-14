@@ -103,8 +103,8 @@ const noWaitMessage = (skillName, phrase, around) =>
 test('the no-wait failure names the skill and the phrase, and says to use the passive or pair it with a wait', () => {
   const text = 'then raise the flag on the story';
   const m = text.match(RAISE_AT);
-  const message = noWaitMessage('sample-skill', m[0], text);
-  for (const part of ['sample-skill', 'raise the', 'is raised', '`sites`', '`inRound`', '`notRaises`']) assert.ok(message.includes(part), part);
+  const message = noWaitMessage('sample-skill', m[0], 'the flag on the story');
+  for (const part of ['sample-skill', '"raise the"', 'is raised', '`sites`', '`inRound`', '`notRaises`']) assert.ok(message.includes(part), part);
 });
 
 // LWY-160.4 c4: the wordings LWY-160.3's c9 widened RAISE_AT for, so narrowing it again goes red.
