@@ -142,6 +142,14 @@ spec amendment, and only the criterion's owner makes it: the product owner for a
 planner for a `TC-n`. A test bent to meet the code is the failure the freeze exists to stop, and the
 reviewer treats any change beyond the un-skip as a BLOCKER.
 
+**The one exception is a mechanical fix.** You may change a frozen test beyond its skip marker only when
+**all three** hold: the criterion it serves is unchanged; no assertion is removed or weakened (a looser
+match, a smaller set, a dropped negative case); and the change only lets the test observe the behaviour it
+already names (a fixture, a query, a lookup, a setup step). Then report each changed file in the brief's
+`## Frozen test fix` section: the file, the criterion it serves, its diff against the round-0 commit
+verbatim, and why each condition holds. If any one fails, it is the spec amendment above, and you return
+`BLOCKED`.
+
 ## Every factual claim must be settled, and reading is not always how
 
 This is the most common source of review failures — not broken logic, but confident statements that

@@ -70,6 +70,14 @@ red tests.
 | Test | Criterion | Skip marker | Failure when un-skipped (verbatim) |
 |---|---|---|---|
 
+## Frozen test fix
+
+Only when a frozen test needed a mechanical fix (the implementer's "Frozen tests"). One entry per frozen file
+changed beyond its skip marker: the file, the criterion it serves, its diff against the round-0 commit
+verbatim, and why each condition holds. **The section is cumulative:** re-list every fix since round 0, an
+unchanged one marked `unchanged since round <N>`, with the round whose reviewer judged it. Write "none" when
+no frozen file changed beyond its skip marker.
+
 ## Claims
 
 Every non-obvious behavioural claim this diff asserts — in a code comment, a doc line, a test name,
