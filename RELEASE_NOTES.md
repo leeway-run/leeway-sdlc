@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- **A question the criteria already answer does not reach the human (LWY-244).** Before raising an implementer's `## Question`
+  or a reviewer's `Escalates:` block, `run` checks whether the story's `AC-n` and `TC-n` decide it. A decided block raises no
+  escalation: it is recorded in a `# Decided from the criteria` comment and answered in the next round (one more after a
+  PASS, within `roundCap`). A real choice, a spec amendment and every kind `PROCESS.md` lists are still raised unedited.
+- **Round 0 proves its tests can pass (LWY-244).** The implementer writes a temporary stand-in, runs each red test against
+  it, pastes the passing run (or why none can be written) and deletes it before staging; the gate checks every row and
+  the reviewer checks each run against its test.
+- **A mechanical fix to a frozen test stays in the run (LWY-244).** The implementer may change a frozen test beyond its
+  skip marker when the criterion is unchanged, no assertion is weakened and the change only lets the test observe what it
+  names, and reports it in the brief's `## Frozen test fix` section. The gate requires every such file to be named, the
+  section is cumulative, and the reviewer judges the three conditions; an unmet one is a `freeze` BLOCKER, hard stop 8.
 - **The product check lives in the gap checklist (LWY-239).** The seven gap kinds are defined once, under `## The product
   check` in `gap-checklist.md`, which shaping and planning both read; `plan-project` step 1 points to it.
 - **Shaping runs the product check before it writes (LWY-239).** `shape-project` reads an existing body against it in the

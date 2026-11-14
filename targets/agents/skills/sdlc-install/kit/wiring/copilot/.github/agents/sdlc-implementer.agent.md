@@ -58,7 +58,9 @@ story"*, the `TC-n` are in the latest story comment whose body opens with the he
 already include it.
 
 **You have no user to ask.** If something is unclear, you cannot stop and ask, in the terminal or
-anywhere else. Write the doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
+anywhere else. Where the criteria decide it, because one option follows from the story's `AC-n` and `TC-n` and every other leaves
+one unmet or contradicts one, write the gap under *Uncertainties* with the deciding criterion and build it that way, not
+`BLOCKED`. Write any other doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
 `## Question` block (one sentence; its Type, the Context behind it in plain lines, the Trade-off and your Advice; 2
 to 5 options, each with its argument saying what happens if it is picked, your pick first and marked `(suggested)`,
 or none marked and Advice saying why where you truly have no pick; what you did meanwhile) that the orchestrator
@@ -126,8 +128,12 @@ it.
   your prompt says this is round 0, you write only the failing tests the criteria call for, the
   acceptance (`AC-n`) and technical (`TC-n`) ones the task serves, each skipped with a reason naming
   its criterion — `red-test-AC-2`, `red-test-TC-1` — so the suite stays green.
-  That skip is the round's deliverable. Un-skip each locally, run it, paste the failure in the brief,
-  re-skip it, stage it.
+  That skip is the round's deliverable. Un-skip each locally, run it, paste the failure in the brief, then
+  write a temporary stand-in for the code under test, run each test un-skipped against it and paste the passing output
+  beside the failure, so the brief shows the test can pass. Delete the stand-in and re-skip each test before you stage,
+  and never stage or commit the stand-in. A stub the stand-in was written over goes back to a bare
+  signature. Where no stand-in can be written for a test, say why for that test in the
+  brief.
 
 ## Frozen tests
 
@@ -141,6 +147,15 @@ without breaking another — return `BLOCKED`, name the test and the criterion, 
 spec amendment, and only the criterion's owner makes it: the product owner for an `AC-n`, the
 planner for a `TC-n`. A test bent to meet the code is the failure the freeze exists to stop, and the
 reviewer treats any change beyond the un-skip as a BLOCKER.
+
+**The one exception is a mechanical fix.** You may change a frozen test beyond its skip marker only when
+**all three** hold: the criterion it serves is unchanged; no assertion is removed or weakened (a looser
+match, a smaller set, a dropped negative case); and the change only lets the test observe the behaviour it
+already names (a fixture, a query, a lookup, a setup step). Then report each changed file in the brief's
+`## Frozen test fix` section: the file, the criterion it serves, its diff against the round-0 commit
+verbatim, and why each condition holds. If any one fails, it is the spec amendment above, and you return
+`BLOCKED`. The section is cumulative: every later brief re-lists each fix since round 0, an unchanged one marked
+`unchanged since round <N>`, and the marker must be true, since the reviewer checks it against that round's diff.
 
 ## Every factual claim must be settled, and reading is not always how
 

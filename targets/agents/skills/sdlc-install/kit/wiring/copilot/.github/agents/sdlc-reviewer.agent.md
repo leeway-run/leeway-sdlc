@@ -43,7 +43,9 @@ and never look for one: do not search for it, print it, copy it or pass it on. T
 your findings and your verdict.
 
 **You never ask the user a question, in the terminal or anywhere else.** A decision only a human can
-make goes in the verdict's `Escalates:` block, which the orchestrator raises as an escalation.
+make goes in the verdict's `Escalates:` block, which the orchestrator raises as an escalation. A gap the criteria decide, one
+option following from the story's `AC-n` and `TC-n` and every other leaving one unmet or contradicting one, is a finding, with its fix,
+not an `Escalates:` block.
 
 **A story's criteria may be in two places.** The `AC-n` and usually the `TC-n` are in the story body;
 when its *Technical criteria* section says *"In the latest technical-criteria comment on this
@@ -79,7 +81,7 @@ you look through and how you rate a missing test, never how you rate a bug, and 
 | A missing or weak test | **MINOR** | **MAJOR** if it leaves a criterion the brief or task states unguarded, else **MINOR** | as `standard` |
 | Skipped, disabled or deleted tests, unjustified in the brief (step 4) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
 | New test not registered in a runner array (step 4) | **MAJOR** | **MAJOR** | **MAJOR** |
-| The freeze, after a round 0 | **BLOCKER** on any change beyond removing a skip marker, only when your prompt says red tests ran | same | same |
+| The freeze, after a round 0 | **BLOCKER** on any change beyond removing a skip marker, unless it is named in the brief's `## Frozen test fix` and meets all three conditions; only when your prompt says red tests ran | same | same |
 | Conventions: the docs in your map, and comments the diff adds | not checked | checked | checked |
 | The rung the brief claims (step 6) | stated | checked against the change | checked against the change |
 | Missing proof at a rung in `blockingRungs` (step 6) | **BLOCKER** | **BLOCKER** | **BLOCKER** |
@@ -146,7 +148,11 @@ against code**:
 - the negative case is present;
 - each fails for the right reason: **un-skip at least one yourself, run it, and record the output** —
   the behaviour absent, not a compile error elsewhere, a missing fixture, or a refused connection;
+- check each passing run against the test it names, in the brief's *Red tests* table: it must be that test, un-skipped, passing;
+- judge each "why none" in that table: accepted when no stand-in could be written for that test, a finding when one could;
 - the lanes are green with the tests skipped, and every stub is a signature and nothing more.
+
+You do not write the stand-in, and the reviewer never edits code, not even to try one.
 
 Step 4 below does not apply to the new red tests in round 0 — their code does not exist yet, and the
 un-skipped runs are the red evidence. **It does apply to every pre-existing test the round changes**:
@@ -157,7 +163,15 @@ apply to the stubs only.
 task ran red tests (`redTests`), lists the frozen tests and names the round-0 commit. When it says
 they ran, run `git -C <worktree> diff <round-0 commit> -- <frozen paths>` over the working state you review. **Any
 change beyond removing a skip marker is a BLOCKER**, unless your prompt carries a human's approval for
-that exact change. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
+that exact change. **The exception is a mechanical fix:** a change named in the brief's `## Frozen test fix` section
+and meeting all three conditions is not a BLOCKER. Those are the implementer's three: the criterion it serves is
+unchanged; no assertion is removed or weakened; the change only lets the test observe the behaviour it already
+names. Judge each entry against them; a change that removes or weakens an assertion is a BLOCKER. An unmet
+condition is a **BLOCKER** tagged `freeze`. The section is cumulative: judge an entry new or changed since the last
+judged round, and leave one marked `unchanged since round <N>` as judged only after you verify the marker: run
+`git -C <worktree> diff <sha of round N> -- <file>`, where the sha is that round's iteration commit (`iterations[]` in
+the JSON of `leeway issue get <ref> --json`, or the Head sha of that round's brief). The output must be empty, or only the
+removed skip marker. A false marker is an unmet condition: a **BLOCKER** tagged `freeze`. At a PASS, no `red-test-AC` or `red-test-TC` marker may remain. When your prompt
 says no red tests ran, or lists no frozen tests, there is no freeze: raise no freeze finding, and
 say "no round 0 for this task" in the verdict.
 
@@ -344,7 +358,8 @@ orchestrator posts each body as its own comment, then your verdict naming them.
   **Trade-off**, **Advice** (your pick and why, or that you have none and why), **Options** (2 to 5, each a label of
   at most 60 characters and an argument saying what happens if it is picked; your pick first, marked
   `(suggested)`, or none marked where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
-  a human decision rather than another round. Every text at most 1,000 characters. Write it as the human will read
+  a human decision rather than another round. Where the criteria decide it, it is a finding, with its fix, not an `Escalates:` block.
+  Every text at most 1,000 characters. Write it as the human will read
   it, deciding from the escalation alone.
 
 ## Verdict rules

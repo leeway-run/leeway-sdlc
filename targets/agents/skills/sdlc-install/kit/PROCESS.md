@@ -232,9 +232,11 @@ issue run refuses, and goes on.
 
 A task at evidence rung R1 or above, in a type whose `build` params say `redTests`, first runs
 **round 0**: the implementer writes only the failing tests its criteria call for, `AC-n` and `TC-n`
-alike, skipped with the criterion named, and a reviewer checks them against the criteria. Round 0 is
-capped by `round0Cap`. On a PASS the tests are **frozen**: later rounds turn them green by changing
-production code, and changing a frozen test is a spec amendment only the criterion's owner can make. A
+alike, skipped with the criterion named. Each is run un-skipped against a temporary stand-in, deleted
+before it is staged (or the brief says why none can be written), and a reviewer checks them against the
+criteria. Round 0 is capped by `round0Cap`. On a PASS the tests are **frozen**: later rounds turn them green by changing
+production code, and changing a frozen test is a spec amendment only the criterion's owner can make, except a mechanical fix the
+implementer names in the brief's `## Frozen test fix` section and the reviewer finds meets all three conditions. A
 task whose type says `redTests: false` goes straight to implementing.
 
 1. Delegate to the implementer. **Embed critical inputs; do not reference them.** A prompt carrying its
@@ -354,8 +356,14 @@ opening the report behind it:
 - **The pick comes first and is marked `"suggested": true`**, the only option so marked, and Advice says why. Where
   the agent truly has no pick it invents none: no option is suggested, and Advice says there is no pick and why. No
   argument repeats the pick: the recommendation is in Advice and on the option, nowhere else. An orchestrator
-  raising an implementer's `## Question` or a reviewer's `Escalates` block passes its fields through unchanged and
-  keeps its order and its pick. `shape-project` does not recommend: it puts the likeliest answer first, marks no
+  raising an implementer's `## Question` or a reviewer's `Escalates` block first does the triage (`run`, "Before raising a
+  block: do the criteria decide it?") and, for what it does not decide, passes its fields through unchanged and
+  keeps its order and its pick. One option that follows from the story's `AC-n` and `TC-n` while every other leaves one unmet or
+  contradicts one is decided, and nothing is raised. Always raised, unedited:
+  the criteria allow more than one answer; a product or scope choice;
+  a new op or whether something is an op; removing or renaming a response field; the schema; auth; an ownership boundary;
+  a rule in the intent doc.
+  A spec amendment never comes to the triage. `shape-project` does not recommend: it puts the likeliest answer first, marks no
   option suggested, gives no Advice and takes the PO's answer as given.
 - **At most 1,000 characters** each in the question, the context, the trade-off, the advice and each argument; a
   label at most 60 and `"meanwhile"` at most 500. A context that would not fit lists the worst items, then says how

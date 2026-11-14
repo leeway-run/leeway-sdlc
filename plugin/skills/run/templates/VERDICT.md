@@ -8,8 +8,8 @@
 - **Iteration:** it.<N> · <the pushed head sha, 40 hex> (your prompt names it; anchors are lines of the files at this sha)
 - **Review depth:** light | standard | adversarial, as your prompt names it.
 - **Lanes run:** which, and why those. Name any you did not run and why not.
-- **Red tests:** the freeze checked (`git -C <worktree> diff <round-0 commit> -- <frozen paths>` shows removed skip markers
-  and nothing else), or "no round 0 for this task" when your prompt says no red tests ran.
+- **Red tests:** in round 0, each passing run against the stand-in checked against the test it names and each "why none" judged; after it, the freeze checked (`git -C <worktree> diff <round-0 commit> -- <frozen paths>` shows removed skip markers
+  and nothing else, or each change beyond that named in the brief's Frozen test fix section and judged against its three conditions), or "no round 0 for this task" when your prompt says no red tests ran.
 - **Verified:** yes, read directly | partially — say which findings were not confirmed by reading
 - **Not examined:** paths not read, lanes not run, behaviour not reachable from here. **A review
   with no stated limits reads as exhaustive, and none of them are.**
@@ -143,7 +143,8 @@ as `cN`. Check each against the code at this sha.
   prompt lists (`open` or `addressed`): a `disputed` or `settled` one is refused (`fate_conflict`).
 - **Raises:** this round's findings, `F1, F2, …`; the orchestrator replaces them with the `cN` they are posted as.
   Every finding above is raised; a follow-up row is not.
-- **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round.
+- **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round. A gap the
+  criteria decide is a finding, with its fix, not an `Escalates:` block.
   One block per question that depends on no other; where one answer would settle or change another, merge them.
   Write it as the human will read it, not as an instruction to the implementer. Quote code as you would anywhere in the
   verdict: the orchestrator copies each line into a file of the escalation's fields, never onto a command line, so a
