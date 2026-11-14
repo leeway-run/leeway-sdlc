@@ -63,12 +63,13 @@ applied, or "none owed". The orchestrator compares this with the paths you stage
 ## Red tests
 
 Only in round 0, and in the rounds after it. **Round 0:** one row per test, each skipped with a reason naming
-its criterion (`red-test-AC-2`); un-skip it locally, run it, paste the failure, re-skip it, stage it. **Later
+its criterion (`red-test-AC-2`); un-skip it locally, run it, paste the failure, write a temporary stand-in, run the test un-skipped against it, paste the
+passing run, delete the stand-in, re-skip it, stage it; where no stand-in can be written, the last column says why. **Later
 rounds:** each frozen test you un-skipped, and nothing else changed in it. Write "none" when the task runs no
 red tests.
 
-| Test | Criterion | Skip marker | Failure when un-skipped (verbatim) |
-|---|---|---|---|
+| Test | Criterion | Skip marker | Failure when un-skipped (verbatim) | Passes against the stand-in (verbatim), or why none |
+|---|---|---|---|---|
 
 ## Frozen test fix
 

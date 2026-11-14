@@ -146,7 +146,11 @@ against code**:
 - the negative case is present;
 - each fails for the right reason: **un-skip at least one yourself, run it, and record the output** —
   the behaviour absent, not a compile error elsewhere, a missing fixture, or a refused connection;
+- check each passing run against the test it names, in the brief's *Red tests* table: it must be that test, un-skipped, passing;
+- judge each "why none" in that table: accepted when no stand-in could be written for that test, a finding when one could;
 - the lanes are green with the tests skipped, and every stub is a signature and nothing more.
+
+You do not write the stand-in, and the reviewer never edits code, not even to try one.
 
 Step 4 below does not apply to the new red tests in round 0 — their code does not exist yet, and the
 un-skipped runs are the red evidence. **It does apply to every pre-existing test the round changes**:

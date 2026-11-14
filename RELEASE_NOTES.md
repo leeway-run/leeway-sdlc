@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- **Round 0 proves its tests can pass (LWY-244).** The implementer writes a temporary stand-in, runs each red test against
+  it, pastes the passing run (or why none can be written) and deletes it before staging; the gate checks every row and
+  the reviewer checks each run against its test.
 - **A mechanical fix to a frozen test stays in the run (LWY-244).** The implementer may change a frozen test beyond its
   skip marker when the criterion is unchanged, no assertion is weakened and the change only lets the test observe what it
   names, and reports it in the brief's `## Frozen test fix` section. The gate requires every such file to be named, the
