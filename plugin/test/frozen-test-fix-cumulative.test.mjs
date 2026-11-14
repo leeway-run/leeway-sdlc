@@ -18,11 +18,14 @@ const brief = flat(read('skills/run/templates/BRIEF.md'));
 test('AC-2: the reviewer verifies each unchanged marker against the named round\'s diff, and a false one is a freeze BLOCKER', () => {
   assert.match(reviewer, /verify the marker.*git -C <worktree> diff <sha of round N> -- <file>/);
   assert.match(reviewer, /iterations\[\]/);
+  assert.match(reviewer, /where the sha is that round's iteration commit \(`iterations\[\]` in the JSON of `leeway issue get <ref> --json`, or the Head sha of that round's brief\)/);
+  assert.match(reviewer, /The output must be empty, or only the removed skip marker\./);
   assert.match(reviewer, /A false marker is an unmet condition: a \*\*BLOCKER\*\* tagged `freeze`/);
 });
 
 test('AC-2: SKILL and the BRIEF template say the marker is verified, and the gate stays mechanical', () => {
   assert.match(run, /verified the marker: `git -C <worktree> diff <sha of round N> -- <file>`/);
+  assert.match(run, /<file>` is empty, or only the un-skip, where the sha is that round's iteration commit \(`iterations\[\]` in the JSON of `leeway issue get <ref> --json`, or the Head sha of that round's brief\)/);
   assert.match(run, /A false marker is an unmet condition, a `freeze` BLOCKER/);
   assert.match(run, /The gate stays mechanical: it checks names, not markers/);
   assert.match(brief, /reviewer checks each marker against that round's commit.*`freeze` BLOCKER/);
