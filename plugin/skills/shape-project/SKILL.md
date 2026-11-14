@@ -73,7 +73,7 @@ escalations: re-invoking `shape-project` resumes from step 1, reading the answer
 writing nothing twice: step 1 reads the answers, a follow-up goes out as step 3 says and is waited on the same way,
 and with none, steps 4 and 5 propose and write the body and set the shaped step; an answer to the approval
 escalation is acted on as "When the approval round stays" says. No answer moves the story out of the shaped step:
-running `plan-project` on it does, and is the approval of the body.
+running `plan-project` on it does, and is the approval of the body. A held story waits on the escalation its `Held on` names, beside the round's own waits, and `<ref>` is that escalation's issue.
 
 ## The line you do not cross
 
@@ -144,6 +144,8 @@ latest round's quote is what step 5 checks before it writes.
 Hidden scope the PO can decide becomes a criterion, a fallback, or a line under *Out of scope*.
 Whether something exists in the code, or how to build it, is a line under *Open questions for dev*.
 
+**Stories that share a rule.** When stories shaped in one session cut against the same rule, the rule question is raised once, on the first of them, in the order the session shapes them. Each other story gets a comment holding `Held on <ref> eN`, the form `plan-project` uses, posted once that escalation is raised so `eN` exists, and quoting the description under `Description at this round:` as the first comment does; it has no escalation of its own for that rule: the question is never raised a second time on another story.
+
 ## 4. Propose the body
 
 In exactly the template's shape, from the rule down.
@@ -183,6 +185,8 @@ the PO chose to leave do not stop the write. A later round drops what an answer 
 again, and it is not raised for confirmation. No escalation asks whether to write the body: the PO's
 answers are the shaping, and running `plan-project` on the story at the shaped step is the approval of the body. The two exceptions are under
 "When the approval round stays" below.
+
+Under step 5's first rule, "every escalation on the story is answered", the escalations the story holds on count as its own toward it. A follow-up on the shared question is raised on the same first story, and each held story gets a new `Held on` for it. A held story's Status-line name is the answerer of the escalation it holds on, and its baseline for the description check is the `Description at this round:` quote its `Held on` comment carries. The shared answer is written into each story's body. A story holding on another's escalation writes no body and sets no shaped step while that escalation is open. Re-invoking shaping reads the `Held on` comment and the escalation it names.
 
 **The shaped step** is the type's first step of kind `gate` after its `shape` step, with no `plan` step between
 them (`shaped` in the presets). Find it in `process get` by kind and position, never by id.
@@ -260,6 +264,8 @@ the story is and why, in plain words. For several stories, find or create the pr
 list <KEY>`; `project create <KEY> --name "<the PO's title>" --summary "<at most 280 characters>" --stdin
 description`); `plan-project` adopts it and adds what planning needs. Each story
 body goes through steps 3 to 5.
+
+**Stories that share a rule.** When stories shaped in one session cut against the same rule, the rule question is raised once, on the first of them, in the order the session shapes them. Each other story gets a comment holding `Held on <ref> eN`, the form `plan-project` uses, posted once that escalation is raised so `eN` exists, and quoting the description under `Description at this round:` as the first comment does; it has no escalation of its own for that rule: the question is never raised a second time on another story.
 
 **You never create tasks, branches or a design doc**, and the only steps you set are `shape`, in step 0, and the shaped step, in step 5, and
 only for an unplanned story, besides a move the person asks for in the session (`PROCESS.md`, "The cast"). A status

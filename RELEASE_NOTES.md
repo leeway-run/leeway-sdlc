@@ -7,6 +7,8 @@
 - **Shaping runs the product check before it writes (LWY-239).** `shape-project` reads an existing body against it in the
   first round, asks the intent-doc rules and the *Open questions for dev* the user would see, and holds the write
   for any gap but an `OPEN:` line the PO chose to leave.
+- **Stories that share a rule get one question (LWY-239).** When stories shaped in one session cut against the same rule,
+  `shape-project` raises the question on the first and holds the others on it with `Held on <ref> eN`.
 - **The skills directory is gitignored and untracked (LWY-220).** `sync-repo` offers the skills-dir path `HARNESS.md`
   names as a `.gitignore` line and, where the files are tracked, untracks them with `git rm -r --cached`, so they stay
   on disk. `skills-lock.json` stays tracked.
