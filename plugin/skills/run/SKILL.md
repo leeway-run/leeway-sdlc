@@ -108,13 +108,13 @@ of each raise:
 | Raise | `"type"` |
 |---|---|
 | a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story | `blocker` |
-| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block | the block's own `Type:` line, unedited |
+| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block, after the triage ("Before raising a block: do the criteria decide it?") | the block's own `Type:` line, unedited |
 | the ask for the plan's pull request ("The plan's end"); a person asked to act first ("Wait, then carry on", step 5) | `clarification` |
 | a debt proposal ("What a deferred finding becomes") | `debt` |
 | a friction proposal ("Land the task", step 6; "The friction harvest") | `nit` |
 
-An implementer's `## Question` and a reviewer's `Escalates:` block already carry their fields: raise them unedited, in
-the block's order, its pick marked as the block marks it, each line copied into its field of the file as written,
+After the triage, an implementer's `## Question` and a reviewer's `Escalates:` block already carry their fields: raise one the
+criteria do not decide unedited, in the block's order, its pick marked as the block marks it, each line copied into its field of the file as written,
 backticks and all.
 
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
@@ -510,6 +510,10 @@ the marker on if it is required. Pass, in the prompt:
   > that depends on it and return `Status: BLOCKED` with a `## Question` section: the question (one sentence), its
   > Type, Context, Trade-off and Advice, 2 to 5 options each with its argument saying what happens if it is picked,
   > your pick first and marked suggested (or none marked, and Advice saying why), and the meanwhile.
+  >
+  > **A gap the criteria already decide is not a question.** When one option follows from the story's `AC-n` and `TC-n` and
+  > every other leaves one unmet or contradicts one, report it under *Uncertainties* with the deciding criterion, build it
+  > that way, and do not return `BLOCKED`. Adding a field to an existing op's response that a criterion needs is such a gap.
 
 > **Embed critical inputs; do not reference them.** A prompt carrying its own content survives a failed tool call;
 > an agent whose first call fails silently fabricates everything downstream. Reading Leeway is how a subagent
@@ -596,6 +600,34 @@ round opens a new one. Rounds never interleave.** The brief opens `# Handoff bri
 the iteration number, and the verdict is not a reply to the brief (the server refuses review flags on a reply,
 `invalid_parent`).
 
+#### Before raising a block: do the criteria decide it?
+
+"A BLOCKED brief" (step 3) and "Gate again, record, act" (step 3) run this before they raise anything. The story's own
+criteria are not the human's to answer twice, and a real choice still reaches them.
+
+- **Decided** when one option follows from the story's `AC-n` and `TC-n` and every other leaves one unmet or contradicts
+  one. Adding a field to an existing op's response that a criterion needs counts as decided.
+- **Always raised, unedited**, however the criteria read:
+  the criteria allow more than one answer; a product or scope choice;
+  a new op or whether something is an op; removing or renaming a response field; the schema; auth; an ownership boundary;
+  a rule in the intent doc. When you cannot tell, raise it.
+- **A spec amendment never reaches this check.** A frozen test that needs one, a `freeze` BLOCKER included, goes to hard
+  stop 8 ("The freeze") and never comes here.
+- **On decided**, the block raises no escalation. Post one comment as `<alias>/agent` opening
+  `# Decided from the criteria — <ref> · round <N>`, holding the block as written, the criterion that decides it and the
+  option taken. Then:
+  - a `## Question`: run the next round with the decision in the prompt, the step set back as "A BLOCKED brief" says on
+    resume, and the sub-issue not set `blocked`.
+  - an `Escalates:` block: the decision is a live finding for the next round. An `F<n>` block's finding comment exists already
+    and is live. For a block about the round as a whole the decision comment is that finding: add the decision comment's `cN` to
+    the live findings by hand, since its author is `agent`, not `reviewer`. If the server refuses the verdict post because of
+    that `cN` (`fate_conflict` or `invalid_review`), post the verdict without it and record the decision's outcome in a comment
+    from `<alias>/agent`. The next reviewer's prompt then says to report the decision's outcome in its verdict body, not under *Settles*. A PASS verdict with a decided block runs one more round for it ("Then"), counted against
+    `roundCap` like any round. A round that would pass the cap is not run: hard stop 1 fires ("The caps").
+
+Each block of a round is judged on its own. A raised one waits as before, and the decisions go into the next round's prompt
+with its answers.
+
 #### A BLOCKED brief
 
 An implementer that returns `Status: BLOCKED` has stopped on a decision for the human. After the gate:
@@ -604,13 +636,15 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    record its spend on the sub-issue instead, now, before the escalation at step 3 ("Recording spend").
 2. Post the brief as a comment (step 5), so there is a `cN` to point at. With nothing committed write its `Head sha`
    line as `none (BLOCKED, nothing committed)`.
-3. Raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
+3. Run the triage ("Before raising a block: do the criteria decide it?") on each `## Question` block. One the criteria decide
+   raises nothing: run the next round with the decision in the prompt, the step set back as on resume (below), and the sub-issue
+   not set `blocked`. Otherwise raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
    *Question*, *Context*, *Trade-off*, *Advice* and *Meanwhile* copied into the fields file as written, backticks and
    all, its options in its order with `"suggested": true` on the one it marks, and `"comment"` the brief's `cN`; then
    `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`.
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
-4. Set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears).
+4. For a raised block, set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears). A decided one leaves the status as it is.
 5. **Wait.** Report each escalation id and the issue, and start one background wait per open escalation of the round, all together ("Wait, then carry on"). Do not delegate to the
    reviewer.
 
@@ -641,9 +675,11 @@ the lane commands and the known-red list, and:
   `comments` (top level) with `kind` `comment`, `by.actor.role` `reviewer` and `fate` `open` or `addressed`. The
   `kind` and `role` filters matter: every top-level comment starts `open`, so the briefs and the verdicts would
   otherwise match (`review get <ref>` shows verdicts as `open` for ever). Do not filter on `anchor`. It decides, for
-  each, `Settles` or `Disputes`, and names only these.
+  each, `Settles` or `Disputes`, and names only these. When a decision comment was left out of the verdict because the server
+  refused it, the prompt says to report that decision's outcome in the verdict body, not under *Settles*.
 - **How it reaches Leeway**: the implementer's read-only paragraph minus its git and brief sentences, and that it
-  never asks the user: a decision for the human goes in the verdict's `Escalates:` block.
+  never asks the user: a decision for the human goes in the verdict's `Escalates:` block. A gap the criteria decide is a
+  finding, with its fix, not an `Escalates:` block.
 
 ### 4. Gate again, record, act
 
@@ -677,8 +713,9 @@ sufficient: the verdict exists nowhere else.
    One review cannot settle and dispute the same finding, and a finding raised by one review cannot be raised by
    another (`fate_conflict`, `invalid_review`). The verdict opens `# Review verdict: PASS — <ref> · round <N>` or
    `# Review verdict: FAIL — <ref> · round <N>`.
-3. **A dispute or a finding that needs a human** (`Escalates:` is not `none`) becomes an escalation on the
-   sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"):
+3. **A dispute or a finding that needs a human** (`Escalates:` is not `none`): run the triage first ("Before raising a block: do the
+   criteria decide it?"). A decided block is a live finding for the next round and is not raised. Each one the criteria do not decide
+   becomes an escalation on the sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"):
 
    ```json
    {"type":"<Type>","question":"<Question>","context":"<Context>","tradeoff":"<Trade-off>","advice":"<Advice>","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"<Meanwhile>","comment":"cN"}
@@ -720,7 +757,8 @@ edit to its body.
 
 #### Then
 
-- **PASS** → "Land the task". You may override a PASS: if a finding is under-rated and you can say why, send it
+- **PASS** → "Land the task", unless the triage decided a block of this verdict: then one more round for it, as for a FAIL,
+  counted against `roundCap`. You may override a PASS: if a finding is under-rated and you can say why, send it
   back and record the reason as a comment from `<alias>/agent`. The override spends a round. A PASS that carries a
   missing proof at a rung in `blockingRungs` contradicts itself: send it back.
 - **FAIL** → set the step back: `leeway issue update <ref> --as <alias>/agent --step implementing` (it sets
@@ -733,7 +771,8 @@ edit to its body.
 (or round-0 attempts at `round0Cap`, see Round 0) is a stop: leave the sub-issue as it is and raise an escalation
 on it as `<alias>/agent`, `"type": "blocker"`, whose context gives each outstanding finding in a line of its own, what it
 says and its `cN`, and whose options are the human's real choices (for example "Re-scope the task", "Allow one more round", "Cancel it"), each with its argument, and wait on
-it ("Wait, then carry on"). **You may not override the cap.** Overriding a PASS and the cap together is the
+it ("Wait, then carry on"). A decided block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided block
+ and its `# Decided from the criteria` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
 pattern the cap exists to prevent.
 
 **Spend rounds on the risk, not on the artifact.** A round that only polishes a fix that was already correct buys
@@ -1078,7 +1117,7 @@ further question for one stop); otherwise the issue run raises it on the story.
 
 | # | Condition | Detected | The stop's escalation |
 |---|---|---|---|
-| 1 | **The round cap is hit** on any task: the verdict is FAIL and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
+| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided block, or a `BLOCKED` brief whose `## Question` is decided, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
 | 3 | **A verdict carries a `security` follow-up** | "What a deferred finding becomes" | the issue run's, on the story |
 | 4 | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
@@ -1089,9 +1128,10 @@ further question for one stop); otherwise the issue run raises it on the story.
 | 9 | **The per-story budget is exceeded**: tokens, rounds or wall-clock, whichever first | at every round boundary | the issue run's, on the story |
 | 10 | **Leeway is unreachable**: a call fails, or an empty result where something must exist (an expired sign-in is the usual cause) | any call | none can be raised: see the note |
 
-**And every place the sub-issue run itself says stop or wait**: a stalled round, a BLOCKED brief, a dispute or finding the reviewer
-sends to a human, a pointer to technical criteria with no such comment, a migration recipe the doc map does not
-name. They are stops here too, and each already raises its own escalation. Its wait is step 7 of "On a stop", after
+**And every place the sub-issue run itself says stop or wait**: a stalled round, a raised `## Question` of a BLOCKED brief, a raised
+`Escalates:` block (a dispute or finding the reviewer sends to a human), a pointer to technical criteria with no such comment, a migration recipe the doc map does not
+name. They are stops here too, and each already raises its own escalation. Only a raised block is a stop: one the criteria decide
+raises nothing and the round carries on. Its wait is step 7 of "On a stop", after
 the status comment, not a second one before it.
 
 Notes on the ones that need them:

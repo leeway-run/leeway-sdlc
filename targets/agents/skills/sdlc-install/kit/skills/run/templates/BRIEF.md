@@ -107,12 +107,14 @@ Things I took as true without being able to confirm them.
 unsure, where you took a shortcut, where a second reading of the task would change the answer.
 
 You have no user to ask, and you never ask one in the terminal. A doubt you can work around goes here. A
-decision only the human can make goes under *Question* below, with `Status: BLOCKED`.
+decision only the human can make goes under *Question* below, with `Status: BLOCKED`. A gap the criteria decide, because one
+option follows from the story's `AC-n` and `TC-n` and every other leaves one unmet or contradicts one, goes here with the
+deciding criterion, and you build it that way: not `BLOCKED`.
 
 ## Question
 
-Only when `Status: BLOCKED`. The orchestrator raises this, unedited, as a Leeway escalation, so write it as the
-human will read it:
+Only when `Status: BLOCKED`, and never for a gap the criteria decide. The orchestrator raises this, unedited, as a Leeway
+escalation, so write it as the human will read it:
 
 Each line goes to its own field of the escalation, unchanged. Every text is at most 1,000 characters. Quote code as
 you would anywhere in the brief: the orchestrator copies each line into a file of the escalation's fields, never onto

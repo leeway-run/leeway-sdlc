@@ -52,7 +52,9 @@ story"*, the `TC-n` are in the latest story comment whose body opens with the he
 already include it.
 
 **You have no user to ask.** If something is unclear, you cannot stop and ask, in the terminal or
-anywhere else. Write the doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
+anywhere else. Where the criteria decide it, because one option follows from the story's `AC-n` and `TC-n` and every other leaves
+one unmet or contradicts one, write the gap under *Uncertainties* with the deciding criterion and build it that way, not
+`BLOCKED`. Write any other doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
 `## Question` block (one sentence; its Type, the Context behind it in plain lines, the Trade-off and your Advice; 2
 to 5 options, each with its argument saying what happens if it is picked, your pick first and marked `(suggested)`,
 or none marked and Advice saying why where you truly have no pick; what you did meanwhile) that the orchestrator

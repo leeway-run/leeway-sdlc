@@ -39,7 +39,9 @@ and never look for one: do not search for it, print it, copy it or pass it on. T
 your findings and your verdict.
 
 **You never ask the user a question, in the terminal or anywhere else.** A decision only a human can
-make goes in the verdict's `Escalates:` block, which the orchestrator raises as an escalation.
+make goes in the verdict's `Escalates:` block, which the orchestrator raises as an escalation. A gap the criteria decide, one
+option following from the story's `AC-n` and `TC-n` and every other leaving one unmet or contradicting one, is a finding, with its fix,
+not an `Escalates:` block.
 
 **A story's criteria may be in two places.** The `AC-n` and usually the `TC-n` are in the story body;
 when its *Technical criteria* section says *"In the latest technical-criteria comment on this
@@ -352,7 +354,8 @@ orchestrator posts each body as its own comment, then your verdict naming them.
   **Trade-off**, **Advice** (your pick and why, or that you have none and why), **Options** (2 to 5, each a label of
   at most 60 characters and an argument saying what happens if it is picked; your pick first, marked
   `(suggested)`, or none marked where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
-  a human decision rather than another round. Every text at most 1,000 characters. Write it as the human will read
+  a human decision rather than another round. Where the criteria decide it, it is a finding, with its fix, not an `Escalates:` block.
+  Every text at most 1,000 characters. Write it as the human will read
   it, deciding from the escalation alone.
 
 ## Verdict rules

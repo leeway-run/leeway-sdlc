@@ -143,7 +143,8 @@ as `cN`. Check each against the code at this sha.
   prompt lists (`open` or `addressed`): a `disputed` or `settled` one is refused (`fate_conflict`).
 - **Raises:** this round's findings, `F1, F2, …`; the orchestrator replaces them with the `cN` they are posted as.
   Every finding above is raised; a follow-up row is not.
-- **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round.
+- **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round. A gap the
+  criteria decide is a finding, with its fix, not an `Escalates:` block.
   One block per question that depends on no other; where one answer would settle or change another, merge them.
   Write it as the human will read it, not as an instruction to the implementer. Quote code as you would anywhere in the
   verdict: the orchestrator copies each line into a file of the escalation's fields, never onto a command line, so a

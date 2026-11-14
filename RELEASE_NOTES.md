@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- **A question the criteria already answer does not reach the human (LWY-244).** Before raising an implementer's `## Question`
+  or a reviewer's `Escalates:` block, `run` checks whether the story's `AC-n` and `TC-n` decide it. A decided block raises no
+  escalation: it is recorded in a `# Decided from the criteria` comment and answered in the next round (one more after a
+  PASS, within `roundCap`). A real choice, a spec amendment and every kind `PROCESS.md` lists are still raised unedited.
 - **Round 0 proves its tests can pass (LWY-244).** The implementer writes a temporary stand-in, runs each red test against
   it, pastes the passing run (or why none can be written) and deletes it before staging; the gate checks every row and
   the reviewer checks each run against its test.
