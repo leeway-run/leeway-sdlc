@@ -30,6 +30,10 @@ Three places in `run` turn a question nobody needs to answer into an escalation 
 - **The gate** ("The freeze"): `git diff --cached <round-0 commit> -- <frozen paths>` as today. Every frozen file whose
   diff goes beyond removed skip markers must be named in the section (e6). A file changed and not named stops the round
   before the record, as today: hard stop 8, the spec amendment, unchanged. The gate does not judge the conditions.
+- **Cumulative across rounds** (c10 finding 1). The gate diffs against the round-0 commit, so an approved fix shows in
+  every later diff. Each later brief re-lists every fix since round 0, an unchanged one marked `unchanged since round
+  <N>`; the later-implementer prompt says so. The reviewer judges entries new or changed since the last judged round and
+  leaves the unchanged ones as judged. A brief that drops an earlier fix stops at the gate.
 - **The record**: the brief is posted whole, so the section is in the thread. The iteration's `--note` also names the
   fix (`frozen test fix: <paths>`), so the thread's iteration row shows it without opening the brief.
 - **The reviewer** (prompt line in run step 3; reviewer definition): when the brief carries the section, the prompt
@@ -66,7 +70,8 @@ and by verdict step 3, and the raise table's row points to it:
     back as "A BLOCKED brief" says on resume; the sub-issue is not set `blocked`);
   - for an `Escalates:` block, the decision is a live finding the next round answers: its `F<n>` comment exists
     already; on a block about the round as a whole, the decision comment is that finding. A PASS verdict with a decided
-    block runs one more round for it, as a FAIL would, and counts against `roundCap` like any round.
+    block runs one more round for it, as a FAIL would, and counts against `roundCap` like any round. A round that would
+  pass the cap is not run: hard stop 1 fires as today, its context naming the decided block (e8).
 - **Prompts** (reviewer definition, run step 3's prompt line, the verdict template's *Escalates* line; implementer
   definition and its prompt paragraph, the brief's *Question* section): a gap the criteria decide is reported as a
   finding with its fix (reviewer) or under *Uncertainties* with the criterion that decides it and built that way
@@ -99,18 +104,20 @@ one before. Each adds its line to `RELEASE_NOTES.md` under *Unreleased* and rege
 3. **LWY-244.3, decide what the criteria decide:** the triage subsection, both raise paths, the raise table, PROCESS.md,
    reviewer and implementer prompts and templates. AC-4, AC-5, AC-6, TC-2, TC-3, TC-4, TC-5.
 
-The hand test is a sub-issue of LWY-212 (e5).
+The hand test is a sub-issue of LWY-212 (e5), with one case per freeze condition (e7).
 
 ## Hazard register
 
 | Hazard | Owning task | The check that proves it closed | Rung |
 |---|---|---|---|
 | A frozen file changed but not named in the section slips through the gate | LWY-244.1 | pin: the gate names "every frozen file whose diff goes beyond removed skip markers" and stops on one not in the section | R1 |
+| An approved fix stops a later round, or a changed fix is waved through as unchanged | LWY-244.1 | pin: later briefs re-list every fix since round 0, a dropped one stops at the gate, a changed entry is judged again | R1 |
 | A weakened assertion passes because the gate now lets diffs through | LWY-244.1 | pin: reviewer freeze row keeps BLOCKER for any unmet condition, and "never weaken or delete an assertion" stays in the implementer | R1 |
 | A `freeze` BLOCKER is triaged away as "decided" | LWY-244.3 | pin: the triage subsection says a spec amendment never reaches it, and the freeze BLOCKER goes to hard stop 8 | R1 |
 | The stand-in reaches the round-0 commit | LWY-244.2 | pin: the implementer deletes it before staging, and the round-0 gate's staged-set rule is cited as the check | R1 |
 | The reviewer is told to write the stand-in (cast broken) | LWY-244.2 | pin: the reviewer's round-0 text checks the run and says it still never edits code | R1 |
 | A decided block on a PASS verdict is lost because PASS ends the task | LWY-244.3 | pin: a PASS with a decided block runs one more round | R1 |
+| A decided block's extra round runs past `roundCap` | LWY-244.3 | pin: at the cap hard stop 1 fires, naming the decided block | R1 |
 | An AC-5 kind of question is decided by the orchestrator | LWY-244.3 | pin: the always-raised list appears in run and PROCESS.md, word for word the same items | R1 |
 | Docs disagree (AC-6) | every task | pins read PROCESS.md, run, both agents and both templates for the same rule | R1 |
 | `targets/agents/` stale after an edit | every task | `node scripts/build-targets.mjs --check` | R1 |
