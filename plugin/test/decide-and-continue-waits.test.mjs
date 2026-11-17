@@ -33,3 +33,10 @@ test('a reviewer\'s continued block ties to its # Decided and continued comment,
 test('the order sentence: the triage, then the stop list, then decide and continue', () => {
   assert.match(run, /send every block through this order: the triage, then the stop list, then decide and continue\./);
 });
+
+test('round 5: the cap and hard stop 1 name a continued block, and "then you wait" carries its exception', () => {
+  assert.match(run, /A decided or continued block's extra round that would pass `roundCap` is not run/);
+  assert.match(run, /\| 1 \| \*\*The round cap is hit\*\* on any task: the verdict is FAIL, or a PASS with a decided or continued block, or a `BLOCKED` brief whose `## Question` is decided or continued,/);
+  assert.match(run, /then you wait for its answer \("Wait, then carry on"\), a continued block's escalation excepted \("Stop, or decide and continue"\)\. Nowhere in this skill do you ask the user\./);
+  assert.match(run, /A raised stop waits as before, and the decisions go into the next round's prompt/);
+});

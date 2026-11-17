@@ -93,7 +93,7 @@ while the whole command stays short (Claude Code prompts for any command over 10
 Nothing cleans the directory, and it is safe to delete between runs.
 
 **A question for the human is never a terminal question.** It is a Leeway escalation on the sub-issue in hand, and
-then you wait for its answer ("Wait, then carry on"). Nowhere in this skill do you ask the user.
+then you wait for its answer ("Wait, then carry on"), a continued block's escalation excepted ("Stop, or decide and continue"). Nowhere in this skill do you ask the user.
 
 **Every escalation this skill raises carries its fields, from a file** (`PROCESS.md`, "Questions to the human are
 escalations"). Write them as JSON where run's other bodies go, then raise it with the raise script, by the command
@@ -633,7 +633,7 @@ criteria are not the human's to answer twice, and a real choice still reaches th
     from `<alias>/agent`. The next reviewer's prompt then says to report the decision's outcome in its verdict body, not under *Settles*. A PASS verdict with a decided block runs one more round for it ("Then"), counted against
     `roundCap` like any round. A round that would pass the cap is not run: hard stop 1 fires ("The caps").
 
-Each block of a round is judged on its own. A raised one waits as before, and the decisions go into the next round's prompt
+Each block of a round is judged on its own. A raised stop waits as before, and the decisions go into the next round's prompt
 with its answers.
 
 #### Stop, or decide and continue
