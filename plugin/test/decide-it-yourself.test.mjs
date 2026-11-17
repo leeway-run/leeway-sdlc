@@ -40,7 +40,8 @@ const blocks = (text) => {
   }
   return out.map(flat).filter(Boolean);
 };
-const clauses = (text) => flat(text).split(/(?<=[.;:!?])\s+|\s+—\s+/);
+// "Status: BLOCKED" is one phrase, so a colon after "Status" does not end a clause.
+const clauses = (text) => flat(text).split(/(?<=[.;!?]|(?<!Status):)\s+|\s+—\s+/);
 const slice = (text, from, to) => {
   const start = text.indexOf(from);
   assert.notEqual(start, -1, `anchor not found: ${from}`);
@@ -134,19 +135,38 @@ const ITEM_MEANING = [
   ['a test-plumbing fix that leaves every assertion unchanged, which for a frozen test is `## Frozen test fix`', null],
 ];
 
-// Where a block names `BLOCKED` and the `## Question` block together.
-const BLOCKED_QUESTION = (b) => /\bBLOCKED\b/.test(b) && /## Question/.test(b);
+// "stop list" and "stop-list" are the same words (the task itself writes "a stop-list one").
+const STOP = /\bstop[- ]list\b/i;
 
-// A clause that tells the reviewer to write or edit a test: the reviewer (or "you") as the subject, or an imperative, with no
-// negation ahead of the verb in the clause. "for the next round to write" has no such subject and is not one.
-const toldToWriteATest = (text) =>
+// Where a block, or a clause, names `BLOCKED` and the `## Question` block together.
+const BLOCKED_QUESTION = (b) => /\bBLOCKED\b/.test(b) && /## Question/.test(b);
+// The clauses of a block, a list item's marker also ending one: a clause is judged on its own, not on the paragraph around it.
+const itemClauses = (b) => b.split(/\s+(?:[-*+]|\d+[.)])\s+(?=[A-Z`*_])/).flatMap(clauses);
+// Clauses that return `BLOCKED` with a `## Question` and name neither the stop list nor "only": a permission for any question.
+const blockedOffTheStopList = (text) =>
+  blocks(text)
+    .flatMap(itemClauses)
+    .filter((c) => BLOCKED_QUESTION(c) && !STOP.test(c) && !/\bonly\b/i.test(c));
+
+// A clause that tells the reviewer to write or edit a test: "you" or "the reviewer" as the subject, or a sentence-initial imperative,
+// with no negation ahead of it in the clause. "for the next round to write" and "the next round should write" have no such
+// subject and are not one. In a *Test* field (inField) the object may be "it" or "them", as the field already names the test.
+const WRITE = '(?:write|edit|add|create|author)';
+const MODALS = '(?:may |must |should |can |will |also |then |to )*';
+const toldToWriteATest = (text, inField = false) =>
   clauses(text).filter((c) => {
-    const verb = /\b(write|writes|edit|edits|add|adds|create|creates|author|authors)\b/i;
-    const object = /\b(a|the|that|its|any|new|your)?\s*(failing |pinning |red )?tests?\b/i;
-    if (!verb.test(c) || !object.test(c)) return false;
-    const subject = /\b(you|the reviewer|reviewers?)\s+(may |must |should |can |will |also |then )*(write|edit|add|create|author)s?\b[^.;]{0,60}\btests?\b|^(write|edit|create|author)\b[^.;,]{0,40}\btests?\b|\bto (write|edit|add|create|author) (a|the|that|its|any|your)\b[^.;]{0,30}\btests?\b|\b(write|edit|add|create|author) the test\b|\b(and|then|also)\s+(also\s+)?(write|edit|add|create|author)\b[^.;]{0,50}\btests?\b/i;
-    if (!subject.test(c)) return false;
-    return !/\b(never|not|no|nor|don't|doesn't|do not|does not|cannot|can't)\b/i.test(c.slice(0, c.search(subject)));
+    const object = inField ? '(?:tests?|it|them)' : 'tests?';
+    if (!inField && !/\btests?\b/i.test(c)) return false;
+    // in a *Test* field "write it" is an order only with "yourself" or "this round" ("Write it as the human will read it" is not one)
+    const imperative = `^(?:write|edit|create|author)\\b[^.;,]{0,40}\\b(?:tests?${inField ? "|(?:it|them)\\b[^.;,]{0,30}\\b(?:yourself|this round)" : ""})\\b`;
+    const subject = new RegExp(
+      `\\b(?:you|the reviewer|reviewers?)\\s+${MODALS}${WRITE}s?\\b[^.;]{0,60}\\b${object}\\b|${imperative}|\\b(?:and|then|also)\\s+(?:also\\s+)?${WRITE}\\b[^.;]{0,50}\\b${object}\\b`,
+      'i',
+    );
+    const m = subject.exec(c);
+    if (!m) return false;
+    if (/^(?:and|then|also)\b/i.test(m[0]) && /\b(next round|next implementer|implementer|round)\b/i.test(c)) return false;
+    return !/\b(never|not|no|nor|don't|doesn't|do not|does not|cannot|can't)\b/i.test(c.slice(0, m.index));
   });
 
 // ---- the list: PROCESS.md, and the same four items in both agents --------------------------------------------------------
@@ -168,7 +188,7 @@ red('AC-4', 'the fourth item is the test-plumbing one: every assertion unchanged
 red('AC-4', 'after the list: "decide and continue" for other behaviour the criteria leave open, then "only the stop list stops"', () => {
   const rest = flat(listEnd(processDecide()));
   const dc = rest.search(/decide and continue/i);
-  const stop = rest.search(/only the stop list stops/i);
+  const stop = rest.search(/only the stop[- ]list stops/i);
   assert.notEqual(dc, -1, 'no "decide and continue" after the list');
   assert.notEqual(stop, -1, 'no "only the stop list stops" after the list');
   assert.ok(dc < stop, '"decide and continue" comes after "only the stop list stops"');
@@ -196,7 +216,7 @@ red('AC-4', 'the implementer builds a question off the stop list with its pick a
       /\bpick\b/i.test(b) &&
       /\bmarked\b|\(suggested\)/i.test(b) &&
       /\bbuil[dt]\b|\bbuilding\b/i.test(b) &&
-      /\bstop list\b/i.test(b),
+      STOP.test(b),
   );
   assert.ok(ok, 'no block ties a question off the stop list to its pick, built, and reported under `## Decided and continued` with the `## Question` fields');
 });
@@ -204,9 +224,9 @@ red('AC-4', 'the implementer builds a question off the stop list with its pick a
 red('AC-4', 'the implementer returns `BLOCKED` with `## Question` for the stop list only', () => {
   const blocked = blocks(implementer()).filter(BLOCKED_QUESTION);
   assert.ok(blocked.length > 0, 'no block describes returning `BLOCKED` with a `## Question`');
-  for (const b of blocked) assert.match(b, /\bstop list\b/i, `a block returns BLOCKED with ## Question without tying it to the stop list: ${b.slice(0, 160)}`);
+  assert.deepEqual(blockedOffTheStopList(implementer()), [], 'a clause returns BLOCKED with ## Question without the stop list or "only"');
   assert.ok(
-    blocked.some((b) => /\bonly\b[^.;]{0,100}\bstop list\b|\bstop list\b[^.;]{0,60}\bonly\b|\bstop list (alone|only)\b/i.test(b)),
+    blocked.some((b) => /\bonly\b[^.;]{0,100}\bstop[- ]list\b|\bstop[- ]list\b[^.;]{0,60}\bonly\b|\bstop[- ]list (alone|only)\b/i.test(b)),
     'no block says BLOCKED with ## Question is for the stop list only',
   );
 });
@@ -215,12 +235,11 @@ red('AC-4', 'the implementer is never allowed to return `BLOCKED` for a question
   const ok = blocks(implementer()).some(
     (b) =>
       /\bBLOCKED\b/.test(b) &&
-      /\bstop list\b/i.test(b) &&
+      STOP.test(b) &&
       clauses(b).some((c) => /\b(never|not|do not|does not|don't)\b(\s+\w+){0,3}\s+(build|built|building|go on|carry on|continue|decide|decided|guess)\b/i.test(c) || /\bnever\b[^.;]{0,40}\b(built|decided|continued)\b/i.test(c)),
   );
   assert.ok(ok, 'no block says a stop-list question is never built with a pick: it returns BLOCKED');
-  const allowsAny = blocks(implementer()).filter((b) => BLOCKED_QUESTION(b) && !/\bstop list\b/i.test(b));
-  assert.deepEqual(allowsAny, [], 'a block allows BLOCKED with ## Question for a question that need not be on the stop list');
+  assert.deepEqual(blockedOffTheStopList(implementer()), [], 'a clause allows BLOCKED with ## Question for a question that need not be on the stop list');
 });
 
 // ---- the reviewer -------------------------------------------------------------------------------------------------------
@@ -250,6 +269,7 @@ red('AC-4', 'the reviewer\'s `Escalates:` block gains *Test*: the test that woul
   assert.match(field, /\bsuggested\b|\bpick\b/i);
   assert.match(field, /\bnext round\b/i);
   assert.match(field, /\bwrite\b|\bwritten\b/i);
+  assert.deepEqual(toldToWriteATest(field, true), [], 'the Test field tells the reviewer to write the test');
 });
 
 red('AC-4', 'the reviewer reads the same decide-it-yourself list, as a gap the criteria decide stays a finding (the list is the four items, identical to PROCESS.md)', () => {
@@ -260,18 +280,30 @@ red('AC-4', 'the reviewer reads the same decide-it-yourself list, as a gap the c
 red('AC-4', 'the reviewer still never edits code, and is never told to write or edit a test (reviewer definition, run\'s reviewer prompt, VERDICT.md, PROCESS.md)', () => {
   assert.match(flat(reviewer()), /the reviewer never edits code/);
   assert.match(testField(escalatesBullet(reviewer())), /\bnext round\b/i, 'the Escalates block has no *Test* for the next round to write');
-  for (const bad of ['Write the test that pins your suggested answer.', 'You write the test that pins your pick.', 'The reviewer may add a test for it.', 'Escalate, and also write a test for the suggested answer.', 'Test: you must create the failing test in the repo.']) {
+  for (const bad of ['Write the test that pins your suggested answer.', 'You write the test that pins your pick.', 'The reviewer may add a test for it.', 'Escalate, and also write a test for the suggested answer.', 'Test: you must create the failing test in the repo.', 'You also write the test.', 'The reviewer writes the test.', 'Write the test yourself.']) {
     assert.notDeepEqual(toldToWriteATest(bad), [], bad);
+  }
+  for (const bad of ['the test for the next round; you write it yourself', 'the test that pins it, and you write it', 'the reviewer writes it', 'you write them in this round', 'Write it yourself.']) {
+    assert.notDeepEqual(toldToWriteATest(bad, true), [], `in a Test field: ${bad}`);
   }
   for (const good of [
     'Test: the test that would pin its suggested answer, for the next round to write.',
     'The reviewer never edits code, not even to try one, and never writes a test.',
     'You do not write or edit a test.',
     'Break a test to watch it fail, and restore it.',
+    'The next round should write the test.',
+    'Tell the next round to write the test that pins it.',
+    'Test: the test that would pin it, for the next round to write the test.',
   ]) {
     assert.deepEqual(toldToWriteATest(good), [], good);
   }
+  for (const good of ['the test that would pin its suggested answer, for the next round to write', 'the test for the next round to write; you never write it', 'the next round writes it', 'you do not write them']) {
+    assert.deepEqual(toldToWriteATest(good, true), [], `in a Test field: ${good}`);
+  }
   const reviewerPrompt = slice(run(), "- **How it reaches Leeway**: the implementer's read-only", '### 4. Gate again, record, act');
+  for (const [name, text] of Object.entries({ 'sdlc-reviewer.md': escalatesBullet(reviewer()), 'VERDICT.md': escalatesBullet(verdict()), 'run reviewer prompt': reviewerPrompt })) {
+    assert.deepEqual(toldToWriteATest(testField(text), true), [], `the *Test* field in ${name} tells the reviewer to write the test`);
+  }
   for (const [name, text] of Object.entries({ 'sdlc-reviewer.md': reviewer(), 'run reviewer prompt': reviewerPrompt, 'VERDICT.md': verdict(), 'PROCESS.md': processDecide() })) {
     assert.deepEqual(toldToWriteATest(text), [], `${name} tells the reviewer to write or edit a test`);
   }
@@ -291,7 +323,7 @@ red('AC-4', 'BRIEF.md has a `## Decided and continued` section: the `## Question
 
 red('AC-4', 'BRIEF.md says `Status: BLOCKED` with a `## Question` is for the stop list, not for a question that can be decided and continued', () => {
   const s = slice(brief(), '## Uncertainties and cut corners', '- **Type:**');
-  assert.match(flat(s), /\bstop list\b/i);
+  assert.match(flat(s), STOP);
   assert.match(flat(s), /Decided and continued/);
 });
 
@@ -319,7 +351,7 @@ red('AC-4', 'run\'s implementer prompt says so, beside "A gap the criteria alrea
   assert.notEqual(decided, -1, 'the implementer prompt does not name `## Decided and continued`');
   assert.ok(gap < decided, 'the new lines do not sit after the gap line');
   assert.match(flat(s), /decide it yourself/i);
-  for (const b of blocks(s).filter(BLOCKED_QUESTION)) assert.match(b, /\bstop list\b/i, `the prompt returns BLOCKED with ## Question without the stop list: ${b.slice(0, 160)}`);
+  assert.deepEqual(blockedOffTheStopList(s), [], 'the prompt returns BLOCKED with ## Question without the stop list or "only"');
 });
 
 red('AC-4', 'run\'s reviewer prompt says so, beside "A gap the criteria decide is a finding, with its fix": the list, and *Test* on an `Escalates:` block', () => {
@@ -341,12 +373,12 @@ red('AC-4', 'the gate raises each `## Decided and continued` block through "Stop
 });
 
 red('AC-4', 'a `## Decided and continued` block that is on the stop list is a gate failure (the implementer should have returned `BLOCKED`) and is not raised as continued', () => {
-  const found = blocks(gateSection()).filter((b) => b.includes(DECIDED_SECTION) && /\bstop list\b/i.test(b));
+  const found = blocks(gateSection()).filter((b) => b.includes(DECIDED_SECTION) && STOP.test(b));
   assert.ok(found.length > 0, 'no block of step 2 speaks of a stop-list `## Decided and continued` block');
   const ok = found.some(
     (b) =>
       /\bgate failure\b|\bfails the gate\b/i.test(b) &&
-      /should have returned `?BLOCKED`?/i.test(b) &&
+      /should have returned (`?Status: )?`?BLOCKED`?/i.test(b) &&
       clauses(b).some((c) => /\b(not|never)\b[^.;]{0,50}\b(raised|continued)\b/i.test(c) && !/\b(not|never)\b[^.;]{0,25}\b(a|the) gate failure\b/i.test(c)),
   );
   assert.ok(ok, 'the gate does not call a stop-list `## Decided and continued` block a failure that is not raised as continued');
@@ -355,4 +387,18 @@ red('AC-4', 'a `## Decided and continued` block that is on the stop list is a ga
 red('AC-4', 'the continued `Escalates:` block\'s live finding carries its *Test*', () => {
   const ok = blocks(run()).some((b) => /\blive finding\b/i.test(b) && /\bEscalates\b/.test(b) && /\*{1,2}Test:?\*{1,2}/.test(b) && /continu|decided/i.test(b));
   assert.ok(ok, 'no block of run ties a continued Escalates block\'s live finding to its *Test*');
+});
+
+// An `Escalates:` block is raised with each line to its field, and plugin/scripts/raise.mjs refuses a key it does not know (exit 2):
+// a *Test* line copied into the fields file would break every continued raise of such a block.
+const OUT_OF_THE_FIELDS = /\b(not|never|nor|without|neither|out of|excluded?|omit(ted)?|left out|leave[sd]? out|kept out)\b/i;
+red('AC-4', 'the *Test* line goes to the live finding and not into the escalation\'s fields file', () => {
+  const found = blocks(run()).filter((b) => /\*{1,2}Test:?\*{1,2}/.test(b) && /\blive finding\b/i.test(b) && /\bfields?\b/i.test(b));
+  assert.ok(found.length > 0, 'no block of run names the *Test*, the live finding and the fields file together');
+  const ok = found.some((b) => itemClauses(b).some((c) => /\bfields?\b/i.test(c) && OUT_OF_THE_FIELDS.test(c)));
+  assert.ok(ok, 'no clause says the *Test* line stays out of the escalation\'s fields file');
+  for (const b of found) {
+    const into = itemClauses(b).filter((c) => /\*{1,2}Test:?\*{1,2}/.test(c) && /\bfields? file\b/i.test(c) && !OUT_OF_THE_FIELDS.test(c));
+    assert.deepEqual(into, [], 'a clause puts the *Test* line into the fields file');
+  }
 });
