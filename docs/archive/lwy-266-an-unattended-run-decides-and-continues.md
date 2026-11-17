@@ -48,8 +48,9 @@ it?". The order for every implementer `## Question` and reviewer `Escalates:` bl
    3. **Raise the escalation** tied to that comment, as the role of the block (implementer or reviewer), its fields
       unedited except two: `"type": "clarification"`, and `"meanwhile"` saying the run carried on with the pick, the
       follow-up's ref, and that an answer matching the pick closes it.
-   4. **Add `Escalation: <ref> eN`** to the follow-up's description (e10). Its title and the escalation already name
-      each other's other half.
+   4. **Name the escalation on the follow-up** (e10): its title becomes `Follow-up: <ref> eN — <the question,
+      shortened>`, and `Escalation: <ref> eN` is added to its description. The title carries it because `issue list`
+      returns titles and no descriptions, and the reading below finds follow-ups by it (c18 finding 1).
    5. **Carry on** as LWY-244's decided path does: a `## Question`'s pick goes into the next round's prompt; an
       `Escalates:` block's pick is a live finding for the next round, and a PASS with one runs one more round within
       `roundCap`. The sub-issue is not set `blocked`, and no wait starts.
@@ -69,16 +70,21 @@ A new `run` subsection, **"Reading the answers behind"**, run at three points: e
 implementer round and before the next task), the story gate (before step 1's merge), and the plan's end (before its
 status update).
 
-- **The index is the project's issues**, not the escalations: one `issue list <KEY> <project>` and, for each open
-  issue whose description carries `Escalation: <ref> eN`, one `issue get <ref>` to read that escalation's answer.
+- **The index is the project's issue titles** (c18 finding 1): `issue list` returns titles and no descriptions, and
+  `escalation list` cannot list answered escalations from the CLI (its `--open` cannot be false, LWY-164). So: one
+  `issue list <KEY> <project>`; each issue neither `done` nor `cancelled` whose title starts `Follow-up: <ref> eN` is a
+  follow-up, and one `issue get <ref>` reads that escalation's answer.
 - **Matching answer** (its `label` is the pick's): post `# Pick stood — <ref> eN` on the follow-up and set it `done`.
 - **Differing answer**: post `# Answer differs — <ref> eN` on the follow-up, quoting the label and note, once; it stays
   `backlog` to be built.
-- **Debt proposals** (no longer stop 4, and in a sub-issue run no longer waited on at "Land the task" step 5): each open
-  or answered `debt` escalation the run raised in this project is read the same way; on "File it", the debt issue is
-  filed as "What a deferred finding becomes" says, its description carrying `Escalation: <ref> eN`.
-- **Each action checks its marker first** (the follow-up's status or comment, a debt issue carrying the line), so a
-  second reading writes nothing (TC-4).
+- **Debt proposals** (no longer stop 4, and in a sub-issue run no longer waited on at "Land the task" step 5): each
+  `debt` escalation the run raised is read from `issue get <story>`, whose `escalations[]` carries its sub-issues':
+  the story in hand at a round boundary and the story gate, every story of the project at the plan's end. On "File it",
+  the debt issue is filed as "What a deferred finding becomes" says, its title ending `(<ref> eN)` and its description
+  carrying `Escalation: <ref> eN`.
+- **Each action checks its marker first**, so a second reading writes nothing (TC-4): a follow-up already `done`, or
+  already carrying `# Answer differs — <ref> eN`; a debt issue whose title in the same `issue list` already ends
+  `(<ref> eN)`.
 - **The plan's end** lists, in its status update on the Plan record and in its ending, every follow-up whose escalation
   is unanswered and every one whose answer differs and is not `done` (AC-3, must not happen). Re-running `run` on the
   project reaches the plan's end again ("Run a project", "Nothing left") and reads anything answered since.
@@ -147,14 +153,17 @@ is untouched. The manual step after build still waits for a person; only what it
 ### Read paths
 
 No rule restricts data a Leeway op returns: the story changes plugin text and process values only. The one new read is
-`run`'s reading of the project's issues and escalations, bounded by the project's `issue list` (one page) and one
-`issue get` per open follow-up (TC-4).
+`run`'s reading of the project's issues and escalations, bounded by the project's `issue list` (one reply, no
+pagination), one `issue get` per open follow-up, and one `issue get` per story (the story in hand, or every story at the
+plan's end) for debt proposals (TC-4).
 
 ### Blast radius
 
 - **Pins on the words this story changes**: `criteria-triage.test.mjs` ("Always raised, unedited"),
   `run-budget.test.mjs` (stop 9), `run-waits.test.mjs` and `skills-wait.test.mjs` (every raise waits; its `RAISE_AT`
-  rule, LWY-242), `escalation-recommends.test.mjs`, `developer-interview.test.mjs` and `plan-ends-at-planned.test.mjs`.
+  rule, LWY-242), `escalation-recommends.test.mjs`, `developer-interview.test.mjs` and `plan-ends-at-planned.test.mjs`;
+  also `escalation-rounds.test.mjs` and `wait-answer.test.mjs` (LWY-266.1, .2), `run-spend.test.mjs` (LWY-266.4),
+  `plan-ends-at-main.test.mjs` (LWY-266.2) and `run-project-skips.test.mjs` (LWY-266.6) (c18 note 3).
   Each task that changes their words rewrites the pin to the same strength (TC-10). Owned by the task that changes the
   words.
 - **Generated copies** `targets/agents/`: every task (TC-10).
