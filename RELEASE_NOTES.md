@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- **A run reads the answers behind its picks and its debt proposals, and waits on neither (LWY-266).** A new `run`
+  subsection, "Reading the answers behind", runs at every round boundary, before the story gate's merge and at the plan's
+  end: one `issue list` of the project finds each open `Follow-up: <ref> eN`, and one `issue get` reads its answer. A
+  matching answer posts `# Pick stood — <ref> eN` and closes the follow-up; a differing one posts `# Answer differs — <ref> eN`
+  and leaves it `backlog`; each action checks its marker first, so a second reading writes nothing. A debt proposal is
+  raised and the run carries on: on "File it" the issue is filed when the answer is read, its title ending `(<ref> eN)`.
+  "Land the task" step 5 and the wait in "Wait, then carry on" for a debt proposal are gone. The story gate never waits on
+  an open escalation or follow-up, and the plan's end lists every follow-up that is unanswered or whose answer differs.
 - **A run stops only for the stop list and decides and continues on the rest (LWY-266).** After the triage, `run`
   checks a block against the stop list: production, a merge into `main` or real data; a secret; the wider of two access
   options; no option marked `(suggested)`; a refused permission, and a block it cannot place. A stop is raised and
