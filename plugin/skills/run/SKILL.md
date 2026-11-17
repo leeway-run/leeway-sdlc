@@ -1001,7 +1001,7 @@ the project** is the way back. Each step reads before it writes, so running it a
     `--status done`. End by saying that the plan has merged into `main` and the Plan record reads `done`.
   - **Any story does not:** set the collector `--status in_review` unless it reads `in_review` already, post the
     status update naming each story's pull request (or branch) not yet in `main` unless the collector's latest
-    comment is already one naming the same ones, and end by saying that the Plan record reads `in_review` and naming
+    comment is already one naming the same stories and follow-ups, and end by saying that the Plan record reads `in_review` and naming
     each of them (number and URL, or branch) as waiting on the person. "When the plan merges into `main`" goes on
     from there.
 

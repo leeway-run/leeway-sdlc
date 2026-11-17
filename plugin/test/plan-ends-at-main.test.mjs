@@ -173,7 +173,7 @@ test('with no plan branch the Plan record closes only once every story reads mer
   assert.ok(merged >= 0 && done > merged && notMerged > done, 'the Plan record closes before the read-back');
   assert.doesNotMatch(from(step, '**Any story does not:**'), CLOSES, 'a story not in main closes the Plan record');
   assert.doesNotMatch(from(step, '**Any story does not:**'), MERGES_HERE, 'a story not in main is merged');
-  assert.match(step, /post the status update naming each story's pull request \(or branch\) not yet in `main` unless the collector's latest comment is already one naming the same ones/);
+  assert.match(step, /post the status update naming each story's pull request \(or branch\) not yet in `main` unless the collector's latest comment is already one naming the same stories and follow-ups/);
 });
 
 test('each ending says what the Plan record reads: in review and the pull request, or merged into main', () => {
