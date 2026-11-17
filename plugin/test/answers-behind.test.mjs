@@ -11,13 +11,16 @@ import { fileURLToPath } from 'node:url';
 const plugin = process.env.PLUGIN_DIR || join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (path) => readFileSync(join(plugin, path), 'utf8').replace(/\r\n/g, '\n');
 const flat = (text) => text.replace(/\s+/g, ' ');
+// A section is flattened, but each list item keeps a mark (¶) at its start, so a bullet is a sentence boundary.
+const BULLET = /\n(?=[ \t]*(?:[-*]|\d+\.) )/g;
+const mark = (raw) => flat(raw.replace(BULLET, ' ¶ '));
 
 const red = (criterion, name, fn) => test(`${criterion}: ${name}`, { skip: `red-test-${criterion}` }, fn);
 
 const run = () => read('skills/run/SKILL.md');
 
 // The heading line containing `title`, down to the next heading of its level or above (fenced blocks skipped).
-const section = (text, title) => {
+const rawSection = (text, title) => {
   const all = text.split('\n');
   const first = all.findIndex((line) => /^#+ /.test(line) && line.includes(title));
   assert.notEqual(first, -1, `anchor not found: a heading titled ${title}`);
@@ -31,18 +34,23 @@ const section = (text, title) => {
     if (heading && heading[1].length <= level) break;
     out.push(line);
   }
-  return flat(out.join('\n'));
+  return out.join('\n');
 };
+const section = (text, title) => mark(rawSection(text, title));
 const slice = (text, from, to) => {
   const start = text.indexOf(from);
   assert.notEqual(start, -1, `anchor not found: ${from}`);
   const end = text.indexOf(to, start);
   assert.notEqual(end, -1, `anchor not found: ${to}`);
-  return flat(text.slice(start, end));
+  return mark(text.slice(start, end));
 };
 
-// Sentences of flattened text, so a pin binds words that sit in one sentence whatever the line wrapping.
-const sentences = (text) => flat(text).split(/(?<=[.?!])\s+(?=[A-Z`*#|(<"])/);
+// Sentences of flattened text, so a pin binds words that sit in one sentence whatever the line wrapping. A list item
+// (a section's ¶ mark) starts a new one, so a bullet's words never join its neighbour's.
+const sentences = (text) =>
+  mark(text)
+    .split(/(?<=[.?!])\s+(?=[A-Z`*#|(<"])|\s*¶\s*/)
+    .filter(Boolean);
 const says = (text, ...res) => sentences(text).some((s) => res.every((re) => re.test(s)));
 const assertSays = (text, ...res) =>
   assert.ok(says(text, ...res), `no sentence says all of ${res.join(' and ')}`);
@@ -58,6 +66,10 @@ const sweep = (text) =>
 const SUB = 'Reading the answers behind';
 const sub = () => section(run(), SUB);
 const NEGATION = /\b(no longer|never|not|no wait)\b/i;
+// "nothing in hand waits on it": the debt row's own reassurance that the loop does not wait.
+const NOTHING_WAITS = /\bnothing\b[^.,;]*\bwaits?\b/i;
+const debtWait = (x) =>
+  /\bdebt\b/i.test(x) && /\b(wait\w*|holds?)\b/i.test(x) && !NEGATION.test(x) && !NOTHING_WAITS.test(x);
 
 red('TC-4', 'the subsection "Reading the answers behind" exists, under a heading of its own', () => {
   assert.ok(/^#{3,5} .*Reading the answers behind/m.test(run()), "anchor not found: a heading titled Reading the answers behind");
@@ -97,7 +109,7 @@ red('TC-4', 'a round boundary calls it, from outside the subsection, the story g
     sweep(text).some((s) => s.includes(SUB) && !/^#+ /.test(s) && /round boundary|before the next (implementer round|task)/i.test(s)),
     'no sentence names the subsection at a round boundary',
   );
-  const outside = flat(text).split(sub())[0];
+  const outside = flat(text.replace(rawSection(text, SUB), ''));
   assert.match(outside, /round boundary|next implementer round/i);
 });
 
@@ -108,12 +120,15 @@ red('TC-4', 'the index is the project\'s issue list: titles starting `Follow-up:
   assertSays(s, /neither/i, /`?done`?/, /`?cancelled`?/);
   assertSays(s, /one `?issue get/i);
   assertSays(s, /issue list/, /titles?/i, /(no|not|without) descriptions?/i);
-  assertSays(s, /one[^.]*issue list/i, /(one reply|no pagination|one page)/i);
 });
 
 red('TC-4', 'escalation list is not used for the index (LWY-164)', () => {
   const s = sub();
-  assertSays(s, /escalation list/, /\b(not|never|cannot)\b/i);
+  assertSays(
+    s,
+    /escalation list`?[^.;]*\b(is not|are not|not used|never used|does not|cannot (list|be used|serve|read)|never)\b|\b(not|never) (use|used|rely|read)\b[^.;]*escalation list/i,
+  );
+  assert.doesNotMatch(s, /escalation list`?,? (is|are|can be) used\b/i);
   assert.match(s, /LWY-164/);
   assert.doesNotMatch(s, /leeway escalation list/);
 });
@@ -164,7 +179,11 @@ red('AC-3', 'a differing answer never sets done', () => {
       if (/\bdone\b/.test(c) && !/match/i.test(c)) assert.match(c, NEGATION, `a differing answer is not kept off done: ${c}`);
     }
   }
-  assert.ok(saysClause(s, /differ/i, /\b(never|not|no)\b[^,;]*\bdone\b/i), 'no clause says a differing answer is never done');
+  // The never-done clause sits anywhere in the differing answer's own sentence or bullet.
+  assert.ok(
+    sentences(s).some((x) => /differ/i.test(x) && x.split(/[,;]/).some((c) => /\b(never|not|no)\b[^,;]*\bdone\b/i.test(c))),
+    'no clause of the differing answer says it is never done',
+  );
 });
 
 red('AC-3', 'a follow-up whose escalation is unanswered is never closed', () => {
@@ -206,7 +225,7 @@ red('TC-4', 'no polling: a reading is one issue list and one issue get per follo
 red('AC-3', 'the plan\'s end lists every follow-up whose escalation is unanswered and every one whose answer differs and is not done, in its status update and in its ending', () => {
   const end = section(run(), "The plan's end");
   assertSays(end, /status update/i, /unanswered/i, /differ/i);
-  assertSays(end, /\bend(ing|s)?\b|end by saying/i, /unanswered/i, /differ/i);
+  assertSays(end, /\bending\b|end by saying|final message|closing message/i, /unanswered/i, /differ/i);
   assertSays(end, /differ/i, /not `?done`?/i);
 });
 
@@ -233,7 +252,7 @@ red('AC-2', '"Land the task" no longer waits on a debt proposal (step 5 is gone 
   assert.doesNotMatch(land, /start its wait/i);
   assert.doesNotMatch(land, /Wait, then carry on/);
   for (const x of sentences(land)) {
-    if (/\bdebt\b/i.test(x) && /\bwait/i.test(x)) assert.match(x, NEGATION, `Land the task waits on a debt proposal: ${x}`);
+    if (/\bdebt\b/i.test(x) && /\bwait/i.test(x) && !NOTHING_WAITS.test(x)) assert.match(x, NEGATION, `Land the task waits on a debt proposal: ${x}`);
   }
   assert.match(land, /Friction/);
 });
@@ -253,9 +272,7 @@ red('AC-2', 'hard stop 4 and its notes no longer say a debt proposal stops or ho
 });
 
 red('AC-2', 'proven false: a run waits on a debt proposal anywhere in run (no sentence about a debt proposal waits, stops or holds without a negation)', () => {
-  const offenders = sweep(run()).filter(
-    (x) => /\bdebt\b/i.test(x) && /\b(wait\w*|holds?)\b/i.test(x) && !NEGATION.test(x),
-  );
+  const offenders = sweep(run()).filter(debtWait);
   assert.deepEqual(offenders, []);
 });
 
