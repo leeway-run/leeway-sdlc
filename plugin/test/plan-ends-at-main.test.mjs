@@ -118,7 +118,7 @@ test('with a plan branch the Plan record waits in review, never done, and nothin
 test('a plan\'s end run twice with a plan branch writes neither the status nor the status update twice', () => {
   const step = withPlanBranch();
   assert.match(step, /1\. \*\*Set the collector `--status in_review`, never `done`\*\*, unless it reads `in_review` already\. /);
-  assert.match(step, /3\. \*\*Post the plan's status update\*\* as a comment on the nit collector \(`comment add <collector> --stdin body`\), naming each pull request that waits for the person's test, unless the collector's latest comment is already one naming the same pull requests\. 4\. /);
+  assert.match(step, /3\. \*\*Post the plan's status update\*\* as a comment on the nit collector \(`comment add <collector> --stdin body`\), naming each pull request that waits for the person's test and each follow-up whose escalation is unanswered or whose answer differs \(the last paragraph of this section\), unless the collector's latest comment is already one naming the same pull requests and follow-ups\. 4\. /);
 });
 
 test('the Plan record reads in review before any wait for the pull request', () => {

@@ -401,9 +401,9 @@ opening the report behind it:
   - the answer to a question asked of the agent is not written (the next point);
   - or the answer ends the work.
 
-  A wait that blocks nothing (run's debt proposal once its task has landed, "Land the task", step 5) does not stop the
-  turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and
-  carries on. Either way, do not continue the work that depends on the answer, and do not ask again somewhere else.
+  A debt proposal is not waited on (run, "Reading the answers behind"): it is raised and the run carries on, and `run`
+  reads its answer at its next reading point. Where a wait stops the turn, do not continue the work that depends on the
+  answer, and do not ask again somewhere else.
   A question asked of the agent while it waits does not end the wait (the next point).
 - **A question asked of the agent is answered, then the wait starts again.** A person can ask the agent about an open
   escalation before deciding it, and the wait exits 5 on the question, printing

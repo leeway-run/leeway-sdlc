@@ -66,7 +66,9 @@ test('run raises independent questions together and does not hide the friction p
   assert.match(text, /A brief with a second block raises it in the same round/);
   assert.match(text, /A verdict with more than one `Escalates:` block raises them all in this round/);
   assert.match(text, /\*\*Debt proposals from one verdict are one round\*\*/);
-  assert.match(text, /Step 6's friction proposal depends on no answer here, so where there is a wait to do, do step 6's collecting and raise its proposal first/);
+  assert.match(text, /5\. \*\*A debt proposal is not waited on here\.\*\*/);
+  assert.doesNotMatch(text, /where there is a wait to do/);
+  assert.match(text, /`"meanwhile"` saying nothing waits/);
 });
 
 test('a stop or a resume in run carries every escalation of the round, not one', () => {

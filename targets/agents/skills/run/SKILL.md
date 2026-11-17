@@ -148,7 +148,7 @@ work nobody reviewed.
 ## Wait, then carry on
 
 **Every escalation this skill raises is followed by a wait, not by the end of the turn**, in a sub-issue, issue or
-project run. The one exception is a continued block's escalation ("Stop, or decide and continue"), which is raised without a wait and is not an escalation of the round in
+project run. The exceptions are a continued block's escalation ("Stop, or decide and continue") and a debt proposal ("What a deferred finding becomes"): each is raised and never waited on, and neither is an escalation of the round in
 the steps below. Where a path below says to raise an escalation and wait, do this:
 
 1. **Post what the path posts**, unchanged: the context comment, the escalation and, on an issue run's stop, the
@@ -167,9 +167,7 @@ the steps below. Where a path below says to raise an escalation and wait, do thi
    `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. Each only
    reads: it checks about a minute after it starts, then less and less often, never more than 15 minutes apart, and
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
-4. **Act on how it exits, as the table says**, with one exception: a wait on something that blocks nothing, such
-   as a sub-issue run's debt proposal after its task is `done` ("Land the task", step 5), carries on instead of
-   stopping when it ends without an answer (exit 2, 3 or 4).
+4. **Act on how it exits, as the table says.**
    With several waits running, each exit is handled for its own escalation, not for the round. Exit 0 carries on only
    when every escalation of the round is answered: read the issue, and where another is still open, its wait keeps
    running, except that an answer that ends the work (step 5) is followed at once. Exit 5 answers the question and restarts that escalation's wait only. A stop exit (2, 3, 4, 1 or any other)
@@ -484,6 +482,8 @@ removing the skip marker, nothing else.
 
 ### 1. Delegate to the implementer
 
+**At every round boundary, read the answers behind** ("Reading the answers behind"), before the next implementer round and before the next task.
+
 Delegate to the **sdlc-implementer** agent, fresh, as `HARNESS.md` ("Delegating to a named agent") describes, with
 the marker on if it is required. Pass, in the prompt:
 
@@ -789,7 +789,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | The follow-up is | What you do |
 |---|---|
 | Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway issue create <KEY> --as <alias>/agent --projectId <project.id> --title "…" --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`, in the task's project |
-| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `"type": "debt"`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and in an issue run that the run waits here for the answer (its stop 4). In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal ("Wait, then carry on") before it ends ("Land the task", step 5). On a yes, `issue create` as above, quoting the answer's `label` and `note`; on a no it stays a nit |
+| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `"type": "debt"`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it. The run carries on and never waits on the proposal, in a sub-issue run or an issue run: it reads the answer at its next reading point ("Reading the answers behind"), and on "File it" files the issue there, as above, quoting the answer's `label` and `note`; on "Keep it a nit" it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway comment add <collector> --as <alias>/agent --stdin body <nit.md` |
 
 **Debt proposals from one verdict are one round**: raised together, with those one answer would settle merged into
@@ -822,6 +822,22 @@ pattern the cap exists to prevent.
 **Spend rounds on the risk, not on the artifact.** A round that only polishes a fix that was already correct buys
 nothing. Notice when you are spending one on it.
 
+### Reading the answers behind
+
+A run reads the answers to what it left open at three reading points. Each is a read with one `issue list` of the project, one `issue get` per open follow-up and one per story read for debt proposals: no pagination, no polling and no wait.
+
+- **Every round boundary**: before the next implementer round and before the next task, with the story in hand.
+- **The story gate**: before step 1's merge, with the story in hand. It reads and never waits on an open escalation or an open follow-up: the story is merged into the plan branch with escalations and follow-ups still open.
+- **The plan's end**: before its status update, with every story of the project.
+- **The index is the project's `issue list`**: one `issue list <KEY> <project> --json` per reading, one reply. It returns titles and no descriptions, so a follow-up is found by its title: each issue neither `done` nor `cancelled` whose title starts `Follow-up: <ref> eN` ("Stop, or decide and continue", step 4, gives it that title) is a follow-up, and one `issue get <ref>` each reads that escalation's answer. `escalation list` is not used for the index: its `--open` cannot be false from the CLI (LWY-164), so it cannot list the answered ones.
+- **What an answer does to its follow-up.** Read the answer of `eN` in the `escalations[]` of `issue get <ref>`:
+  - **Unanswered:** the follow-up is never closed and nothing is written. It stays `backlog`.
+  - **A matching answer**, its `label` equal to the pick the follow-up names: post `# Pick stood — <ref> eN` on the follow-up and set it `done`.
+  - **A differing answer**, its `label` not the pick's: post `# Answer differs — <ref> eN` on the follow-up, quoting the answer's `label` and `note`. It stays `backlog`, never `done`, to be built when a later run takes that issue.
+- **Debt proposals** are read from `issue get <story>`, whose `escalations[]` carries its sub-issues' too, so one `issue get` on a story reads every `debt` escalation of its tasks. The story in hand is read at a round boundary and at the story gate; every story of the project is read at the plan's end. A debt proposal never stops the run and is never waited on: the run carries on and reads its answer here. On "File it", file the debt issue as "What a deferred finding becomes" says, its title ending `(<ref> eN)` and its description carrying `Escalation: <ref> eN`, quoting the answer's `label` and `note`. On "Keep it a nit" it stays a nit and nothing is filed. An unanswered proposal is left as it is and read again at the next reading point.
+- **Each action checks its marker first.** Before it writes, a reading skips a follow-up that is already `done` or already carries `# Answer differs — <ref> eN`, and files no debt issue whose title in the same `issue list` already ends `(<ref> eN)`. It posts unless the latest comment is already one naming the same `<ref> eN`. A second reading writes nothing: no second comment, nothing closed twice and no second debt issue.
+- **The plan's end** lists what is left open, for the person who decides the merge into `main`: every follow-up whose escalation is unanswered and every one whose answer differs and is not `done`, as "The plan's end" says.
+
 ### Land the task
 
 On a PASS of a code round.
@@ -839,15 +855,8 @@ On a PASS of a code round.
    `issue get <ref>` shows `done`.
 4. **Remove the task worktree** and delete the local task branch: `git -C <primary> worktree remove <task worktree>`, then
    `git -C <primary> branch -d <task branch>`, which accepts a squashed branch because its pushed upstream holds it.
-5. **Wait on each debt proposal, only when `run` was invoked on the sub-issue itself** (an issue run has already
-   waited on it, as its stop 4). Step 6's friction proposal depends on no answer here, so where there is a wait to
-   do, do step 6's collecting and raise its proposal first, in the same round, and do not raise it again at step 6.
-   For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
-   of this task, start its wait ("Wait, then carry on"), all together with the others. On a yes, file the issue as that row says; on
-   a no, the finding stays a nit. **A wait here that ends without an answer (exit 2, 3 or 4) does not end the run**:
-   the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume. Leave
-   the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to
-   step 6.
+5. **A debt proposal is not waited on here.** Its escalation was raised in "What a deferred finding becomes" and the run
+   carries on: "Reading the answers behind" reads its answer at the next reading point and files the issue on a "File it".
 6. **Friction, only when `run` was invoked on the sub-issue itself** (an issue run harvests the whole story once,
    at the end). Collect every *Friction* line from this task's briefs and verdicts, round 0 included; drop `none`; dedupe
    against each other and against the open issues of the friction project (`friction-project:` in
@@ -870,6 +879,8 @@ On a PASS of a code round.
 
 When the story's last task has landed, in the **story worktree**. The order is fixed: the story branch is merged into
 its base (step 5) before the story's next step is written, so a `manual` next step never skips the merge.
+
+**Before step 1, read the answers behind** ("Reading the answers behind"). The gate never waits on an open escalation or an open follow-up: the story is merged with them still open.
 
 1. **Merge the story's base into the story branch** (fetched fresh: `git -C <story worktree> fetch origin <base>`, then
    `git -C <story worktree> merge --no-edit origin/<base>`), and resolve conflicts **yourself**. A conflict
@@ -949,8 +960,9 @@ Reached from the story gate's step 6, and from a project run that finds nothing 
 `done` ("Run a project", step 2, "Nothing left"). That second way in is how a plan's end is picked up again when a
 wait below ended without an answer, the session ended before it, or the last story reached `done` outside the gate
 (a person moved it past a `manual` step): `run` refuses a `done` story and the Plan record, so re-invoking `run` **on
-the project** is the way back. Each step reads before it writes, so running it again writes only what is missing. By
-you, as `<alias>/agent`:
+the project** is the way back. Each step reads before it writes, so running it again writes only what is missing.
+
+**Before the status update**, read the answers behind ("Reading the answers behind"), every story of the project. By you, as `<alias>/agent`:
 
 - **With a plan branch**, in each repository the plan changes (its stories' `issue.repository.fullName`):
   1. **Set the collector `--status in_review`, never `done`**, unless it reads `in_review` already. It is an issue of
@@ -977,14 +989,14 @@ you, as `<alias>/agent`:
      `github_unavailable` means try again; any other refusal (`pr_not_found`, `github_access_lost`,
      `github_not_configured`) leaves the pull request unlinked: name it in the ending.
   3. **Post the plan's status update** as a comment on the nit collector (`comment add <collector> --stdin body`),
-     naming each pull request that waits for the person's test, unless the collector's latest comment is already one
-     naming the same pull requests.
+     naming each pull request that waits for the person's test and each follow-up whose escalation is unanswered or whose answer differs (the last paragraph of this section), unless the collector's latest comment is already one
+     naming the same pull requests and follow-ups.
   4. **End by saying** that the project reads "in review" and naming each pull request (its number and URL) that
      waits on the person's test, where it is linked and open (a pull request that had already merged ends as "When
      the plan merges into `main`" does). Otherwise name the pull request that is not linked (a refused link), or
      say none is open yet, and say the project reads "in review" only once one is linked and open. Where they test it is theirs to
      choose: locally, on a dev server, anywhere.
-     Nothing merges it into `main` until they say so ("When the plan merges into `main`").
+     Nothing merges it into `main` until they say so ("When the plan merges into `main`"). The ending lists the follow-ups too: each whose escalation is unanswered and each whose answer differs.
 - **With no plan branch** (*Plan branch* `none`), each story was merged into the integration branch at step 5 as the
   repo's convention says, which may be a pull request that waits for the person. So **read back that every `done`
   story of the project is in `main`** before anything closes (a cancelled one has nothing to merge): its pull
@@ -998,6 +1010,8 @@ you, as `<alias>/agent`:
     comment is already one naming the same ones, and end by saying that the Plan record reads `in_review` and naming
     each of them (number and URL, or branch) as waiting on the person. "When the plan merges into `main`" goes on
     from there.
+
+**Both ways, the status update and the ending list the follow-ups left open**: every follow-up whose escalation is unanswered and every one whose answer differs and is not `done`, each with its ref and `eN`, for the person who decides the merge into `main`.
 
 ### The verification gate
 
@@ -1132,7 +1146,7 @@ tasks that share no file; that trade is a person's to take when they run sub-iss
 
 For the next task, run "Run a sub-issue" from "0. Locate, read the process, set up" through "Land the task": the task
 worktree, round 0 where the rung calls for it, every round, the verification gate, the records, landing. Then check
-the stop conditions, then take the next task. **Skip the per-task friction step of "Land the task"**: the issue run
+the stop conditions, read the answers behind ("Reading the answers behind"), then take the next task. **Skip the per-task friction step of "Land the task"**: the issue run
 harvests the whole story once, at the end.
 
 **Fresh subagents per task.** Never carry an implementer or reviewer from one task into the next, and keep nothing
@@ -1147,7 +1161,7 @@ spend. Every line can be rebuilt from Leeway, which is what makes it safe to los
 changes* row the task's diff touched. The reviewer ran the lanes on the task branch; the squash on the story branch
 is normally the same tree, and this run is what makes "normally" a fact.
 
-Where the sub-issue run asks a person for something (a debt proposal, a spec amendment, a cap), there is no one in the
+Where the sub-issue run asks a person for something (a spec amendment, a cap), there is no one in the
 session. That is what the stop conditions are.
 
 ### Hard stop conditions
@@ -1155,7 +1169,7 @@ session. That is what the stop conditions are.
 **Only a human overrides these. The agent never does**, not with a reason, not once. A human overrides one by
 answering the escalation; the run waiting on it reads it there ("Wait, then carry on"), or a later run does
 (precondition 5). Each stop ends in **one escalation**, or in one per independent question where the sub-issue run raised a round of
-them (a brief's second `## Question`, a verdict's second `Escalates:` block, a verdict's debt proposals): where
+them (a brief's second `## Question`, a verdict's second `Escalates:` block): where
 the sub-issue run already raises it or them, those are the stop's, and the issue run adds none (one more would be a
 further question for one stop); otherwise the issue run raises it on the story.
 
@@ -1164,7 +1178,7 @@ further question for one stop); otherwise the issue run raises it on the story.
 | 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided or continued block, or a `BLOCKED` brief whose `## Question` is decided or continued, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
 | 3 | **A verdict carries a `security` follow-up** | "What a deferred finding becomes" | the issue run's, on the story |
-| 4 (removed: a debt proposal no longer stops the run, LWY-266) | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
+| 4 (removed: a debt proposal no longer stops the run, LWY-266) | removed: a debt proposal is raised and read later ("Reading the answers behind"), never waited on | none | none |
 | 5 | **A second verification-gate hallucination on the same task** | "The verification gate" | the issue run's, on the story |
 | 6 | **A lane green at baseline is red on the story branch**, after a task lands or at the story gate | after each task | the issue run's, on the story |
 | 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate" | the issue run's, on the story |
@@ -1184,8 +1198,8 @@ Notes on the ones that need them:
   the story branch, which reaches nobody until the story gate. So a PASS is landed through "Land the task",
   and then the run stops. A `security` follow-up is filed first, as "What a deferred finding becomes" says, with no delay; the stop is so a
   person decides whether the story should go on being built on top of it (options "Continue the story" and "Hold the
-  story"). A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred
-  finding becomes" says, and on a no the finding stays a nit.
+  story"). A `debt` follow-up is raised as a proposal the run does not stop for: on a yes the run files the issue as "What a deferred
+  finding becomes" says when it reads the answer ("Reading the answers behind"), and on a no the finding stays a nit.
 - **5 replaces the sub-issue run's fallback.** A sub-issue run does a twice-hallucinated round inline and tells the user the
   workflow degraded. Unattended there is nobody to tell while it matters, and a degraded round nobody noticed is
   indistinguishable afterwards from a normal one. Stop instead.
@@ -1249,7 +1263,7 @@ Do these, in this order, and nothing else:
 `/leeway-sdlc:run` on DRY-2 again", not "review the findings". Two escalations are still one action: "Answer e2 and e3 on DRY-2.1, then invoke…". A stop whose next step the human has to work out costs
 them the investigation the run already did. The skill is named as `HARNESS.md`'s **commands** spells it
 (`/leeway-sdlc:run` in Claude Code), or as leeway-sdlc's `run` skill where it names skills in words: a bare `run`
-can reach another skill of that name. For a `debt` stop the proposals follow the template, one line each.
+can reach another skill of that name.
 
 ### The end
 
@@ -1327,9 +1341,8 @@ either generates one.
 
 The human sees the story at the end, not per task. The round records are all there, but nobody reads them as they
 happen, so a task that passed review on a misread criterion is found at the story gate, after later tasks were built
-on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up holds the run on
-its answer rather than waiting in a queue, so a debt-heavy codebase waits often; the alternative is filing tickets nobody
-approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count that
+on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up is read at the next reading point, so a yes can sit unfiled for a round or a task; the alternative
+is filing tickets nobody approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count that
 cannot be made leaves the token total a floor, not a count. A span the session ends inside, before its
 record is written, is not recorded at all. And dropping each task's subagent context means a pattern noticed in
 task 2 reaches task 5 only if a round record wrote it down.

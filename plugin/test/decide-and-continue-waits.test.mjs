@@ -21,7 +21,7 @@ test('"A BLOCKED brief" reads only each stop on resume', () => {
 
 test('"Check the round", "Wait, then carry on" and "On a stop" step 7 leave a continued block out of the wait', () => {
   assert.match(run, /a continued block's escalation is raised without a wait and counts as none of "the round's escalations" below/);
-  assert.match(run, /The one exception is a continued block's escalation \("Stop, or decide and continue"\), which is raised without a wait and is not an escalation of the round in the steps below\./);
+  assert.match(run, /The exceptions are a continued block's escalation \("Stop, or decide and continue"\) and a debt proposal \("What a deferred finding becomes"\): each is raised and never waited on, and neither is an escalation of the round in the steps below\./);
   assert.match(run, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together; a continued block's escalation is not one of them\./);
 });
 
