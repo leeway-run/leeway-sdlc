@@ -183,7 +183,7 @@ test('time spent in a wait does not count toward the wall-clock budget', () => {
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {
   const stop = under(skill, 'On a stop');
-  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
+  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together; a continued block's escalation is not one of them\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
   assert.match(stop, /Only when a wait ends without an answer, or an answer ends the work, stop the turn/);
   assert.match(stop, /Stop 10 has no escalation to wait on/);
   assert.match(under(skill, 'Hard stop conditions'), /Its wait is step 7 of "On a stop", after the status comment, not a second one before it/);

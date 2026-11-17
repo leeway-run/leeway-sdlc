@@ -73,9 +73,9 @@ test('a stop or a resume in run carries every escalation of the round, not one',
   const text = skill('run');
   assert.doesNotMatch(text, /stop's one escalation/);
   assert.match(text, /\*\*Work held on a round carries on only when every escalation of the round is answered, with all the answers reaching it\*\*/);
-  assert.match(text, /read each escalation the brief raised \(`escalations\[\]\.answer`\)\. One still open and no answer ended the work: wait on it, and start no round\. All answered:/);
+  assert.match(text, /read each stop the brief raised \(`escalations\[\]\.answer`\); a continued block's escalation is not read here and holds nothing\. A stop still open and no answer ended the work: wait on it, and start no round\. All answered:/);
   assert.match(text, /run the next round with all the answers pasted into the prompt/);
-  assert.match(text, /PASS or FAIL handling until every one is answered/);
+  assert.match(text, /PASS or FAIL handling until every stop is answered/);
   assert.match(text, /a second block on one finding gets a comment of its own/);
   assert.match(text, /one `# Run status` comment on the story names each of the stop's escalations/);
   assert.match(text, /Every escalation it names must be answered, or the change it asked for recorded\. One open and that change not recorded/);

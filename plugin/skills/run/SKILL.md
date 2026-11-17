@@ -142,7 +142,8 @@ work nobody reviewed.
 ## Wait, then carry on
 
 **Every escalation this skill raises is followed by a wait, not by the end of the turn**, in a sub-issue, issue or
-project run. Where a path below says to raise an escalation and wait, do this:
+project run. The one exception is a continued block's escalation ("Stop, or decide and continue"), which is raised without a wait and is not an escalation of the round in
+the steps below. Where a path below says to raise an escalation and wait, do this:
 
 1. **Post what the path posts**, unchanged: the context comment, the escalation and, on an issue run's stop, the
    `# Run status` comment. `<raise>` prints the escalation as JSON: `escalation.escalation` in it (`e1`) is the `eN` you
@@ -197,7 +198,7 @@ fresh.
 
 **Check the round before raising more than one** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change
 another question, merge them into one, or hold the dependent one for the next round. Independent ones are raised
-together, not rationed behind a wait, and waited on all together ("Wait, then carry on"). **Work held on a round carries on only when every escalation of the round is
+together, not rationed behind a wait, and waited on all together ("Wait, then carry on"); a continued block's escalation is raised without a wait and counts as none of "the round's escalations" below. **Work held on a round carries on only when every escalation of the round is
 answered, with all the answers reaching it**: one answer of two is not yet step 5's answer, except one that ends the
 work, which is followed at once. A later round drops what an answer settled.
 
@@ -683,7 +684,8 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
 5. **Wait.** On a stop only: a continued block's escalation is reported and not waited on. Report each escalation id and the issue, and start one background wait per open stop of the round, all together ("Wait, then carry on"). Do not delegate to the
    reviewer.
 
-On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
+On resume, whether the wait answered or `run` was invoked again, read each stop the brief raised (`escalations[].answer`); a continued block's
+escalation is not read here and holds nothing. A stop still
 open and no answer ended the work: wait on it, and start no round. All answered: set the
 step back to the stage the thread shows (`--step red-tests` or `--step implementing`), and run the next round with
 all the answers pasted into the prompt.
@@ -763,13 +765,14 @@ sufficient: the verdict exists nowhere else.
    Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it
    marks, or on none where its Advice says there is no pick.
 
-   `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
+   A stop's `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
    review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
    them all in this round; a second block on one finding gets a comment of its own, naming the finding, and its
-   escalation is tied to that, since a comment holds one open escalation. Report each escalation id and the issue, wait
-   on every one at once ("Wait, then carry on"), and do not go to
-   PASS or FAIL handling until every one is answered. Leave the sub-issue `in_review`, in round 0 too.
+   escalation is tied to that, since a comment holds one open escalation. A continued block's `"comment"` is the `cN` of its
+   `# Decided and continued` comment, never the finding's, which a stop on that finding may hold. Report each escalation id and the issue, wait
+   on every stop at once ("Wait, then carry on"), and do not go to
+   PASS or FAIL handling until every stop is answered. A continued block's escalation is not waited on and does not hold PASS or FAIL handling. Leave the sub-issue `in_review`, in round 0 too.
 
 #### What a deferred finding becomes
 
@@ -1231,7 +1234,7 @@ Do these, in this order, and nothing else:
    real choices as options (2 to 5, each with its argument) and `"meanwhile"` saying what stays blocked and what does not.
    Where the sub-issue run raised it or them, add each id to the status comment, and raise no other.
 6. **Tell the user the same thing** in the session, with the comment's `cN` and each escalation id.
-7. **Wait on each of the stop's escalations** ("Wait, then carry on"), all together. Once every one is answered the run carries on from where step 1
+7. **Wait on each of the stop's escalations** ("Wait, then carry on"), all together; a continued block's escalation is not one of them. Once every one is answered the run carries on from where step 1
    left it, the condition overridden by those answers, and writes none of steps 4 and 5 again. Only when a wait ends
    without an answer, or an answer ends the work, stop the turn. Stop 10 has no escalation to wait on: stop the
    turn.
