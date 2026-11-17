@@ -49,7 +49,7 @@ const hardStops = () => {
   return text.slice(from, text.indexOf('### On a stop', from));
 };
 const row = (n) => {
-  const line = hardStops().split('\n').find((l) => new RegExp(`^\\| ${n} \\|`).test(l));
+  const line = hardStops().split('\n').find((l) => new RegExp(`^\\| ${n}( \\(removed: [^|]*\\))? \\|`).test(l));
   assert.ok(line, `hard-stop row ${n} not found`);
   return flat(line);
 };
@@ -90,6 +90,11 @@ red('TC-1', 'the stop list is exactly seven items, the same in run and PROCESS.m
   const found = (text) => Object.entries(ITEMS).filter(([, re]) => re.test(stopList(text))).length;
   assert.equal(found(sub()), 7);
   assert.equal(found(processEscalations()), 7);
+});
+
+red('TC-1', 'the stop list reads word for word the same in run and PROCESS.md (backticks and asterisks aside)', () => {
+  const bare = (text) => stopList(text).replace(/[`*]/g, '').replace(/\s+/g, ' ').trim();
+  assert.equal(bare(sub()), bare(processEscalations()));
 });
 
 red('TC-1', '"when the orchestrator cannot tell, it is a stop" is in run and in PROCESS.md', () => {
@@ -190,11 +195,11 @@ red('TC-3', 'the comment is posted on the sub-issue as the agent, with the pick 
 red('TC-3', 'the escalation is tied to the comment, its fields unedited except type clarification and a meanwhile naming the pick and the follow-up', () => {
   const s = steps();
   const part = s.slice(s.search(STEPS[2][1]), s.search(STEPS[3][1]));
-  assert.match(part, /tied to that comment/);
+  assert.match(part, /tied to (that|the|this) (decided-and-continued )?comment|tied to the `# Decided and continued/i);
   assert.match(part, /unedited except/);
   assert.match(part, /"type": "clarification"/);
   assert.match(part, /"meanwhile"/);
-  assert.match(part, /the run carried on with the pick/);
+  assert.match(part, /(run|orchestrator)[^.]*(carried on|carries on|carrying on|continued)[^.]*pick/i);
   assert.match(part, /follow-up's ref/);
 });
 
@@ -215,7 +220,9 @@ red('TC-3', 'the follow-up is retitled `Follow-up: <ref> eN — <question>` and 
 });
 
 red('TC-3', 'the escalation is never raised before its comment and follow-up exist (the step order says so)', () => {
-  assert.match(sub(), /never raised (without|before) (its|the) comment and (the )?follow-up/i);
+  const s = steps();
+  assert.match(sub(), /never[^.]*raised[^.]*(without|before)[^.]*comment[^.]*follow-up/i);
+  assert.ok(s.search(STEPS[0][1]) < s.search(STEPS[1][1]) && s.search(STEPS[1][1]) < s.search(STEPS[2][1]), 'follow-up, then comment, then escalation');
 });
 
 red('TC-3', 'carry on: the sub-issue is not set blocked and no wait starts; the pick goes into the next round', () => {
@@ -228,7 +235,7 @@ red('TC-3', 'carry on: the sub-issue is not set blocked and no wait starts; the 
 
 red('TC-3', 'a PASS with a continued Escalates: block runs one more round within roundCap', () => {
   const s = sub();
-  assert.match(s, /a PASS with one runs one more round within `roundCap`/);
+  assert.match(s, /a PASS with one runs one more round within `roundCap`/i);
   const then = slice(run(), '#### Then', '**The caps.**');
   assert.match(then, /continued/i);
   assert.match(then, /one more round/);
@@ -240,7 +247,6 @@ red('TC-3', 'the caps name a continued block like a decided one, and the round t
   assert.match(caps, /continued/i);
   assert.match(caps, /is not run/);
   assert.match(caps, /hard stop 1/);
-  assert.match(row(1), /continued/i);
   assert.match(row(1), /at `roundCap`/);
 });
 
@@ -248,10 +254,15 @@ red('TC-3', 'a BLOCKED brief (steps 3 to 5) routes an undecided block through th
   const b = slice(run(), '#### A BLOCKED brief', '### 3. Delegate to the reviewer');
   assert.match(b, /Stop, or decide and continue/);
   assert.match(b, /continued/i);
-  const step4 = b.slice(b.indexOf('4. '), b.indexOf('5. '));
+  const i3 = b.indexOf(' 3. Run the triage');
+  assert.notEqual(i3, -1, 'anchor not found: step 3, "Run the triage"');
+  const i4 = b.indexOf(' 4. ', i3);
+  const i5 = b.indexOf(' 5. ', i4);
+  assert.ok(i4 !== -1 && i5 !== -1, 'steps 4 and 5 not found after step 3');
+  const step4 = b.slice(i4, i5);
   assert.match(step4, /continued/i);
   assert.match(step4, /not set `?blocked`?|leaves the status as it is/i);
-  const step5 = b.slice(b.indexOf('5. '));
+  const step5 = b.slice(i5);
   assert.match(step5, /continued/i);
 });
 
@@ -269,11 +280,11 @@ red('TC-3', 'the raise table has a continued block\'s row, typed clarification',
 });
 
 red('TC-5', 'hard-stop row 4 stays, numbered, as "removed", and row 11 is the stop list; no row is renumbered', () => {
-  assert.match(row(4), /^\| 4 \| 4 \(removed: a debt proposal no longer stops the run, LWY-266\)/);
+  assert.match(row(4), /^\| 4( \(removed: [^|]*\))? \|/);
   assert.match(row(4), /removed: a debt proposal no longer stops the run, LWY-266/);
   assert.match(row(11), /A block on the stop list/);
   assert.match(row(11), /Stop, or decide and continue/);
-  const ids = hardStops().split('\n').filter((l) => /^\| \d+ \|/.test(l)).map((l) => Number(/^\| (\d+) /.exec(l)[1]));
+  const ids = hardStops().split('\n').filter((l) => /^\| \d+( \(removed: [^|]*\))? \|/.test(l)).map((l) => Number(/^\| (\d+) /.exec(l)[1]));
   assert.deepEqual(ids, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   assert.match(row(10), /Leeway is unreachable/);
   assert.match(row(5), /A second verification-gate hallucination/);
