@@ -106,7 +106,7 @@ test('TC-4, TC-5: the contract names the fields and where the pick goes', () => 
 
 // Round 1's c5: a type is a kind of question, not whether something has stopped yet.
 test('TC-4: the types are defined by what kind of question each is', () => {
-  assert.match(process_, /\*\*`"type"`, always, by what kind of question it is\.\*\* `blocker`: the work has stopped on a failure or a block, and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that needs a spec amendment, a stop of an issue run\. `clarification`: a decision the plan or the operation needs from a person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping, interview or floor question, an install, sync or tune question\. Either kind holds the work that depends on it until it is answered\. `debt` for a debt proposal, `nit` for a friction proposal\./);
+  assert.match(process_, /\*\*`"type"`, always, by what kind of question it is\.\*\* `blocker`: the work has stopped on a failure or a block, and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that needs a spec amendment, a stop of an issue run\. `clarification`: a decision the plan or the operation needs from a person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping, interview or floor question, an install, sync or tune question\. A stop holds the work that depends on it until it is answered; anything else is decided and continued \(`run`, "Stop, or decide and continue"\)\. A block is a stop when going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options; or when it marks no option `\(suggested\)` \(no sensible pick\), or reports an action the permission check refused\. When the orchestrator cannot tell, it is a stop\. `debt` for a debt proposal, `nit` for a friction proposal\./);
   for (const [path, text] of docs) assert.doesNotMatch(text, /stops nothing yet/, path);
 });
 
@@ -140,7 +140,7 @@ test('TC-7: a server without the fields stops the raise with a line naming LWY-1
 
 test('TC-4: run names the type of each of its raises in its table', () => {
   assert.match(run, /\| a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story \| `blocker` \|/);
-  assert.match(run, /\| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block, after the triage \("Before raising a block: do the criteria decide it\?"\) \| the block's own `Type:` line, unedited \|/);
+  assert.match(run, /\| a `BLOCKED` brief's `## Question` or a reviewer's `Escalates:` block that is a stop, after the triage \("Before raising a block: do the criteria decide it\?"\) \| the block's own `Type:` line, unedited \|/);
   assert.match(run, /\| a debt proposal \("What a deferred finding becomes"\) \| `debt` \|/);
   assert.match(run, /\| a friction proposal \("Land the task", step 6; "The friction harvest"\) \| `nit` \|/);
 });
@@ -196,7 +196,7 @@ test('TC-5: the implementer\'s ## Question and the reviewer\'s Escalates carry t
   assert.match(implementer, /its Type, the Context behind it in plain lines, the Trade-off and your Advice/);
   assert.match(implementer, /your pick first and marked `\(suggested\)`, or none marked and Advice saying why/);
   assert.match(reviewer, /\*\*Type\*\* .*\*\*Context\*\* \(the finding or dispute behind it in plain lines, never only its `F<n>` or `cN`\), \*\*Trade-off\*\*, \*\*Advice\*\*/);
-  assert.match(run, /Run the triage \("Before raising a block: do the criteria decide it\?"\) on each `## Question` block\..*Otherwise raise its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
+  assert.match(run, /Run the triage \("Before raising a block: do the criteria decide it\?"\) on each `## Question` block\..*a stop raises its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
   assert.match(run, /run the triage first.*Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it marks/);
 });
 

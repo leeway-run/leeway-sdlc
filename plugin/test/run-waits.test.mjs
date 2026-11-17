@@ -151,7 +151,7 @@ test('each stop path in run waits on its escalation', () => {
   };
   for (const [name, text] of Object.entries(paths)) {
     assert.match(text, WAITS, `${name} does not wait`);
-    assert.doesNotMatch(text, STOPS, `${name} still stops`);
+    assert.doesNotMatch(text.replaceAll('"Stop, or decide and continue"', ''), STOPS, `${name} still stops`);
   }
   assert.match(paths['the debt proposal'], /in an issue run that the run waits here for the answer \(its stop 4\)/);
   assert.match(paths['the debt proposal'], /In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal \("Wait, then carry on"\) before it ends \("Land the task", step 5\)/);
@@ -172,7 +172,7 @@ test('a sub-issue run waits on its debt proposal once the task has landed, and f
 });
 
 test('in an issue run, a debt follow-up is filed by the run on a yes and stays a nit on a no', () => {
-  const note = from(under(skill, 'Hard stop conditions'), '**3 and 4: finish landing the task first.**', '**5 replaces');
+  const note = from(under(skill, 'Hard stop conditions'), '**3: finish landing the task first.**', '**5 replaces');
   assert.match(note, /A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred finding becomes" says, and on a no the finding stays a nit\./);
   assert.doesNotMatch(note, /filed by nobody/);
 });

@@ -340,8 +340,10 @@ opening the report behind it:
   and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that
   needs a spec amendment, a stop of an issue run. `clarification`: a decision the plan or the operation needs from a
   person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping,
-  interview or floor question, an install, sync or tune question. Either kind holds the work that depends on it until
-  it is answered. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
+  interview or floor question, an install, sync or tune question. A stop holds the work that depends on it until it is
+  answered; anything else is decided and continued (`run`, "Stop, or decide and continue"). A block is a stop when going on would touch production, a merge into `main` or real data; involve a
+  secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action
+  the permission check refused. When the orchestrator cannot tell, it is a stop. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
   raises.
 - **`"context"`: the specific thing behind the question, in plain lines**, taken from the report, the brief or the
   code: each blocker, finding or question summarised in one line of its own, with what it is about. **Never only a

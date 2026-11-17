@@ -116,7 +116,7 @@ test('AC-4: a decided `## Question` runs the next round with the decision in the
 
 // Replaces the pin on "Raise its `## Question` block **unedited**, as the implementer, ..." (escalation-recommends, "TC-4: ...").
 test('AC-4, AC-5: "A BLOCKED brief" runs the triage first, then raises the block unedited, each line to its field', () => {
-  assert.match(blocked(), /(triage|criteria decide).*[Rr]aise its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
+  assert.match(blocked(), /(triage|criteria decide).*a stop raises its `## Question` block \*\*unedited\*\*, as the implementer, tied to the brief, each line to its field: \*Type\*, \*Question\*, \*Context\*, \*Trade-off\*, \*Advice\* and \*Meanwhile\* copied into the fields file as written, backticks and all/);
 });
 
 // Replaces the pin on "Each line of the block goes to its field, unedited, backticks and all, ..." (escalation-recommends).
@@ -134,14 +134,15 @@ test('AC-4: a decided `Escalates:` block is a live finding for the next round, a
 test('AC-4: at roundCap a decided block gets no extra round, hard stop 1 fires and its escalation names the decided block', () => {
   const s = afterReview();
   assert.match(s, /hard stop 1/i);
-  assert.match(s, /names? the decided block/i);
+  assert.match(s, /names? the decided or continued block/i);
   assert.match(s, /# Decided from the criteria/);
+  assert.match(s, /# Decided and continued/);
 });
 
 // Replaces the pin on the raise-table row (escalation-recommends, "TC-4: run names the type of each of its raises in its table").
 test('AC-5: the raise-table row says the block is raised unedited after the triage', () => {
   const run = read('skills/run/SKILL.md');
-  const row = /\| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block[^|]*\|[^|]*\|/.exec(run);
+  const row = /\| a `BLOCKED` brief's `## Question` or a reviewer's `Escalates:` block that is a stop[^|]*\|[^|]*\|/.exec(run);
   assert.ok(row, 'raise-table row not found');
   assert.match(row[0], /(triage|criteria).*the block's own `Type:` line, unedited|the block's own `Type:` line, unedited.*(triage|criteria)/i);
 });
@@ -151,9 +152,10 @@ test('AC-5: the paragraph under the table raises a block unedited after the tria
   assert.match(p, /(?:triage|criteria decide).{0,300}in the block's order, its pick marked as the block marks it, each line copied into its field of the file as written, backticks and all|in the block's order, its pick marked as the block marks it, each line copied into its field of the file as written, backticks and all.{0,300}(?:triage|criteria decide)/i);
 });
 
-test('AC-4: the hard-stop table\'s closing paragraph says only a raised block is a stop', () => {
+test('AC-4: the hard-stop table\'s closing paragraph says only a block on the stop list is a stop', () => {
   const p = slice(read('skills/run/SKILL.md'), '**And every place the sub-issue run itself says stop or wait**', 'Notes on the ones that need them:');
-  assert.match(p, /only an? (raised [^.]{0,40}(block|question|brief)|[^.]{0,40}(is|gets|has been) raised)/i);
+  assert.match(p, /a block on the stop list is a stop too \(row 11\)/i);
+  assert.match(p, /one the criteria decide raises nothing and one off the stop list is continued/i);
 });
 
 // Replaces the pin on "passes its fields through unchanged and keeps its order and its pick" (escalation-recommends, "TC-4, TC-5: the contract ...").

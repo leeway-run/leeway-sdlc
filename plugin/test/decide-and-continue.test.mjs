@@ -12,7 +12,7 @@ const plugin = process.env.PLUGIN_DIR || join(dirname(fileURLToPath(import.meta.
 const read = (path) => readFileSync(join(plugin, path), 'utf8').replace(/\r\n/g, '\n');
 const flat = (text) => text.replace(/\s+/g, ' ');
 
-const red = (criterion, name, fn) => test(`${criterion}: ${name}`, { skip: `red-test-${criterion}: LWY-266.1 round 0, the words are not written yet` }, fn);
+const red = (criterion, name, fn) => test(`${criterion}: ${name}`, fn);
 
 const run = () => read('skills/run/SKILL.md');
 const process_ = () => read('PROCESS.md');

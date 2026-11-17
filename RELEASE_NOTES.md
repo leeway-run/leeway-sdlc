@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- **A run stops only for the stop list and decides and continues on the rest (LWY-266).** After the triage, `run`
+  checks a block against the stop list: production, a merge into `main` or real data; a secret; the wider of two access
+  options; no option marked `(suggested)`; a refused permission, and a block it cannot place. A stop is raised and
+  waited on as before (hard stop 11). Any other block is continued: a follow-up issue in `backlog`, a `# Decided and
+  continued` comment, a `clarification` escalation that does not block, the follow-up retitled `Follow-up: <ref> eN — …`,
+  and the next round with the pick (one more after a PASS, within `roundCap`). Row 4 of the hard stops is removed.
 - **A question the criteria already answer does not reach the human (LWY-244).** Before raising an implementer's `## Question`
   or a reviewer's `Escalates:` block, `run` checks whether the story's `AC-n` and `TC-n` decide it. A decided block raises no
   escalation: it is recorded in a `# Decided from the criteria` comment and answered in the next round (one more after a

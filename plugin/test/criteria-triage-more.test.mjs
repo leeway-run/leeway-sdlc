@@ -38,7 +38,7 @@ test('c16: a decided `## Question` at roundCap is not run, in "The caps" and in 
   assert.match(caps, /whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`[^.]{0,40}hard stop 1/);
   const row = /\| 1 \| \*\*The round cap is hit\*\*[^\n]*/.exec(run());
   assert.ok(row, 'hard-stop row 1 not found');
-  assert.match(flat(row[0]), /a `BLOCKED` brief whose `## Question` is decided, that needs one more round/);
+  assert.match(flat(row[0]), /a `BLOCKED` brief whose `## Question` is decided or continued, that needs one more round/);
 });
 
 test('c17: PROCESS.md says a spec amendment never comes to the triage', () => {

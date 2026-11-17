@@ -114,7 +114,8 @@ of each raise:
 | Raise | `"type"` |
 |---|---|
 | a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story | `blocker` |
-| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block, after the triage ("Before raising a block: do the criteria decide it?") | the block's own `Type:` line, unedited |
+| a `BLOCKED` brief's `## Question` or a reviewer's `Escalates:` block that is a stop, after the triage ("Before raising a block: do the criteria decide it?") | the block's own `Type:` line, unedited |
+| a continued block ("Stop, or decide and continue") | `clarification` |
 | the ask for the plan's pull request ("The plan's end"); a person asked to act first ("Wait, then carry on", step 5) | `clarification` |
 | a debt proposal ("What a deferred finding becomes") | `debt` |
 | a friction proposal ("Land the task", step 6; "The friction harvest") | `nit` |
@@ -634,6 +635,39 @@ criteria are not the human's to answer twice, and a real choice still reaches th
 Each block of a round is judged on its own. A raised one waits as before, and the decisions go into the next round's prompt
 with its answers.
 
+#### Stop, or decide and continue
+
+"A BLOCKED brief" (step 3) and "Gate again, record, act" (step 3) send every block through this order: the triage, then the
+stop list, then decide and continue.
+
+**The triage.** "Before raising a block: do the criteria decide it?" runs first, unchanged: a decided block takes its path
+there and comes no further. A spec amendment, a `freeze` BLOCKER included, never reaches it or this subsection: it is hard stop 8
+("The freeze").
+
+**The stop list.** A block is a stop when going on would touch production, a merge into `main` or real data; involve a
+secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action
+the permission check refused. When the orchestrator cannot tell, it is a stop. A stop is raised and waited on exactly as
+today: fields unedited, its own type, and it is hard stop 11. A block on the stop list is never continued, and where a block
+meets both paths the stricter is taken.
+
+**Decide and continue**, every other block. In this order, and the escalation is never raised without its comment and follow-up
+first:
+
+1. **File the follow-up** in the story's project, in `backlog`, its type chosen as the Plan record's is (`plan-project` step
+   5.2). Title `Follow-up: <question, shortened>`; description: the task, the round, the options, the pick taken and what
+   building another answer would change.
+2. **Post `# Decided and continued — <ref> · round <N>`** on the sub-issue as `<alias>/agent`: the block as written, the pick
+   taken and why (the stricter option where access is involved), and the follow-up's ref.
+3. **Raise the escalation**, tied to that comment, as the role of the block (implementer or reviewer), its fields unedited except
+   two: `"type": "clarification"` (never `blocker`), and `"meanwhile"`, saying the run carried on with the pick, naming the
+   follow-up's ref and that an answer matching the pick closes it.
+4. **Name the escalation on the follow-up.** Its title becomes `Follow-up: <ref> eN — <question, shortened>` and
+   `Escalation: <ref> eN` is added to its description. The title carries it because `issue list` returns titles and no
+   descriptions.
+5. **Carry on** as the decided path does: a `## Question`'s pick goes into the next round's prompt, the step set back as "A BLOCKED
+   brief" says on resume. An `Escalates:` block's pick is a live finding for the next round, and a PASS with one runs one more round
+   within `roundCap` ("Then"). The sub-issue is not set `blocked`, and no wait starts.
+
 #### A BLOCKED brief
 
 An implementer that returns `Status: BLOCKED` has stopped on a decision for the human. After the gate:
@@ -644,14 +678,15 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    line as `none (BLOCKED, nothing committed)`.
 3. Run the triage ("Before raising a block: do the criteria decide it?") on each `## Question` block. One the criteria decide
    raises nothing: run the next round with the decision in the prompt, the step set back as on resume (below), and the sub-issue
-   not set `blocked`. Otherwise raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
+   not set `blocked`. Then the stop list ("Stop, or decide and continue"): a stop raises its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
    *Question*, *Context*, *Trade-off*, *Advice* and *Meanwhile* copied into the fields file as written, backticks and
    all, its options in its order with `"suggested": true` on the one it marks, and `"comment"` the brief's `cN`; then
-   `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`.
+   `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`. Any other block is continued, with the
+   follow-up, comment and escalation steps of that subsection.
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
-4. For a raised block, set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears). A decided one leaves the status as it is.
-5. **Wait.** Report each escalation id and the issue, and start one background wait per open escalation of the round, all together ("Wait, then carry on"). Do not delegate to the
+4. For a stop, set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears). A decided or continued one leaves the status as it is.
+5. **Wait.** On a stop only: a continued block's escalation is reported and not waited on. Report each escalation id and the issue, and start one background wait per open stop of the round, all together ("Wait, then carry on"). Do not delegate to the
    reviewer.
 
 On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
@@ -720,8 +755,8 @@ sufficient: the verdict exists nowhere else.
    another (`fate_conflict`, `invalid_review`). The verdict opens `# Review verdict: PASS — <ref> · round <N>` or
    `# Review verdict: FAIL — <ref> · round <N>`.
 3. **A dispute or a finding that needs a human** (`Escalates:` is not `none`): run the triage first ("Before raising a block: do the
-   criteria decide it?"). A decided block is a live finding for the next round and is not raised. Each one the criteria do not decide
-   becomes an escalation on the sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"):
+   criteria decide it?"). A decided block is a live finding for the next round and is not raised. Each one the criteria do not decide goes through
+   "Stop, or decide and continue": a stop becomes an escalation on the sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"); any other is continued, its escalation raised without a wait and its pick a live finding for the next round. A stop's escalation:
 
    ```json
    {"type":"<Type>","question":"<Question>","context":"<Context>","tradeoff":"<Trade-off>","advice":"<Advice>","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"<Meanwhile>","comment":"cN"}
@@ -763,8 +798,8 @@ edit to its body.
 
 #### Then
 
-- **PASS** → "Land the task", unless the triage decided a block of this verdict: then one more round for it, as for a FAIL,
-  counted against `roundCap`. You may override a PASS: if a finding is under-rated and you can say why, send it
+- **PASS** → "Land the task", unless the triage decided a block of this verdict, or one was continued ("Stop, or decide and continue"): then one more round
+  for it, as for a FAIL, counted against `roundCap`. You may override a PASS: if a finding is under-rated and you can say why, send it
   back and record the reason as a comment from `<alias>/agent`. The override spends a round. A PASS that carries a
   missing proof at a rung in `blockingRungs` contradicts itself: send it back.
 - **FAIL** → set the step back: `leeway issue update <ref> --as <alias>/agent --step implementing` (it sets
@@ -777,8 +812,8 @@ edit to its body.
 (or round-0 attempts at `round0Cap`, see Round 0) is a stop: leave the sub-issue as it is and raise an escalation
 on it as `<alias>/agent`, `"type": "blocker"`, whose context gives each outstanding finding in a line of its own, what it
 says and its `cN`, and whose options are the human's real choices (for example "Re-scope the task", "Allow one more round", "Cancel it"), each with its argument, and wait on
-it ("Wait, then carry on"). A decided block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided block
- and its `# Decided from the criteria` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
+it ("Wait, then carry on"). A decided or continued block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided or continued block
+ and its `# Decided from the criteria` or `# Decided and continued` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
 pattern the cap exists to prevent.
 
 **Spend rounds on the risk, not on the artifact.** A round that only polishes a fix that was already correct buys
@@ -1123,26 +1158,26 @@ further question for one stop); otherwise the issue run raises it on the story.
 
 | # | Condition | Detected | The stop's escalation |
 |---|---|---|---|
-| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided block, or a `BLOCKED` brief whose `## Question` is decided, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
+| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided or continued block, or a `BLOCKED` brief whose `## Question` is decided or continued, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
 | 3 | **A verdict carries a `security` follow-up** | "What a deferred finding becomes" | the issue run's, on the story |
-| 4 | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
+| 4 (removed: a debt proposal no longer stops the run, LWY-266) | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
 | 5 | **A second verification-gate hallucination on the same task** | "The verification gate" | the issue run's, on the story |
 | 6 | **A lane green at baseline is red on the story branch**, after a task lands or at the story gate | after each task | the issue run's, on the story |
 | 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate" | the issue run's, on the story |
 | 8 | **A frozen test needs a spec amendment**; the owner is the product owner for an `AC-n`, the developer for a `TC-n` | "The freeze" | the sub-issue run's, on the sub-issue |
 | 9 | **The per-story budget is exceeded**: tokens, rounds or wall-clock, whichever first | at every round boundary | the issue run's, on the story |
 | 10 | **Leeway is unreachable**: a call fails, or an empty result where something must exist (an expired sign-in is the usual cause) | any call | none can be raised: see the note |
+| 11 | **A block on the stop list**: a `## Question` or `Escalates:` block that is a stop | "Stop, or decide and continue" | the sub-issue run's, on the sub-issue |
 
-**And every place the sub-issue run itself says stop or wait**: a stalled round, a raised `## Question` of a BLOCKED brief, a raised
-`Escalates:` block (a dispute or finding the reviewer sends to a human), a pointer to technical criteria with no such comment, a migration recipe the doc map does not
-name. They are stops here too, and each already raises its own escalation. Only a raised block is a stop: one the criteria decide
-raises nothing and the round carries on. Its wait is step 7 of "On a stop", after
+**And every place the sub-issue run itself says stop or wait**: a stalled round, a pointer to technical criteria with no such comment, a migration recipe the doc map does not
+name. They are stops here too, and each already raises its own escalation. A block on the stop list is a stop too (row 11); one the criteria decide
+raises nothing and one off the stop list is continued, and the round carries on. Its wait is step 7 of "On a stop", after
 the status comment, not a second one before it.
 
 Notes on the ones that need them:
 
-- **3 and 4: finish landing the task first.** A follow-up is by definition not this task's diff, and the task lands on
+- **3: finish landing the task first.** A follow-up is by definition not this task's diff, and the task lands on
   the story branch, which reaches nobody until the story gate. So a PASS is landed through "Land the task",
   and then the run stops. A `security` follow-up is filed first, as "What a deferred finding becomes" says, with no delay; the stop is so a
   person decides whether the story should go on being built on top of it (options "Continue the story" and "Hold the
