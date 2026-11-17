@@ -143,35 +143,28 @@ const STOP = /\bstop[- ]list\b/i;
 const BLOCKED_QUESTION = (b) => /\bBLOCKED\b/.test(b) && /## Question/.test(b);
 // The clauses of a block, a list item's marker also ending one: a clause is judged on its own, not on the paragraph around it.
 const itemClauses = (b) => b.split(/\s+(?:[-*+]|\d+[.)])\s+(?=[A-Z`*_])/).flatMap(clauses);
-// A clause that returns `BLOCKED` with a `## Question` is on the stop list when the stop list is named in it, in its lead (the
-// clause before it, when that ends in a colon or semicolon, or the list item's lead line), or in the clause right after it in
-// the same block ("That is for the stop list only"). In its own clause the stop list counts unless a "never" or "cannot" stands
-// between `BLOCKED` and it ("…only when you cannot decide, and never build a pick for a stop list question" is no rule). A clause
-// that says "otherwise" or "any other" is off the list whatever its context says, and a clause that forbids `BLOCKED` is no
-// permission. "only" alone does not put a clause on the stop list.
+// Strict per clause: every clause that names `BLOCKED` and the `## Question` block must itself name the stop list after `BLOCKED` ("Return `BLOCKED` with a
+// `## Question` block only for a question on the stop list"), with no never/not/don't/cannot between `BLOCKED` and it ("…when you cannot decide,
+// and never build a pick for a stop list question" is no rule). No lead, no next clause carries the stop list for it. A clause with an else word
+// ("otherwise", "any other") is off the list, and a clause that forbids `BLOCKED` is no permission and is skipped.
 const ON_THE_LIST = /\b(?:for|on|of|from|to|when|if|only)\b[^.;:]{0,40}\bstop[- ]list\b|\bstop[- ]list (?:questions?|ones?|items?|alone|only)\b/i;
 const ELSE_MARK = /\b(?:otherwise|any other|anything else|everything else|for the rest|the rest)\b/i;
 const NEGATION = /\b(?:never|not|don't|do not|doesn't|cannot|can't|nor)\b/i;
-// The stop list named in the clause, but not after a "never" or "cannot" that follows `BLOCKED`.
+// The clause names the stop list for every `BLOCKED` in it, with no never/not/cannot between the two: after the `BLOCKED` ("return `BLOCKED` ...
+// only for a question on the stop list"), or, for the first `BLOCKED` only, before it ("If a decision is on the stop list, ... return `BLOCKED`").
+// A second `BLOCKED` is a permission of its own ("..., though you may return `BLOCKED` when a doubt blocks you").
 const namesStopList = (c) => {
-  const stop = c.search(STOP);
-  return stop !== -1 && !NEGATION.test(c.slice(c.search(/\bBLOCKED\b/), Math.max(stop, 0)));
+  const at = [...c.matchAll(/\bBLOCKED\b/g)].map((m) => m.index);
+  const stops = [...c.matchAll(new RegExp(STOP.source, 'gi'))].map((m) => m.index);
+  return at.every((b, n) =>
+    stops.some((s) => (s > b ? !NEGATION.test(c.slice(b, s)) : n === 0 && !NEGATION.test(c.slice(s, b)))),
+  );
 };
 const FORBIDS_BLOCKED = /\b(?:never|not|don't|doesn't|cannot|can't|nor)\b(?:\s+\w+){0,4}\s+\W*BLOCKED\b/i;
-const blockedOffTheStopList = (text) => {
-  const all = blocks(text).map((b) => itemClauses(b.replace(/\s+—\s+/g, ': ')));
-  const off = [];
-  all.forEach((units, bi) =>
-    units.forEach((c, i) => {
-      if (!BLOCKED_QUESTION(c) || FORBIDS_BLOCKED.test(c)) return;
-      const lead = i > 0 ? units[i - 1] : bi > 0 ? all[bi - 1].at(-1) : '';
-      const context = [/[:;]$/.test(lead) ? lead : '', units[i + 1] || ''];
-      const onList = !ELSE_MARK.test(c) && (namesStopList(c) || context.some((x) => ON_THE_LIST.test(x) && !ELSE_MARK.test(x)));
-      if (!onList) off.push(c);
-    }),
-  );
-  return off;
-};
+const blockedOffTheStopList = (text) =>
+  blocks(text)
+    .flatMap((b) => itemClauses(b.replace(/\s+—\s+/g, ': ')))
+    .filter((c) => BLOCKED_QUESTION(c) && !FORBIDS_BLOCKED.test(c) && (ELSE_MARK.test(c) || !namesStopList(c)));
 
 // A clause that tells the reviewer to write or edit a test: "you" or "the reviewer" as the subject, or a sentence-initial imperative,
 // with no negation ahead of it in the clause. "for the next round to write" and "the next round should write" have no such
@@ -419,18 +412,12 @@ red('AC-4', 'the continued `Escalates:` block\'s live finding carries its *Test*
 // An `Escalates:` block is raised with each line to its field, and plugin/scripts/raise.mjs refuses a key it does not know (exit 2):
 // a *Test* line copied into the fields file would break every continued raise of such a block.
 const OUT_OF_THE_FIELDS = /\b(not|never|nor|without|neither|out of|excluded?|omit(ted)?|left out|leave[sd]? out|kept out|off|apart|away|separate(ly)?|only on|isn't|aren't|no field|outside)\b/i;
-red('AC-4', 'the *Test* line goes to the live finding and not into the escalation\'s fields file', () => {
+// The sentence is fixed: "the *Test* line is not copied into the fields file" (or "is never copied"), in a block that also says "live finding".
+const TEST_NOT_COPIED = /\bthe\s+\*{1,2}Test:?\*{1,2}\s+line\s+is\s+(?:not|never)\s+copied\s+into\s+the\s+fields\s+file\b/i;
+red('AC-4', 'the *Test* line goes to the live finding and is not copied into the escalation\'s fields file', () => {
   const found = blocks(run()).filter((b) => /\*{1,2}Test:?\*{1,2}/.test(b) && /\blive finding\b/i.test(b) && /\bfields?\b/i.test(b));
   assert.ok(found.length > 0, 'no block of run names the *Test*, the live finding and the fields file together');
-  // An exclusion word within 40 characters of "fields" or "file" ("stays out of the file", "kept apart from the fields", "leave it off
-  // the fields file"), in a clause that names the *Test*, or that holds a pronoun ("It is not copied into the fields file") after a clause that does.
-  const NAMES_TEST = /\*{1,2}Test:?\*{1,2}|\bTest line\b/;
-  const near = new RegExp(`(?:${OUT_OF_THE_FIELDS.source})[^.;]{0,40}\\b(?:fields?|file)\\b|\\b(?:fields?|file)\\b[^.;]{0,40}(?:${OUT_OF_THE_FIELDS.source})`, 'i');
-  const ok = found.some((b) => {
-    const cs = itemClauses(b);
-    return cs.some((c, i) => (near.test(c) || /\bno fields?\b/i.test(c)) && (NAMES_TEST.test(c) || (/\b(?:it|them|this|that)\b/i.test(c) && NAMES_TEST.test(cs[i - 1] || ''))));
-  });
-  assert.ok(ok, 'no clause says the *Test* line stays out of the escalation\'s fields file');
+  assert.ok(found.some((b) => TEST_NOT_COPIED.test(b)), 'no block with "live finding" says "the *Test* line is not copied into the fields file"');
   for (const b of found) {
     const into = itemClauses(b).filter((c) => /\*{1,2}Test:?\*{1,2}/.test(c) && /\bfields? file\b/i.test(c) && !OUT_OF_THE_FIELDS.test(c));
     assert.deepEqual(into, [], 'a clause puts the *Test* line into the fields file');
