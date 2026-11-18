@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **The plan branch is kept current at story start, and "blocked by" means merged (LWY-266).** In `run`, "Story start" gains a paragraph before the worktree step: when the story's base is a plan branch, the integration branch is merged into it through the detached merge worktree of the story gate's step 5 (which it cites rather than copies) and the base is pushed. A continuation run whose base already holds the integration branch's head writes nothing, and a non-mechanical conflict aborts the merge and is hard stop 7, never resolved by hand. A blocker now counts as cleared by one sentence, the same in step 0.3 of "Run a sub-issue", precondition 3, "The task order" step 5 and "Run a project" step 2: `done` or `cancelled`; a story also at a step after its `build` step (never `planned`, `ready` or `build` itself); a sub-issue only when `done` or `cancelled`, `in_review` included as not cleared.
 - **Planning runs three sweeps, and the plan gate checks them (LWY-266).** `plan-project` step 4 gains "The three sweeps":
   read paths (every op and surface that returns the data of a rule the story adds or restricts, each with a criterion and a
   test), blast radius (the rules the touched code already enforces, the scripts, helpers and evidence tools on a changed
