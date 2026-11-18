@@ -220,7 +220,7 @@ task shapes included). Those are the framework. Making them configurable is how 
 config format nobody tunes correctly.
 
 **Written without asking, with a preset only: the per-story budget** `{"tokens": 8000000, "rounds": 15,
-"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as `params.budget`
+"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock: a `# Budget reached` notice at each one reached, and stop 9 at twice any of them), as `params.budget`
 on each `build` step that has none (step 5). No preset sets one, so the install does, as a default the human did
 not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) the process is the human's
 and no budget is written. Step 7 says which `build` steps have one.
@@ -240,7 +240,7 @@ process step 3.4 read, make only the change their answers ask for (3), write no 
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
      `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`. A `build`
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
-     unattended, budget?}`; a `plan` step `params {designDoc}`.
+     unattended, budget?}`; a `plan` step `params {designDoc}`. `round0Cap` and `roundCap` are each an integer 1 to 10.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
      reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
      `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,

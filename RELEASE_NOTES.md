@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **The per-story budget is a notice, and the run stops at twice it (LWY-266).** In `run`, "Start the budget": at a round boundary where a dimension (`tokens`, `rounds` or `hours`) has reached its budget, the run posts `# Budget reached — <story> · <dimension>` on the story and carries on. It posts it once per dimension, after reading the story's comments for one already there (at most three notices a story). Hard stop 9 now fires at twice the budget in any dimension, reading the same `totals` as the notice, `tokensIncomplete` included. A `build` step with no `budget` still gets no notice and no stop. `sdlc-tune` and `sdlc-install` give `round0Cap` as an integer 1 to 10, the limit Leeway now accepts.
 - **Implementers and reviewers decide what is theirs (LWY-266).** `PROCESS.md` gains "Decide it yourself": states that cannot
   happen, error wording, a choice between equally good data sources, and a test-plumbing fix that leaves every assertion
   unchanged (for a frozen test, the brief's `## Frozen test fix`); other behaviour the criteria leave open is decided and
