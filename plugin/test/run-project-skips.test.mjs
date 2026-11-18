@@ -50,7 +50,7 @@ test('a project run skips an issue its issue run refuses, says why, and goes on'
 test("a refused issue's dependants are never run", () => {
   assert.match(bullet('Skip an issue its issue run refuses'),
     /the issues it blocks stay unrunnable, and are skipped as blocked\./);
-  assert.match(bullet('Refuse an issue whose blockers are not done'), /skip it and take the next runnable one\./);
+  assert.match(bullet('Refuse an issue whose blockers are not cleared'), /skip it and take the next runnable one\./);
 });
 
 test("a project run still stops on an issue run's real stop", () => {
@@ -80,7 +80,7 @@ test('an issue waiting at a step after `build`, and the Plan record, leave nothi
 test('when nothing runnable is left, the run ends and reports what it ran and what it skipped', () => {
   assert.match(bullet('Nothing runnable left'),
     /the run ends there, and step 5 reports what it ran, what it skipped and why, naming the blockers\./);
-  assert.doesNotMatch(bullet('Refuse an issue whose blockers are not done'), /none is runnable|stop and say so/);
+  assert.doesNotMatch(bullet('Refuse an issue whose blockers are not cleared'), /none is runnable|stop and say so/);
   assert.doesNotMatch(bullet('Skip an issue its issue run refuses'), /When nothing runnable is left/);
   assert.match(step('Say so in the session'), /every issue it skipped and why \(the precondition that refused it/);
   const done = section('Done when');

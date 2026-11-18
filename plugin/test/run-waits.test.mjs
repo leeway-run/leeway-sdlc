@@ -72,9 +72,10 @@ test('each exit of the script has its one meaning', () => {
   assert.match(row(5), /^ a question is waiting; `\{"clarification","question","askedAt"\}` on stdout \| not an answer and not an end: answer it and wait again on the same escalation, as `PROCESS\.md`, "Questions to the human are escalations", says\. Carry on only on exit 0 \|/);
 });
 
-test('exit 5 is never an end: a wait that blocks nothing answers the question and waits again too', () => {
+test('exit 5 is never an end: every wait answers the question and waits again, with no exception for a debt proposal', () => {
   const wait = under(skill, 'Wait, then carry on');
-  assert.match(wait, /Act on how it exits, as the table says\*\*, with one exception: a wait on something that blocks nothing, such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\), carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\)\./);
+  assert.match(wait, /4\. \*\*Act on how it exits, as the table says\.\*\* With several waits running/);
+  assert.doesNotMatch(wait, /with one exception: a wait on something that blocks nothing/);
   assert.equal((wait.match(/as the table says/g) || []).length, 1, 'step 4 says "as the table says" more than once');
 });
 
@@ -144,36 +145,35 @@ test('each stop path in run waits on its escalation', () => {
     'a stalled round': from(under(skill, '2. Gate, commit, push, record'), '2. **Stalled-round check.**', '3. **Push'),
     'a BLOCKED brief': from(under(skill, 'A BLOCKED brief'), '5. **Wait.**'),
     'a finding that needs a human': from(under(skill, '4. Gate again, record, act'), '3. **A dispute or a finding', '```'),
-    'the debt proposal': from(under(skill, 'What a deferred finding becomes'), '| Technical debt', '| Anything else'),
     'the code-round cap': from(under(skill, 'Then'), '**The caps.**', '**Spend rounds'),
     'a merge conflict at the story gate': from(under(skill, 'The story gate'), '1. **Merge the story', '2. Run'),
     'a hard stop': from(under(skill, 'On a stop'), '7. **Wait on each of the stop'),
   };
   for (const [name, text] of Object.entries(paths)) {
     assert.match(text, WAITS, `${name} does not wait`);
-    assert.doesNotMatch(text, STOPS, `${name} still stops`);
+    assert.doesNotMatch(text.replaceAll('"Stop, or decide and continue"', ''), STOPS, `${name} still stops`);
   }
-  assert.match(paths['the debt proposal'], /in an issue run that the run waits here for the answer \(its stop 4\)/);
-  assert.match(paths['the debt proposal'], /In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal \("Wait, then carry on"\) before it ends \("Land the task", step 5\)/);
   assert.match(paths['a merge conflict at the story gate'], /escalate and wait \("Wait, then carry on"\).*or escalate and wait if it names none/);
 });
 
-test('a sub-issue run waits on its debt proposal once the task has landed, and files only on a yes', () => {
+test('a debt proposal is never waited on: the run carries on, reads the answer later, and files only on a yes', () => {
+  const row = from(under(skill, 'What a deferred finding becomes'), '| Technical debt', '| Anything else');
+  assert.match(row, /`--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it\. The run carries on and never waits on the proposal, in a sub-issue run or an issue run: it reads the answer at its next reading point \("Reading the answers behind"\), and on "File it" files the issue there, as above, quoting the answer's `label` and `note`; on "Keep it a nit" it stays a nit/);
+  assert.doesNotMatch(row, /its stop 4|\("Land the task", step 5\)|waits here for the answer/);
   const land = under(skill, 'Land the task');
-  const step = from(land, '5. **Wait on each debt proposal', '6. **Friction');
-  assert.match(step, /only when `run` was invoked on the sub-issue itself\*\* \(an issue run has already waited on it, as its stop 4\)/);
-  assert.match(step, /start its wait \("Wait, then carry on"\), all together with the others\. On a yes, file the issue as that row says; on a no, the finding stays a nit\./);
-  assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **Wait on each debt proposal'), 'the debt wait does not come after the task has landed');
-  assert.match(step, /A wait here that ends without an answer \(exit 2, 3 or 4\) does not end the run\*\*: the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume\. Leave the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to step 6\./);
-  assert.doesNotMatch(step, STOPS, 'the debt wait stops the run');
-  assert.match(under(skill, 'Wait, then carry on'), /Act on how it exits, as the table says\*\*, with one exception: a wait on something that blocks nothing, such as a sub-issue run's debt proposal after its task is `done` \("Land the task", step 5\), carries on instead of stopping when it ends without an answer \(exit 2, 3 or 4\)\./);
+  const step = from(land, '5. **A debt proposal is not waited on here.**', '6. **Friction');
+  assert.match(step, /the run carries on: "Reading the answers behind" reads its answer at the next reading point and files the issue on a "File it"\./);
+  assert.ok(land.indexOf('4. **Remove the task worktree') < land.indexOf('5. **A debt proposal is not waited on here'), 'step 5 does not come after the task has landed');
+  assert.doesNotMatch(step, STOPS, 'step 5 stops the run');
+  assert.doesNotMatch(step, /start its wait/);
+  assert.match(under(skill, 'Wait, then carry on'), /The exceptions are a continued block's escalation \("Stop, or decide and continue"\) and a debt proposal \("What a deferred finding becomes"\): each is raised and never waited on/);
   assert.match(under(skill, 'What a deferred finding becomes'), /quoting the answer's `label` and `note`/);
   assert.doesNotMatch(under(skill, 'What a deferred finding becomes'), /answer's `option`/);
 });
 
 test('in an issue run, a debt follow-up is filed by the run on a yes and stays a nit on a no', () => {
-  const note = from(under(skill, 'Hard stop conditions'), '**3 and 4: finish landing the task first.**', '**5 replaces');
-  assert.match(note, /A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred finding becomes" says, and on a no the finding stays a nit\./);
+  const note = from(under(skill, 'Hard stop conditions'), '**3: finish landing the task first.**', '**5 replaces');
+  assert.match(note, /A `debt` follow-up is raised as a proposal the run does not stop for: on a yes the run files the issue as "What a deferred finding becomes" says when it reads the answer \("Reading the answers behind"\), and on a no the finding stays a nit\./);
   assert.doesNotMatch(note, /filed by nobody/);
 });
 
@@ -183,7 +183,7 @@ test('time spent in a wait does not count toward the wall-clock budget', () => {
 
 test('the hard stop waits after its status comment, and on an answer carries on without writing it again', () => {
   const stop = under(skill, 'On a stop');
-  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
+  assert.match(stop, /7\. \*\*Wait on each of the stop's escalations\*\* \("Wait, then carry on"\), all together; a continued block's escalation is not one of them\. Once every one is answered the run carries on from where step 1 left it, the condition overridden by those answers, and writes none of steps 4 and 5 again/);
   assert.match(stop, /Only when a wait ends without an answer, or an answer ends the work, stop the turn/);
   assert.match(stop, /Stop 10 has no escalation to wait on/);
   assert.match(under(skill, 'Hard stop conditions'), /Its wait is step 7 of "On a stop", after the status comment, not a second one before it/);
@@ -206,13 +206,13 @@ test('PROCESS.md: every skill that raises waits, it names every stop, and only t
   assert.doesNotMatch(rule, /Every other skill stops the turn/);
   assert.match(rule, /Where `HARNESS\.md` says `wait: stop`, no wait starts: act at once as for exit 2\./);
   // Every stop, listed (LWY-160.2 c2): exits 2, 3, 4, 1 and any other, a refused answer write, and an answer that ends the work.
-  const stops = from(rule, 'A wait that holds work stops the turn only when:', 'A wait that blocks nothing');
+  const stops = from(rule, 'A wait that holds work stops the turn only when:', 'A debt proposal is not waited on');
   assert.match(stops, /it ends without an answer \(exit 2, about 16 hours; exit 3, Leeway unreachable\), naming the escalation and the issue;/);
   assert.match(stops, /it ends on a blocker outside Leeway \(exit 4, `leeway login`\), naming the action;/);
   assert.match(stops, /it ends in a bug \(exit 1\) or never ran \(any other exit\), saying so;/);
   assert.match(stops, /the answer to a question asked of the agent is not written \(the next point\);/);
   assert.match(stops, /or the answer ends the work\./);
-  assert.match(rule, /A wait that blocks nothing \(run's debt proposal once its task has landed, "Land the task", step 5\) does not stop the turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and carries on\./);
+  assert.match(rule, /A debt proposal is not waited on \(run, "Reading the answers behind"\): it is raised and the run carries on, and `run` reads its answer at its next reading point\. Where a wait stops the turn, do not continue the work that depends on the answer, and do not ask again somewhere else\./);
   assert.match(rule, /a comment, a status change or an edited description is not/);
   assert.match(rule, /raises the escalation from the block, and waits\./);
 });

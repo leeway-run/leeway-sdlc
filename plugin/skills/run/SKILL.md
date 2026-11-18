@@ -87,7 +87,7 @@ while the whole command stays short (Claude Code prompts for any command over 10
 Nothing cleans the directory, and it is safe to delete between runs.
 
 **A question for the human is never a terminal question.** It is a Leeway escalation on the sub-issue in hand, and
-then you wait for its answer ("Wait, then carry on"). Nowhere in this skill do you ask the user.
+then you wait for its answer ("Wait, then carry on"), a continued block's escalation excepted ("Stop, or decide and continue"). Nowhere in this skill do you ask the user.
 
 **Every escalation this skill raises carries its fields, from a file** (`PROCESS.md`, "Questions to the human are
 escalations"). Write them as JSON where run's other bodies go, then raise it with the raise script, by the command
@@ -108,14 +108,15 @@ of each raise:
 | Raise | `"type"` |
 |---|---|
 | a stalled round; a round cap or a round-0 cap; a frozen test that needs a spec amendment; a merge conflict at the story gate; an issue run's stop on the story | `blocker` |
-| a `BLOCKED` brief's `## Question`, a reviewer's `Escalates:` block, after the triage ("Before raising a block: do the criteria decide it?") | the block's own `Type:` line, unedited |
+| a `BLOCKED` brief's `## Question` or a reviewer's `Escalates:` block that is a stop, after the triage ("Before raising a block: do the criteria decide it?") | the block's own `Type:` line, unedited |
+| a continued block ("Stop, or decide and continue") | `clarification` |
 | the ask for the plan's pull request ("The plan's end"); a person asked to act first ("Wait, then carry on", step 5) | `clarification` |
 | a debt proposal ("What a deferred finding becomes") | `debt` |
 | a friction proposal ("Land the task", step 6; "The friction harvest") | `nit` |
 
 After the triage, an implementer's `## Question` and a reviewer's `Escalates:` block already carry their fields: raise one the
 criteria do not decide unedited, in the block's order, its pick marked as the block marks it, each line copied into its field of the file as written,
-backticks and all.
+backticks and all, except a reviewer's *Test* line, which is not copied into the fields file.
 
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
 <ref> --step <id>` and `--status <status>`. No iteration, comment, verdict or escalation moves anything; a stalled
@@ -141,7 +142,8 @@ work nobody reviewed.
 ## Wait, then carry on
 
 **Every escalation this skill raises is followed by a wait, not by the end of the turn**, in a sub-issue, issue or
-project run. Where a path below says to raise an escalation and wait, do this:
+project run. The exceptions are a continued block's escalation ("Stop, or decide and continue") and a debt proposal ("What a deferred finding becomes"): each is raised and never waited on, and neither is an escalation of the round in
+the steps below. Where a path below says to raise an escalation and wait, do this:
 
 1. **Post what the path posts**, unchanged: the context comment, the escalation and, on an issue run's stop, the
    `# Run status` comment. `<raise>` prints the escalation as JSON: `escalation.escalation` in it (`e1`) is the `eN` you
@@ -159,9 +161,7 @@ project run. Where a path below says to raise an escalation and wait, do this:
    `<ref>` is the issue the escalation is on, and `<server>` and `<cli>` are those of `.sdlc/leeway.md`. Each only
    reads: it checks about a minute after it starts, then less and less often, never more than 15 minutes apart, and
    gives up after 16 hours. Do not poll the issue yourself, and do no other work of this run while it waits.
-4. **Act on how it exits, as the table says**, with one exception: a wait on something that blocks nothing, such
-   as a sub-issue run's debt proposal after its task is `done` ("Land the task", step 5), carries on instead of
-   stopping when it ends without an answer (exit 2, 3 or 4).
+4. **Act on how it exits, as the table says.**
    With several waits running, each exit is handled for its own escalation, not for the round. Exit 0 carries on only
    when every escalation of the round is answered: read the issue, and where another is still open, its wait keeps
    running, except that an answer that ends the work (step 5) is followed at once. Exit 5 answers the question and restarts that escalation's wait only. A stop exit (2, 3, 4, 1 or any other)
@@ -196,7 +196,7 @@ fresh.
 
 **Check the round before raising more than one** (`PROCESS.md`, "Questions to the human are escalations"): where one answer would settle or change
 another question, merge them into one, or hold the dependent one for the next round. Independent ones are raised
-together, not rationed behind a wait, and waited on all together ("Wait, then carry on"). **Work held on a round carries on only when every escalation of the round is
+together, not rationed behind a wait, and waited on all together ("Wait, then carry on"); a continued block's escalation is raised without a wait and counts as none of "the round's escalations" below. **Work held on a round carries on only when every escalation of the round is
 answered, with all the answers reaching it**: one answer of two is not yet step 5's answer, except one that ends the
 work, which is followed at once. A later round drops what an answer settled.
 
@@ -237,8 +237,8 @@ converged mean the task is mis-specified, and that is a human decision.
    - Say what this task will do before doing it: "type `feature`: red tests first (cap 2 attempts), up to 5 code
      rounds, adversarial review, blocking rungs R4 and R5".
 
-3. **Check whether it is blocked.** `issue.blockedBy` lists `{ref, title, status}`; a blocker counts only while its
-   `status` is neither `done` nor `cancelled`. A blocked task does not start: name the blockers and stop.
+3. **Check whether it is blocked.** `issue.blockedBy` lists `{ref, title, status}`. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. A blocked task does
+   not start: name the blockers and stop.
 
 4. **Round 0, or straight to implementing.** Read the task's rung from its `## Evidence` section, against the evidence
    doc in the doc map.
@@ -476,6 +476,8 @@ removing the skip marker, nothing else.
 
 ### 1. Delegate to the implementer
 
+**At every round boundary, read the answers behind** ("Reading the answers behind"), before the next implementer round and before the next task.
+
 Delegate to the **sdlc-implementer** agent, fresh, as `HARNESS.md` ("Delegating to a named agent") describes, with
 the marker on if it is required. Pass, in the prompt:
 
@@ -506,7 +508,7 @@ the marker on if it is required. Pass, in the prompt:
   > writer. You do not commit or push; you `git -C <worktree> add`. Your brief's `Head sha` stays `pending`: the orchestrator
   > commits your staged work and writes the sha.
   >
-  > **You never ask the user a question in the terminal.** If a decision is the human's, stop implementing the part
+  > **You never ask the user a question in the terminal.** If a decision is on the stop list, stop implementing the part
   > that depends on it and return `Status: BLOCKED` with a `## Question` section: the question (one sentence), its
   > Type, Context, Trade-off and Advice, 2 to 5 options each with its argument saying what happens if it is picked,
   > your pick first and marked suggested (or none marked, and Advice saying why), and the meanwhile.
@@ -514,6 +516,8 @@ the marker on if it is required. Pass, in the prompt:
   > **A gap the criteria already decide is not a question.** When one option follows from the story's `AC-n` and `TC-n` and
   > every other leaves one unmet or contradicts one, report it under *Uncertainties* with the deciding criterion, build it
   > that way, and do not return `BLOCKED`. Adding a field to an existing op's response that a criterion needs is such a gap.
+  >
+  > **Decide it yourself:** a question off the stop list is built with your pick and reported in the brief's `## Decided and continued` section. `Status: BLOCKED` with a `## Question` section is for a question on the stop list only. A decision is on the stop list when going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action the permission check refused. When you cannot tell, it is on the stop list.
 
 > **Embed critical inputs; do not reference them.** A prompt carrying its own content survives a failed tool call;
 > an agent whose first call fails silently fabricates everything downstream. Reading Leeway is how a subagent
@@ -530,6 +534,8 @@ message and carry a `## Verification` section with verbatim `git -C <task worktr
 **Then run both yourself, in the task worktree (`git -C <task worktree> status --short`, `git -C <task worktree> diff --cached --stat`), and compare.** That comparison is what catches a round that never
 happened. Where `.sdlc/CONFIG.md` has *Required reading* rows owed by the staged paths, also check that the brief's
 *Rules read* section names each owed file; a missing one sends the brief back.
+
+Each `## Decided and continued` block of the brief is raised through "Stop, or decide and continue"; one on the stop list is a gate failure (the implementer should have returned `BLOCKED`) and is not raised as continued.
 
 If the brief is `Status: BLOCKED`, go to "A BLOCKED brief" instead of the rest of this section. Otherwise, in order;
 a step that fails stops the round.
@@ -625,8 +631,42 @@ criteria are not the human's to answer twice, and a real choice still reaches th
     from `<alias>/agent`. The next reviewer's prompt then says to report the decision's outcome in its verdict body, not under *Settles*. A PASS verdict with a decided block runs one more round for it ("Then"), counted against
     `roundCap` like any round. A round that would pass the cap is not run: hard stop 1 fires ("The caps").
 
-Each block of a round is judged on its own. A raised one waits as before, and the decisions go into the next round's prompt
+Each block of a round is judged on its own. A raised stop waits as before, and the decisions go into the next round's prompt
 with its answers.
+
+#### Stop, or decide and continue
+
+"A BLOCKED brief" (step 3) and "Gate again, record, act" (step 3) send every block through this order: the triage, then the
+stop list, then decide and continue. The gate (step 2) sends each `## Decided and continued` block of a brief through the same
+order: its pick is already built, so "Carry on" adds nothing for it.
+
+**The triage.** "Before raising a block: do the criteria decide it?" runs first, unchanged: a decided block takes its path
+there and comes no further. A spec amendment, a `freeze` BLOCKER included, never reaches it or this subsection: it is hard stop 8
+("The freeze").
+
+**The stop list.** A block is a stop when going on would touch production, a merge into `main` or real data; involve a
+secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action
+the permission check refused. When the orchestrator cannot tell, it is a stop. A stop is raised and waited on exactly as
+today: fields unedited, its own type, and it is hard stop 11. A block on the stop list is never continued, and where a block
+meets both paths the stricter is taken.
+
+**Decide and continue**, every other block. In this order, and the escalation is never raised without its comment and follow-up
+first:
+
+1. **File the follow-up** in the story's project, in `backlog`, its type chosen as the Plan record's is (`plan-project` step
+   5.2). Title `Follow-up: <question, shortened>`; description: the task, the round, the options, the pick taken and what
+   building another answer would change.
+2. **Post `# Decided and continued — <ref> · round <N>`** on the sub-issue as `<alias>/agent`: the block as written, the pick
+   taken and why (the stricter option where access is involved), and the follow-up's ref.
+3. **Raise the escalation**, tied to that comment, as the role of the block (implementer or reviewer), its fields unedited except
+   two: `"type": "clarification"` (never `blocker`), and `"meanwhile"`, saying the run carried on with the pick, naming the
+   follow-up's ref and that an answer matching the pick closes it.
+4. **Name the escalation on the follow-up.** Its title becomes `Follow-up: <ref> eN — <question, shortened>` and
+   `Escalation: <ref> eN` is added to its description. The title carries it because `issue list` returns titles and no
+   descriptions.
+5. **Carry on** as the decided path does: a `## Question`'s pick goes into the next round's prompt, the step set back as "A BLOCKED
+   brief" says on resume. An `Escalates:` block's pick is a live finding for the next round, carrying its *Test*. The *Test* line is not copied into the fields file, it goes to the live finding with the pick, and a PASS with one runs one more round
+   within `roundCap` ("Then"). The sub-issue is not set `blocked`, and no wait starts.
 
 #### A BLOCKED brief
 
@@ -638,17 +678,19 @@ An implementer that returns `Status: BLOCKED` has stopped on a decision for the 
    line as `none (BLOCKED, nothing committed)`.
 3. Run the triage ("Before raising a block: do the criteria decide it?") on each `## Question` block. One the criteria decide
    raises nothing: run the next round with the decision in the prompt, the step set back as on resume (below), and the sub-issue
-   not set `blocked`. Otherwise raise its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
+   not set `blocked`. Then the stop list ("Stop, or decide and continue"): a stop raises its `## Question` block **unedited**, as the implementer, tied to the brief, each line to its field: *Type*,
    *Question*, *Context*, *Trade-off*, *Advice* and *Meanwhile* copied into the fields file as written, backticks and
    all, its options in its order with `"suggested": true` on the one it marks, and `"comment"` the brief's `cN`; then
-   `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`.
+   `<raise> --server <server> --as <alias>/implementer <ref> <fields file> -- <cli>`. Any other block is continued, with the
+   follow-up, comment and escalation steps of that subsection.
    A brief with a second block raises it in the same round: a comment holds one open escalation, so post that block
    as a comment of its own and tie its escalation to that.
-4. For a raised block, set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears). A decided one leaves the status as it is.
-5. **Wait.** Report each escalation id and the issue, and start one background wait per open escalation of the round, all together ("Wait, then carry on"). Do not delegate to the
+4. For a stop, set the sub-issue blocked: `leeway issue update <ref> --as <alias>/agent --status blocked` (the step clears). A decided or continued one leaves the status as it is.
+5. **Wait.** On a stop only: a continued block's escalation is reported and not waited on. Report each escalation id and the issue, and start one background wait per open stop of the round, all together ("Wait, then carry on"). Do not delegate to the
    reviewer.
 
-On resume, whether the wait answered or `run` was invoked again, read each escalation the brief raised (`escalations[].answer`). One still
+On resume, whether the wait answered or `run` was invoked again, read each stop the brief raised (`escalations[].answer`); a continued block's
+escalation is not read here and holds nothing. A stop still
 open and no answer ended the work: wait on it, and start no round. All answered: set the
 step back to the stage the thread shows (`--step red-tests` or `--step implementing`), and run the next round with
 all the answers pasted into the prompt.
@@ -679,7 +721,7 @@ the lane commands and the known-red list, and:
   refused it, the prompt says to report that decision's outcome in the verdict body, not under *Settles*.
 - **How it reaches Leeway**: the implementer's read-only paragraph minus its git and brief sentences, and that it
   never asks the user: a decision for the human goes in the verdict's `Escalates:` block. A gap the criteria decide is a
-  finding, with its fix, not an `Escalates:` block.
+  finding, with its fix, not an `Escalates:` block. **Decide it yourself:** an `Escalates:` block carries a *Test*: the test that would pin its suggested answer, for the next round to write.
 
 ### 4. Gate again, record, act
 
@@ -714,8 +756,8 @@ sufficient: the verdict exists nowhere else.
    another (`fate_conflict`, `invalid_review`). The verdict opens `# Review verdict: PASS — <ref> · round <N>` or
    `# Review verdict: FAIL — <ref> · round <N>`.
 3. **A dispute or a finding that needs a human** (`Escalates:` is not `none`): run the triage first ("Before raising a block: do the
-   criteria decide it?"). A decided block is a live finding for the next round and is not raised. Each one the criteria do not decide
-   becomes an escalation on the sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"):
+   criteria decide it?"). A decided block is a live finding for the next round and is not raised. Each one the criteria do not decide goes through
+   "Stop, or decide and continue": a stop becomes an escalation on the sub-issue, as the reviewer, and you wait on it ("Wait, then carry on"); any other is continued, its escalation raised without a wait and its pick a live finding for the next round. A stop's escalation:
 
    ```json
    {"type":"<Type>","question":"<Question>","context":"<Context>","tradeoff":"<Trade-off>","advice":"<Advice>","options":[{"label":"…","argument":"…","suggested":true},{"label":"…","argument":"…"}],"meanwhile":"<Meanwhile>","comment":"cN"}
@@ -726,15 +768,16 @@ sufficient: the verdict exists nowhere else.
    ```
 
    Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it
-   marks, or on none where its Advice says there is no pick.
+   marks, or on none where its Advice says there is no pick. The *Test* line is not copied into the fields file.
 
-   `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
+   A stop's `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
    review. A question about the round as a whole omits it. A verdict with more than one `Escalates:` block raises
    them all in this round; a second block on one finding gets a comment of its own, naming the finding, and its
-   escalation is tied to that, since a comment holds one open escalation. Report each escalation id and the issue, wait
-   on every one at once ("Wait, then carry on"), and do not go to
-   PASS or FAIL handling until every one is answered. Leave the sub-issue `in_review`, in round 0 too.
+   escalation is tied to that, since a comment holds one open escalation. A continued block's `"comment"` is the `cN` of its
+   `# Decided and continued` comment, never the finding's, which a stop on that finding may hold. Report each escalation id and the issue, wait
+   on every stop at once ("Wait, then carry on"), and do not go to
+   PASS or FAIL handling until every stop is answered. A continued block's escalation is not waited on and does not hold PASS or FAIL handling. Leave the sub-issue `in_review`, in round 0 too.
 
 #### What a deferred finding becomes
 
@@ -745,7 +788,7 @@ their own) by `PROCESS.md`, "Where a finding goes":
 | The follow-up is | What you do |
 |---|---|
 | Security, isolation or data exposure, any severity; or a correctness bug reachable in production | **File its own issue now**, no approval: `leeway issue create <KEY> --as <alias>/agent --projectId <project.id> --title "…" --summary "<at most 280 characters>" --status backlog --stdin description <desc.md`, in the task's project |
-| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `"type": "debt"`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it, and in an issue run that the run waits here for the answer (its stop 4). In a sub-issue run the loop does carry on: the task lands, and the run waits on the proposal ("Wait, then carry on") before it ends ("Land the task", step 5). On a yes, `issue create` as above, quoting the answer's `label` and `note`; on a no it stays a nit |
+| Technical debt: the fix is a design decision | **Ask, and file only on a yes**: an escalation on the sub-issue, `"type": "debt"`, its context the finding and what leaving it costs, with options "File it" and "Keep it a nit", each with its argument, raised as `<alias>/agent`, `--meanwhile` saying, standalone, that the loop carries on because nothing in hand waits on it. The run carries on and never waits on the proposal, in a sub-issue run or an issue run: it reads the answer at its next reading point ("Reading the answers behind"), and on "File it" files the issue there, as above, quoting the answer's `label` and `note`; on "Keep it a nit" it stays a nit |
 | Anything else | **One line, as a comment on the project's nit collector**, no issue: the collector is the ref in `.sdlc/leeway.md`'s *Nit collectors* table for `project.id`: `leeway comment add <collector> --as <alias>/agent --stdin body <nit.md` |
 
 **Debt proposals from one verdict are one round**: raised together, with those one answer would settle merged into
@@ -757,8 +800,8 @@ edit to its body.
 
 #### Then
 
-- **PASS** → "Land the task", unless the triage decided a block of this verdict: then one more round for it, as for a FAIL,
-  counted against `roundCap`. You may override a PASS: if a finding is under-rated and you can say why, send it
+- **PASS** → "Land the task", unless the triage decided a block of this verdict, or one was continued ("Stop, or decide and continue"): then one more round
+  for it, as for a FAIL, counted against `roundCap`. You may override a PASS: if a finding is under-rated and you can say why, send it
   back and record the reason as a comment from `<alias>/agent`. The override spends a round. A PASS that carries a
   missing proof at a rung in `blockingRungs` contradicts itself: send it back.
 - **FAIL** → set the step back: `leeway issue update <ref> --as <alias>/agent --step implementing` (it sets
@@ -771,12 +814,28 @@ edit to its body.
 (or round-0 attempts at `round0Cap`, see Round 0) is a stop: leave the sub-issue as it is and raise an escalation
 on it as `<alias>/agent`, `"type": "blocker"`, whose context gives each outstanding finding in a line of its own, what it
 says and its `cN`, and whose options are the human's real choices (for example "Re-scope the task", "Allow one more round", "Cancel it"), each with its argument, and wait on
-it ("Wait, then carry on"). A decided block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided block
- and its `# Decided from the criteria` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
+it ("Wait, then carry on"). A decided or continued block's extra round that would pass `roundCap` is not run, whether the block was a PASS verdict's `Escalates:` or a `BLOCKED` brief's `## Question`: the stop is hard stop 1, and its escalation's context names the decided or continued block
+ and its `# Decided from the criteria` or `# Decided and continued` comment. **You may not override the cap.** Overriding a PASS and the cap together is the
 pattern the cap exists to prevent.
 
 **Spend rounds on the risk, not on the artifact.** A round that only polishes a fix that was already correct buys
 nothing. Notice when you are spending one on it.
+
+### Reading the answers behind
+
+A run reads the answers to what it left open at three reading points. Each is a read with one `issue list` of the project, one `issue get` per open follow-up and one per story read for debt proposals: no pagination, no polling and no wait.
+
+- **Every round boundary**: before the next implementer round and before the next task, with the story in hand.
+- **The story gate**: before step 1's merge, with the story in hand. It reads and never waits on an open escalation or an open follow-up: the story is merged into the plan branch with escalations and follow-ups still open.
+- **The plan's end**: before its status update, with every story of the project.
+- **The index is the project's `issue list`**: one `issue list <KEY> <project> --json` per reading, one reply. It returns titles and no descriptions, so a follow-up is found by its title: each issue neither `done` nor `cancelled` whose title starts `Follow-up: <ref> eN` ("Stop, or decide and continue", step 4, gives it that title) is a follow-up, and one `issue get <ref>` each reads that escalation's answer. `escalation list` is not used for the index: its `--open` cannot be false from the CLI (LWY-164), so it cannot list the answered ones.
+- **What an answer does to its follow-up.** Read the answer of `eN` in the `escalations[]` of `issue get <ref>`:
+  - **Unanswered:** the follow-up is never closed and nothing is written. It stays `backlog`.
+  - **A matching answer**, its `label` equal to the pick the follow-up names: post `# Pick stood — <ref> eN` on the follow-up and set it `done`.
+  - **A differing answer**, its `label` not the pick's: post `# Answer differs — <ref> eN` on the follow-up, quoting the answer's `label` and `note`. It stays `backlog`, never `done`, to be built when a later run takes that issue.
+- **Debt proposals** are read from `issue get <story>`, whose `escalations[]` carries its sub-issues' too, so one `issue get` on a story reads every `debt` escalation of its tasks. The story in hand is read at a round boundary and at the story gate; every story of the project is read at the plan's end. A debt proposal never stops the run and is never waited on: the run carries on and reads its answer here. On "File it", file the debt issue as "What a deferred finding becomes" says, its title ending `(<ref> eN)` and its description carrying `Escalation: <ref> eN`, quoting the answer's `label` and `note`. On "Keep it a nit" it stays a nit and nothing is filed. An unanswered proposal is left as it is and read again at the next reading point.
+- **Each action checks its marker first.** Before it writes, a reading skips a follow-up that is already `done` or already carries `# Answer differs — <ref> eN`, and files no debt issue whose title in the same `issue list` already ends `(<ref> eN)`. It posts unless the latest comment is already one naming the same `<ref> eN`. A second reading writes nothing: no second comment, nothing closed twice and no second debt issue.
+- **The plan's end** lists what is left open, for the person who decides the merge into `main`: every follow-up whose escalation is unanswered and every one whose answer differs and is not `done`, as "The plan's end" says.
 
 ### Land the task
 
@@ -795,15 +854,8 @@ On a PASS of a code round.
    `issue get <ref>` shows `done`.
 4. **Remove the task worktree** and delete the local task branch: `git -C <primary> worktree remove <task worktree>`, then
    `git -C <primary> branch -d <task branch>`, which accepts a squashed branch because its pushed upstream holds it.
-5. **Wait on each debt proposal, only when `run` was invoked on the sub-issue itself** (an issue run has already
-   waited on it, as its stop 4). Step 6's friction proposal depends on no answer here, so where there is a wait to
-   do, do step 6's collecting and raise its proposal first, in the same round, and do not raise it again at step 6.
-   For each escalation "What a deferred finding becomes" raised for a `debt` follow-up
-   of this task, start its wait ("Wait, then carry on"), all together with the others. On a yes, file the issue as that row says; on
-   a no, the finding stays a nit. **A wait here that ends without an answer (exit 2, 3 or 4) does not end the run**:
-   the proposal blocks nothing and the task is already `done`, so there is nothing a re-invoke could resume. Leave
-   the escalation open, say once that the finding stays unfiled until someone answers it and files it, and go on to
-   step 6.
+5. **A debt proposal is not waited on here.** Its escalation was raised in "What a deferred finding becomes" and the run
+   carries on: "Reading the answers behind" reads its answer at the next reading point and files the issue on a "File it".
 6. **Friction, only when `run` was invoked on the sub-issue itself** (an issue run harvests the whole story once,
    at the end). Collect every *Friction* line from this task's briefs and verdicts, round 0 included; drop `none`; dedupe
    against each other and against the open issues of the friction project (`friction-project:` in
@@ -826,6 +878,8 @@ On a PASS of a code round.
 
 When the story's last task has landed, in the **story worktree**. The order is fixed: the story branch is merged into
 its base (step 5) before the story's next step is written, so a `manual` next step never skips the merge.
+
+**Before step 1, read the answers behind** ("Reading the answers behind"). The gate never waits on an open escalation or an open follow-up: the story is merged with them still open.
 
 1. **Merge the story's base into the story branch** (fetched fresh: `git -C <story worktree> fetch origin <base>`, then
    `git -C <story worktree> merge --no-edit origin/<base>`), and resolve conflicts **yourself**. A conflict
@@ -905,8 +959,9 @@ Reached from the story gate's step 6, and from a project run that finds nothing 
 `done` ("Run a project", step 2, "Nothing left"). That second way in is how a plan's end is picked up again when a
 wait below ended without an answer, the session ended before it, or the last story reached `done` outside the gate
 (a person moved it past a `manual` step): `run` refuses a `done` story and the Plan record, so re-invoking `run` **on
-the project** is the way back. Each step reads before it writes, so running it again writes only what is missing. By
-you, as `<alias>/agent`:
+the project** is the way back. Each step reads before it writes, so running it again writes only what is missing.
+
+**Before the status update**, read the answers behind ("Reading the answers behind"), every story of the project. By you, as `<alias>/agent`:
 
 - **With a plan branch**, in each repository the plan changes (its stories' `issue.repository.fullName`):
   1. **Set the collector `--status in_review`, never `done`**, unless it reads `in_review` already. It is an issue of
@@ -933,14 +988,14 @@ you, as `<alias>/agent`:
      `github_unavailable` means try again; any other refusal (`pr_not_found`, `github_access_lost`,
      `github_not_configured`) leaves the pull request unlinked: name it in the ending.
   3. **Post the plan's status update** as a comment on the nit collector (`comment add <collector> --stdin body`),
-     naming each pull request that waits for the person's test, unless the collector's latest comment is already one
-     naming the same pull requests.
+     naming each pull request that waits for the person's test and each follow-up whose escalation is unanswered or whose answer differs (the last paragraph of this section), unless the collector's latest comment is already one
+     naming the same pull requests and follow-ups.
   4. **End by saying** that the project reads "in review" and naming each pull request (its number and URL) that
      waits on the person's test, where it is linked and open (a pull request that had already merged ends as "When
      the plan merges into `main`" does). Otherwise name the pull request that is not linked (a refused link), or
      say none is open yet, and say the project reads "in review" only once one is linked and open. Where they test it is theirs to
      choose: locally, on a dev server, anywhere.
-     Nothing merges it into `main` until they say so ("When the plan merges into `main`").
+     Nothing merges it into `main` until they say so ("When the plan merges into `main`"). The ending lists the follow-ups too: each whose escalation is unanswered and each whose answer differs.
 - **With no plan branch** (*Plan branch* `none`), each story was merged into the integration branch at step 5 as the
   repo's convention says, which may be a pull request that waits for the person. So **read back that every `done`
   story of the project is in `main`** before anything closes (a cancelled one has nothing to merge): its pull
@@ -951,9 +1006,11 @@ you, as `<alias>/agent`:
     `--status done`. End by saying that the plan has merged into `main` and the Plan record reads `done`.
   - **Any story does not:** set the collector `--status in_review` unless it reads `in_review` already, post the
     status update naming each story's pull request (or branch) not yet in `main` unless the collector's latest
-    comment is already one naming the same ones, and end by saying that the Plan record reads `in_review` and naming
+    comment is already one naming the same stories and follow-ups, and end by saying that the Plan record reads `in_review` and naming
     each of them (number and URL, or branch) as waiting on the person. "When the plan merges into `main`" goes on
     from there.
+
+**Both ways, the status update and the ending list the follow-ups left open**: every follow-up whose escalation is unanswered and every one whose answer differs and is not `done`, each with its ref and `eN`, for the person who decides the merge into `main`.
 
 ### The verification gate
 
@@ -1035,7 +1092,7 @@ A refusal here writes nothing: say in the session which precondition failed and 
      waits on `plan-project`, which applies them. A report with no QUESTION needs no reply.
 
    A type without a plan gate needs only that the story has tasks (`subIssues`) and is planned.
-3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
+3. **The story is not blocked** (`issue.blockedBy`). A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included.
 4. **Leeway answers.** Read the story and its children; a failed call, or an empty result where something must
    exist, is stop 10 below, not an empty story.
 5. **A previous run is answered.** If the story carries a comment opening `# Run status`, read the latest. Every escalation it
@@ -1049,6 +1106,9 @@ A refusal here writes nothing: say in the session which precondition failed and 
 1. **Set the story to its build step**, after reading its state: `leeway issue update <story> --as <alias>/agent --step
    build`. Write nothing if `issue.step.id` is already `build`; a continuation run finds it there, and a second write
    is a second mover in the history.
+
+   **When the story's base is a plan branch, bring it current before the baseline:** merge the integration branch into it through the detached merge worktree of "The story gate", step 5, and push the base. Run the commands and failure paths of "The story gate", step 5, with the integration branch as what is merged and the plan branch as the base: fetch both fresh, the `merge-base --is-ancestor` check, the push of `HEAD:<base>`. A continuation run whose base already holds the integration branch's head (`git -C <primary> merge-base --is-ancestor origin/<integration branch> origin/<base>` exits 0) writes nothing: no worktree, no merge, no push. A conflict in a file a person wrote that is not mechanical is never resolved by hand here: abort the merge (`git -C <primary>/.worktrees/merge-<story> merge --abort`), remove the worktree, and stop (hard stop 7). One merge per story start, made before the baseline: a story worktree cut in step 2 is cut from the base as it then stands, and one reused from an earlier run is left as it is, because "The story gate", step 1, brings the base into the story branch. **Three things differ from step 5's text, which tests the other direction.** The ancestor check here asks whether the merge worktree's detached `HEAD` equals `origin/<base>` as just fetched (`git -C <primary>/.worktrees/merge-<story> rev-parse HEAD` against `git -C <primary> rev-parse origin/<base>`); when it does not, the base moved: remove the worktree and begin this paragraph again, which is what "go back to step 1" means here. If the push of the base fails, fetch `<base>` again: when `origin/<base>` is not an ancestor of the merge worktree's `HEAD` (`git -C <primary>/.worktrees/merge-<story> merge-base --is-ancestor origin/<base> HEAD`), the base moved, so remove the worktree and begin this paragraph again; otherwise remove the worktree, stop and say what git printed. The merge's message file carries its own subject, `Merge <integration branch> into <base>`.
+
 2. **Create or reuse the story worktree** per "0. Locate, read the process, set up": cut from the branch
    the story's `issue.base` names the first time, reused as it stands on a continuation run. Run the per-worktree
    setup command in a new one.
@@ -1056,12 +1116,10 @@ A refusal here writes nothing: say in the session which precondition failed and 
    which are green. A lane red here that is not in *Known-red* is stop 6 before the first task: building on a red
    branch hides whatever the tasks break.
 4. **Start the budget** from the process: `params.budget` on the story's build step (precondition 1), never from
-   `.sdlc/CONFIG.md`. It has up to three dimensions, whichever is hit first: `tokens`, `rounds` and `hours`, the
-   wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build
-   step with no `budget` limits none, so stop 9 never fires; say so in the session when the run starts. A *Per-story
+   `.sdlc/CONFIG.md`. It has up to three dimensions, each checked on its own: `tokens`, `rounds` and `hours`, the
+   wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build step with no `budget` has no notice and no stop; say so in the session when the run starts. A *Per-story
    budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves it into the process. Read the
-   budget again with the totals at each round boundary, so one a person changed while the run waited is the one
-   checked. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
+   budget again with the totals at each round boundary, so one a person changed while the run waited is the one checked. At a round boundary where a dimension has reached its budget, that is a notice, not a stop: post `# Budget reached — <story> · <dimension>` as a comment on the story, `<dimension>` being `tokens`, `rounds` or `hours`, and carry on. Post it unless the story already has a comment that opens `# Budget reached — <story> · <dimension>` for that dimension, read from `leeway issue get <story> --json` before posting: at most three notices a story, one per dimension. The run stops only at twice the budget in any dimension (stop 9). The notice and the stop read the same `totals` the same way: `tokensIncomplete` included. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
    `leeway issue get <story> --json`, over the story's own records and its sub-issues' ("Recording spend").
    **Rounds** are `totals.rounds`, round-0 attempts included; **tokens** are `totals.tokens`, and **wall-clock** is
    `totals.minutes`. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment.
@@ -1075,7 +1133,7 @@ Read the story's children (`subIssues`, then `issue get` on each) and order them
 2. **Never run the nit collector.** It is an issue of the project, a container for comments, not work.
 3. **Order by the blocking relation** (`blockedBy`): every blocker before what it blocks.
 4. **Break ties by plan order**: the order of the breakdown in the design doc, else the sub-issues' `position`.
-5. **Refuse a task whose blockers are not done**, including a blocker outside this story. Skip it and take the next
+5. **Refuse a task whose blockers are not cleared**, including a blocker outside this story. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. Skip it and take the next
    runnable one. If tasks remain and none is runnable, stop: the remaining work is blocked, and that is the human's
    to unblock. Post a `# Run status` comment and raise one escalation on the story naming the blockers ("On a stop"). A cycle
    in the relation is a planning bug: stop the same way.
@@ -1088,7 +1146,7 @@ tasks that share no file; that trade is a person's to take when they run sub-iss
 
 For the next task, run "Run a sub-issue" from "0. Locate, read the process, set up" through "Land the task": the task
 worktree, round 0 where the rung calls for it, every round, the verification gate, the records, landing. Then check
-the stop conditions, then take the next task. **Skip the per-task friction step of "Land the task"**: the issue run
+the stop conditions, read the answers behind ("Reading the answers behind"), then take the next task. **Skip the per-task friction step of "Land the task"**: the issue run
 harvests the whole story once, at the end.
 
 **Fresh subagents per task.** Never carry an implementer or reviewer from one task into the next, and keep nothing
@@ -1103,7 +1161,7 @@ spend. Every line can be rebuilt from Leeway, which is what makes it safe to los
 changes* row the task's diff touched. The reviewer ran the lanes on the task branch; the squash on the story branch
 is normally the same tree, and this run is what makes "normally" a fact.
 
-Where the sub-issue run asks a person for something (a debt proposal, a spec amendment, a cap), there is no one in the
+Where the sub-issue run asks a person for something (a spec amendment, a cap), there is no one in the
 session. That is what the stop conditions are.
 
 ### Hard stop conditions
@@ -1111,37 +1169,37 @@ session. That is what the stop conditions are.
 **Only a human overrides these. The agent never does**, not with a reason, not once. A human overrides one by
 answering the escalation; the run waiting on it reads it there ("Wait, then carry on"), or a later run does
 (precondition 5). Each stop ends in **one escalation**, or in one per independent question where the sub-issue run raised a round of
-them (a brief's second `## Question`, a verdict's second `Escalates:` block, a verdict's debt proposals): where
+them (a brief's second `## Question`, a verdict's second `Escalates:` block): where
 the sub-issue run already raises it or them, those are the stop's, and the issue run adds none (one more would be a
 further question for one stop); otherwise the issue run raises it on the story.
 
 | # | Condition | Detected | The stop's escalation |
 |---|---|---|---|
-| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided block, or a `BLOCKED` brief whose `## Question` is decided, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
+| 1 | **The round cap is hit** on any task: the verdict is FAIL, or a PASS with a decided or continued block, or a `BLOCKED` brief whose `## Question` is decided or continued, that needs one more round, and the code rounds (iterations on the sub-issue minus the round-0 attempts) are at `roundCap` | "The caps" | the sub-issue run's, on the sub-issue |
 | 2 | **The round-0 cap is hit**: the attempts are at `round0Cap` and the last is a FAIL | "Round 0" | the sub-issue run's, on the sub-issue |
 | 3 | **A verdict carries a `security` follow-up** | "What a deferred finding becomes" | the issue run's, on the story |
-| 4 | **A `debt` follow-up needs a human yes** | the same | the sub-issue run's debt proposal, on the sub-issue |
+| 4 (removed: a debt proposal no longer stops the run, LWY-266) | removed: a debt proposal is raised and read later ("Reading the answers behind"), never waited on | none | none |
 | 5 | **A second verification-gate hallucination on the same task** | "The verification gate" | the issue run's, on the story |
 | 6 | **A lane green at baseline is red on the story branch**, after a task lands or at the story gate | after each task | the issue run's, on the story |
-| 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate" | the issue run's, on the story |
+| 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate", "Story start" | the issue run's, on the story |
 | 8 | **A frozen test needs a spec amendment**; the owner is the product owner for an `AC-n`, the developer for a `TC-n` | "The freeze" | the sub-issue run's, on the sub-issue |
-| 9 | **The per-story budget is exceeded**: tokens, rounds or wall-clock, whichever first | at every round boundary | the issue run's, on the story |
+| 9 | **The per-story budget is reached twice over**: tokens, rounds or wall-clock reaches twice its budget, whichever first | at every round boundary | the issue run's, on the story |
 | 10 | **Leeway is unreachable**: a call fails, or an empty result where something must exist (an expired sign-in is the usual cause) | any call | none can be raised: see the note |
+| 11 | **A block on the stop list**: a `## Question` or `Escalates:` block that is a stop | "Stop, or decide and continue" | the sub-issue run's, on the sub-issue |
 
-**And every place the sub-issue run itself says stop or wait**: a stalled round, a raised `## Question` of a BLOCKED brief, a raised
-`Escalates:` block (a dispute or finding the reviewer sends to a human), a pointer to technical criteria with no such comment, a migration recipe the doc map does not
-name. They are stops here too, and each already raises its own escalation. Only a raised block is a stop: one the criteria decide
-raises nothing and the round carries on. Its wait is step 7 of "On a stop", after
+**And every place the sub-issue run itself says stop or wait**: a stalled round, a pointer to technical criteria with no such comment, a migration recipe the doc map does not
+name. They are stops here too, and each already raises its own escalation. A block on the stop list is a stop too (row 11); one the criteria decide
+raises nothing and one off the stop list is continued, and the round carries on. Its wait is step 7 of "On a stop", after
 the status comment, not a second one before it.
 
 Notes on the ones that need them:
 
-- **3 and 4: finish landing the task first.** A follow-up is by definition not this task's diff, and the task lands on
+- **3: finish landing the task first.** A follow-up is by definition not this task's diff, and the task lands on
   the story branch, which reaches nobody until the story gate. So a PASS is landed through "Land the task",
   and then the run stops. A `security` follow-up is filed first, as "What a deferred finding becomes" says, with no delay; the stop is so a
   person decides whether the story should go on being built on top of it (options "Continue the story" and "Hold the
-  story"). A `debt` follow-up is the proposal's escalation: on a yes the run files the issue as "What a deferred
-  finding becomes" says, and on a no the finding stays a nit.
+  story"). A `debt` follow-up is raised as a proposal the run does not stop for: on a yes the run files the issue as "What a deferred
+  finding becomes" says when it reads the answer ("Reading the answers behind"), and on a no the finding stays a nit.
 - **5 replaces the sub-issue run's fallback.** A sub-issue run does a twice-hallucinated round inline and tells the user the
   workflow degraded. Unattended there is nobody to tell while it matters, and a degraded round nobody noticed is
   indistinguishable afterwards from a normal one. Stop instead.
@@ -1152,9 +1210,7 @@ Notes on the ones that need them:
   put the conflicting paths in the status comment.
 - **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been real.
   Read the story's `totals` at each boundary ("Start the budget"). Tokens are new tokens, counted from the transcripts
-  where the harness can ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
-  `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it (the status
-  comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include round-0 attempts.
+  where the harness can ("Recording spend"). Stop when a dimension reaches twice its budget: `totals.tokens` twice `tokens`, `totals.rounds` twice `rounds`, `totals.minutes` twice `hours` × 60; while `tokensIncomplete` is true and that floor is under twice the budget, carry on, and every readout of it (the status comment, the report to the user) says `at least <totals.tokens>, incomplete`. A dimension that has only reached its budget is the notice of "Start the budget", not this stop. Rounds include round-0 attempts.
 - **10: no comment and no escalation can be written.** Put the status comment, word for word, in the session output,
   and post it once Leeway answers again, with the stop's escalation. Never retry in a loop.
 
@@ -1196,7 +1252,7 @@ Do these, in this order, and nothing else:
    real choices as options (2 to 5, each with its argument) and `"meanwhile"` saying what stays blocked and what does not.
    Where the sub-issue run raised it or them, add each id to the status comment, and raise no other.
 6. **Tell the user the same thing** in the session, with the comment's `cN` and each escalation id.
-7. **Wait on each of the stop's escalations** ("Wait, then carry on"), all together. Once every one is answered the run carries on from where step 1
+7. **Wait on each of the stop's escalations** ("Wait, then carry on"), all together; a continued block's escalation is not one of them. Once every one is answered the run carries on from where step 1
    left it, the condition overridden by those answers, and writes none of steps 4 and 5 again. Only when a wait ends
    without an answer, or an answer ends the work, stop the turn. Stop 10 has no escalation to wait on: stop the
    turn.
@@ -1205,7 +1261,7 @@ Do these, in this order, and nothing else:
 `/leeway-sdlc:run` on DRY-2 again", not "review the findings". Two escalations are still one action: "Answer e2 and e3 on DRY-2.1, then invoke…". A stop whose next step the human has to work out costs
 them the investigation the run already did. The skill is named as `HARNESS.md`'s **commands** spells it
 (`/leeway-sdlc:run` in Claude Code), or as leeway-sdlc's `run` skill where it names skills in words: a bare `run`
-can reach another skill of that name. For a `debt` stop the proposals follow the template, one line each.
+can reach another skill of that name.
 
 ### The end
 
@@ -1283,9 +1339,8 @@ either generates one.
 
 The human sees the story at the end, not per task. The round records are all there, but nobody reads them as they
 happen, so a task that passed review on a misread criterion is found at the story gate, after later tasks were built
-on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up holds the run on
-its answer rather than waiting in a queue, so a debt-heavy codebase waits often; the alternative is filing tickets nobody
-approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count that
+on top of it; the plan gate and the round-0 freeze make that rare, not impossible. A `debt` follow-up is read at the next reading point, so a yes can sit unfiled for a round or a task; the alternative
+is filing tickets nobody approved. The budget is checked at round boundaries, so one long round can overshoot it, and a token count that
 cannot be made leaves the token total a floor, not a count. A span the session ends inside, before its
 record is written, is not recorded at all. And dropping each task's subagent context means a pattern noticed in
 task 2 reaches task 5 only if a round record wrote it down.
@@ -1314,12 +1369,12 @@ relaxes it.
    - **Never run the Plan record**, the project's nit collector (*Nit collectors* in `.sdlc/leeway.md`).
    - **Order by the blocking relation** (`blockedBy`), every blocker before what it blocks, and break ties by the
      order of the breakdown in the design doc, else `position`.
-   - **Refuse an issue whose blockers are not done**, including a blocker outside the project: skip it and take the
+   - **Refuse an issue whose blockers are not cleared**, including a blocker outside the project. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. An issue with a blocker not cleared: skip it and take the
      next runnable one.
    - **Skip an issue its issue run refuses**: one that a precondition of "Run an issue" refuses, which writes nothing
      (its type is not unattended, it is not planned, an earlier `# Run status` is unanswered, or any other). Say in
      the session which issue and which precondition, and take the next runnable issue. It is skipped as an issue
-     whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
+     whose blockers are not cleared is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
      skipped for the rest of this run (step 3). A failed Leeway call is not a refusal: it is stop 10.
    - **Nothing runnable left** (issues remain and none is runnable: each is blocked, in a blocking cycle, waiting at a
      step after `build`, or already skipped in this run; the Plan record aside): the run ends there, and step 5
@@ -1345,7 +1400,7 @@ relaxes it.
    of the story ref, so the human who answers it goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
    status` comment's `cN` and each escalation id), every issue it skipped and why (the precondition that refused it,
-   or the blockers not done), and the issues not started, in the order they would have run. When an issue's story
+   or the blockers not cleared), and the issues not started, in the order they would have run. When an issue's story
    gate, or "Nothing left", ran "The plan's end", say last what it left the Plan record reading, as its ending does.
 
 **Bounds.** The per-story budget (the `budget` of each issue's build step, "Start the budget") applies to each issue

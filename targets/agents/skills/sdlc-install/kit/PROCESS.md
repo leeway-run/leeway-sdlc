@@ -89,7 +89,7 @@ is not seen by it, and for that the invariant stays prose. A framework that clai
 not have is worse than one that admits the gap.
 
 A subagent has no user to ask. Where a paired session would stop and ask, a subagent writes the doubt
-under *Uncertainties* in its brief, or returns `BLOCKED` with a `## Question`. **Guessing silently is
+under *Uncertainties* in its brief, or, for the stop list only, returns `BLOCKED` with a `## Question` ("Decide it yourself"). **Guessing silently is
 the one failure that corrupts everything downstream.**
 
 ## How the plugin reaches Leeway
@@ -303,6 +303,23 @@ transcripts, and where it differs from the wording above, it wins. A repo may re
 committed durably in `.sdlc/CONFIG.md`. A claim about runtime behaviour is settled by running something,
 and the result is read from what it left behind.
 
+## Decide it yourself
+
+An implementer and a reviewer are asked only what they cannot sensibly decide. These are theirs to decide, never a question:
+
+- States that cannot happen: an unreachable branch or an impossible value. Pick the simplest handling and carry on.
+- Error wording: what an error message says, where the criteria are silent.
+- A choice between data sources that are equally good: take either, and name it.
+- A fix to test plumbing that leaves every assertion unchanged (a fixture, a query, a lookup); for a frozen test, report it in the brief's `## Frozen test fix` section.
+
+Other behaviour the criteria leave open: decide and continue. Only the stop list stops.
+
+Both agent definitions carry this list word for word, since an agent cannot read this file at run time. An implementer builds a
+question off the stop list with its pick and reports it in the brief's `## Decided and continued` section; `BLOCKED` with a
+`## Question` is for the stop list only. A reviewer's question off the stop list carries a *Test*, the test that would pin its
+suggested answer, for the next round to write, and is raised as an escalation that does not block ("Stop, or decide and
+continue", in `run`).
+
 ## Questions to the human are escalations
 
 **No agent asks the human a question in the terminal.** A question for the human is a Leeway escalation,
@@ -340,8 +357,10 @@ opening the report behind it:
   and cannot go on as planned until a person decides: a `BLOCKED` brief, a stalled round, a cap, a frozen test that
   needs a spec amendment, a stop of an issue run. `clarification`: a decision the plan or the operation needs from a
   person before the work it shapes, where nothing has failed: an op question, a plan-gate QUESTION, a shaping,
-  interview or floor question, an install, sync or tune question. Either kind holds the work that depends on it until
-  it is answered. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
+  interview or floor question, an install, sync or tune question. A stop holds the work that depends on it until it is
+  answered; anything else is decided and continued (`run`, "Stop, or decide and continue"). A block is a stop when going on would touch production, a merge into `main` or real data; involve a
+  secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action
+  the permission check refused. When the orchestrator cannot tell, it is a stop. `debt` for a debt proposal, `nit` for a friction proposal. Each skill names the type of each of its
   raises.
 - **`"context"`: the specific thing behind the question, in plain lines**, taken from the report, the brief or the
   code: each blocker, finding or question summarised in one line of its own, with what it is about. **Never only a
@@ -399,9 +418,9 @@ opening the report behind it:
   - the answer to a question asked of the agent is not written (the next point);
   - or the answer ends the work.
 
-  A wait that blocks nothing (run's debt proposal once its task has landed, "Land the task", step 5) does not stop the
-  turn on exit 2, 3 or 4, nor on an answer that is not written: it says once that the escalation stays unanswered and
-  carries on. Either way, do not continue the work that depends on the answer, and do not ask again somewhere else.
+  A debt proposal is not waited on (run, "Reading the answers behind"): it is raised and the run carries on, and `run`
+  reads its answer at its next reading point. Where a wait stops the turn, do not continue the work that depends on the
+  answer, and do not ask again somewhere else.
   A question asked of the agent while it waits does not end the wait (the next point).
 - **A question asked of the agent is answered, then the wait starts again.** A person can ask the agent about an open
   escalation before deciding it, and the wait exits 5 on the question, printing

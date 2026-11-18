@@ -118,7 +118,7 @@ test('with a plan branch the Plan record waits in review, never done, and nothin
 test('a plan\'s end run twice with a plan branch writes neither the status nor the status update twice', () => {
   const step = withPlanBranch();
   assert.match(step, /1\. \*\*Set the collector `--status in_review`, never `done`\*\*, unless it reads `in_review` already\. /);
-  assert.match(step, /3\. \*\*Post the plan's status update\*\* as a comment on the nit collector \(`comment add <collector> --stdin body`\), naming each pull request that waits for the person's test, unless the collector's latest comment is already one naming the same pull requests\. 4\. /);
+  assert.match(step, /3\. \*\*Post the plan's status update\*\* as a comment on the nit collector \(`comment add <collector> --stdin body`\), naming each pull request that waits for the person's test and each follow-up whose escalation is unanswered or whose answer differs \(the last paragraph of this section\), unless the collector's latest comment is already one naming the same pull requests and follow-ups\. 4\. /);
 });
 
 test('the Plan record reads in review before any wait for the pull request', () => {
@@ -173,7 +173,7 @@ test('with no plan branch the Plan record closes only once every story reads mer
   assert.ok(merged >= 0 && done > merged && notMerged > done, 'the Plan record closes before the read-back');
   assert.doesNotMatch(from(step, '**Any story does not:**'), CLOSES, 'a story not in main closes the Plan record');
   assert.doesNotMatch(from(step, '**Any story does not:**'), MERGES_HERE, 'a story not in main is merged');
-  assert.match(step, /post the status update naming each story's pull request \(or branch\) not yet in `main` unless the collector's latest comment is already one naming the same ones/);
+  assert.match(step, /post the status update naming each story's pull request \(or branch\) not yet in `main` unless the collector's latest comment is already one naming the same stories and follow-ups/);
 });
 
 test('each ending says what the Plan record reads: in review and the pull request, or merged into main', () => {

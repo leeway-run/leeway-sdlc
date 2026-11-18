@@ -2,6 +2,39 @@
 
 ## Unreleased
 
+- **The plan branch is kept current at story start, and "blocked by" means merged (LWY-266).** In `run`, "Story start" gains a paragraph before the worktree step: when the story's base is a plan branch, the integration branch is merged into it through the detached merge worktree of the story gate's step 5 (which it cites rather than copies) and the base is pushed. A continuation run whose base already holds the integration branch's head writes nothing, and a non-mechanical conflict aborts the merge and is hard stop 7, never resolved by hand. A blocker now counts as cleared by one sentence, the same in step 0.3 of "Run a sub-issue", precondition 3, "The task order" step 5 and "Run a project" step 2: `done` or `cancelled`; a story also at a step after its `build` step (never `planned`, `ready` or `build` itself); a sub-issue only when `done` or `cancelled`, `in_review` included as not cleared.
+- **Planning runs three sweeps, and the plan gate checks them (LWY-266).** `plan-project` step 4 gains "The three sweeps":
+  read paths (every op and surface that returns the data of a rule the story adds or restricts, each with a criterion and a
+  test), blast radius (the rules the touched code already enforces, the scripts, helpers and evidence tools on a changed
+  flow, a migration's timing on a copy of real data) and completeness (phone frames, the rollout order of each dropping
+  migration, the plan branch kept current, "blocked by" read as merged). They are recorded under `## Sweeps` in the design
+  doc, or in a story comment opening `# Sweeps` where the type writes no design doc; step 8 tells the reviewer where, and
+  "Done when" names them. The divergence reviewer's step 6 makes a missing sweep, a read-path item with no criterion or test,
+  or a blast-radius item with no owner or reason a BLOCKER, and its findings table says so. A PASS needs the three sweeps present and complete, the report has a "Sweeps read" section, "Trace it yourself first" has the planner check its own sweeps, and "What you receive" lists where they are.
+- **The per-story budget is a notice, and the run stops at twice it (LWY-266).** In `run`, "Start the budget": at a round boundary where a dimension (`tokens`, `rounds` or `hours`) has reached its budget, the run posts `# Budget reached — <story> · <dimension>` on the story and carries on. It posts it once per dimension, after reading the story's comments for one already there (at most three notices a story). Hard stop 9 now fires at twice the budget in any dimension, reading the same `totals` as the notice, `tokensIncomplete` included. A `build` step with no `budget` still gets no notice and no stop. `sdlc-tune` and `sdlc-install` give `round0Cap` as an integer 1 to 10, the limit Leeway now accepts.
+- **Implementers and reviewers decide what is theirs (LWY-266).** `PROCESS.md` gains "Decide it yourself": states that cannot
+  happen, error wording, a choice between equally good data sources, and a test-plumbing fix that leaves every assertion
+  unchanged (for a frozen test, the brief's `## Frozen test fix`); other behaviour the criteria leave open is decided and
+  continued, and only the stop list stops. Both agent definitions carry the same four items word for word. The implementer
+  builds a question off the stop list with its pick and reports it in the brief's new `## Decided and continued` section;
+  `BLOCKED` with a `## Question` is for the stop list only. The reviewer's `Escalates:` block gains a *Test*, the test that
+  would pin its suggested answer, for the next round to write (the reviewer still never edits code); the *Test* line is not
+  copied into the escalation's fields file. `run`'s gate raises each `## Decided and continued` block through "Stop, or decide
+  and continue", and calls one on the stop list a gate failure.
+- **A run reads the answers behind its picks and its debt proposals, and waits on neither (LWY-266).** A new `run`
+  subsection, "Reading the answers behind", runs at every round boundary, before the story gate's merge and at the plan's
+  end: one `issue list` of the project finds each open `Follow-up: <ref> eN`, and one `issue get` reads its answer. A
+  matching answer posts `# Pick stood — <ref> eN` and closes the follow-up; a differing one posts `# Answer differs — <ref> eN`
+  and leaves it `backlog`; each action checks its marker first, so a second reading writes nothing. A debt proposal is
+  raised and the run carries on: on "File it" the issue is filed when the answer is read, its title ending `(<ref> eN)`.
+  "Land the task" step 5 and the wait in "Wait, then carry on" for a debt proposal are gone. The story gate never waits on
+  an open escalation or follow-up, and the plan's end lists every follow-up that is unanswered or whose answer differs.
+- **A run stops only for the stop list and decides and continues on the rest (LWY-266).** After the triage, `run`
+  checks a block against the stop list: production, a merge into `main` or real data; a secret; the wider of two access
+  options; no option marked `(suggested)`; a refused permission, and a block it cannot place. A stop is raised and
+  waited on as before (hard stop 11). Any other block is continued: a follow-up issue in `backlog`, a `# Decided and
+  continued` comment, a `clarification` escalation that does not block, the follow-up retitled `Follow-up: <ref> eN — …`,
+  and the next round with the pick (one more after a PASS, within `roundCap`). Row 4 of the hard stops is removed.
 - **A question the criteria already answer does not reach the human (LWY-244).** Before raising an implementer's `## Question`
   or a reviewer's `Escalates:` block, `run` checks whether the story's `AC-n` and `TC-n` decide it. A decided block raises no
   escalation: it is recorded in a `# Decided from the criteria` comment and answered in the next round (one more after a

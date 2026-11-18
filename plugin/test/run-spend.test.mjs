@@ -201,10 +201,11 @@ test('stop 9: a round with unreported tokens never counts as free', () => {
     from(under(skill, 'Hard stop conditions'), '- **9: check at round boundaries', '- **10:'),
     '- **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been ' +
       "real. Read the story's `totals` at each boundary (\"Start the budget\"). Tokens are new tokens, counted from " +
-      'the transcripts where the harness can ("Recording spend"). Stop when `totals.tokens` reaches the token ' +
-      'budget; while `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it ' +
-      '(the status comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include ' +
-      'round-0 attempts. ',
+      'the transcripts where the harness can ("Recording spend"). Stop when a dimension reaches twice its budget: ' +
+      '`totals.tokens` twice `tokens`, `totals.rounds` twice `rounds`, `totals.minutes` twice `hours` × 60; while ' +
+      '`tokensIncomplete` is true and that floor is under twice the budget, carry on, and every readout of it (the ' +
+      'status comment, the report to the user) says `at least <totals.tokens>, incomplete`. A dimension that has only ' +
+      'reached its budget is the notice of "Start the budget", not this stop. Rounds include round-0 attempts. ',
   );
   assert.doesNotMatch(flat(skill), /that dimension is not enforced/);
   assert.equal(
