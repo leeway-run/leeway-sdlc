@@ -237,8 +237,8 @@ converged mean the task is mis-specified, and that is a human decision.
    - Say what this task will do before doing it: "type `feature`: red tests first (cap 2 attempts), up to 5 code
      rounds, adversarial review, blocking rungs R4 and R5".
 
-3. **Check whether it is blocked.** `issue.blockedBy` lists `{ref, title, status}`; a blocker counts only while its
-   `status` is neither `done` nor `cancelled`. A blocked task does not start: name the blockers and stop.
+3. **Check whether it is blocked.** `issue.blockedBy` lists `{ref, title, status}`. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. A blocked task does
+   not start: name the blockers and stop.
 
 4. **Round 0, or straight to implementing.** Read the task's rung from its `## Evidence` section, against the evidence
    doc in the doc map.
@@ -1092,7 +1092,7 @@ A refusal here writes nothing: say in the session which precondition failed and 
      waits on `plan-project`, which applies them. A report with no QUESTION needs no reply.
 
    A type without a plan gate needs only that the story has tasks (`subIssues`) and is planned.
-3. **The story is not blocked** (`issue.blockedBy`, a blocker counting while neither `done` nor `cancelled`).
+3. **The story is not blocked** (`issue.blockedBy`). A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included.
 4. **Leeway answers.** Read the story and its children; a failed call, or an empty result where something must
    exist, is stop 10 below, not an empty story.
 5. **A previous run is answered.** If the story carries a comment opening `# Run status`, read the latest. Every escalation it
@@ -1106,6 +1106,9 @@ A refusal here writes nothing: say in the session which precondition failed and 
 1. **Set the story to its build step**, after reading its state: `leeway issue update <story> --as <alias>/agent --step
    build`. Write nothing if `issue.step.id` is already `build`; a continuation run finds it there, and a second write
    is a second mover in the history.
+
+   **When the story's base is a plan branch, bring it current before the baseline:** merge the integration branch into it through the detached merge worktree of "The story gate", step 5, and push the base. Run the commands and failure paths of "The story gate", step 5, with the integration branch as what is merged and the plan branch as the base: fetch both fresh, the `merge-base --is-ancestor` check, the push of `HEAD:<base>`. A continuation run whose base already holds the integration branch's head (`git -C <primary> merge-base --is-ancestor origin/<integration branch> origin/<base>` exits 0) writes nothing: no worktree, no merge, no push. A conflict in a file a person wrote that is not mechanical is never resolved by hand here: abort the merge (`git -C <primary>/.worktrees/merge-<story> merge --abort`), remove the worktree, and stop (hard stop 7). One merge per story start, made before the baseline: a story worktree cut in step 2 is cut from the base as it then stands, and one reused from an earlier run is left as it is, because "The story gate", step 1, brings the base into the story branch.
+
 2. **Create or reuse the story worktree** per "0. Locate, read the process, set up": cut from the branch
    the story's `issue.base` names the first time, reused as it stands on a continuation run. Run the per-worktree
    setup command in a new one.
@@ -1130,7 +1133,7 @@ Read the story's children (`subIssues`, then `issue get` on each) and order them
 2. **Never run the nit collector.** It is an issue of the project, a container for comments, not work.
 3. **Order by the blocking relation** (`blockedBy`): every blocker before what it blocks.
 4. **Break ties by plan order**: the order of the breakdown in the design doc, else the sub-issues' `position`.
-5. **Refuse a task whose blockers are not done**, including a blocker outside this story. Skip it and take the next
+5. **Refuse a task whose blockers are not cleared**, including a blocker outside this story. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. Skip it and take the next
    runnable one. If tasks remain and none is runnable, stop: the remaining work is blocked, and that is the human's
    to unblock. Post a `# Run status` comment and raise one escalation on the story naming the blockers ("On a stop"). A cycle
    in the relation is a planning bug: stop the same way.
@@ -1178,7 +1181,7 @@ further question for one stop); otherwise the issue run raises it on the story.
 | 4 (removed: a debt proposal no longer stops the run, LWY-266) | removed: a debt proposal is raised and read later ("Reading the answers behind"), never waited on | none | none |
 | 5 | **A second verification-gate hallucination on the same task** | "The verification gate" | the issue run's, on the story |
 | 6 | **A lane green at baseline is red on the story branch**, after a task lands or at the story gate | after each task | the issue run's, on the story |
-| 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate" | the issue run's, on the story |
+| 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate", "Story start" | the issue run's, on the story |
 | 8 | **A frozen test needs a spec amendment**; the owner is the product owner for an `AC-n`, the developer for a `TC-n` | "The freeze" | the sub-issue run's, on the sub-issue |
 | 9 | **The per-story budget is reached twice over**: tokens, rounds or wall-clock reaches twice its budget, whichever first | at every round boundary | the issue run's, on the story |
 | 10 | **Leeway is unreachable**: a call fails, or an empty result where something must exist (an expired sign-in is the usual cause) | any call | none can be raised: see the note |
@@ -1366,12 +1369,12 @@ relaxes it.
    - **Never run the Plan record**, the project's nit collector (*Nit collectors* in `.sdlc/leeway.md`).
    - **Order by the blocking relation** (`blockedBy`), every blocker before what it blocks, and break ties by the
      order of the breakdown in the design doc, else `position`.
-   - **Refuse an issue whose blockers are not done**, including a blocker outside the project: skip it and take the
+   - **Refuse an issue whose blockers are not cleared**, including a blocker outside the project. A blocker is cleared when its `status` is `done` or `cancelled`; a blocker that is a story is also cleared at a step after its `build` step (never at `planned`, `ready` or `build` itself), and a blocker that is a sub-issue is cleared only when `done` or `cancelled`, never at a step short of that, `in_review` included. An issue with a blocker not cleared: skip it and take the
      next runnable one.
    - **Skip an issue its issue run refuses**: one that a precondition of "Run an issue" refuses, which writes nothing
      (its type is not unattended, it is not planned, an earlier `# Run status` is unanswered, or any other). Say in
      the session which issue and which precondition, and take the next runnable issue. It is skipped as an issue
-     whose blockers are not done is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
+     whose blockers are not cleared is: the issues it blocks stay unrunnable, and are skipped as blocked. It stays
      skipped for the rest of this run (step 3). A failed Leeway call is not a refusal: it is stop 10.
    - **Nothing runnable left** (issues remain and none is runnable: each is blocked, in a blocking cycle, waiting at a
      step after `build`, or already skipped in this run; the Plan record aside): the run ends there, and step 5
@@ -1397,7 +1400,7 @@ relaxes it.
    of the story ref, so the human who answers it goes on with the project, not only that issue.
 5. **Say so in the session**: per issue, where it ended (its new step or status) or why it stopped (its `# Run
    status` comment's `cN` and each escalation id), every issue it skipped and why (the precondition that refused it,
-   or the blockers not done), and the issues not started, in the order they would have run. When an issue's story
+   or the blockers not cleared), and the issues not started, in the order they would have run. When an issue's story
    gate, or "Nothing left", ran "The plan's end", say last what it left the Plan record reading, as its ending does.
 
 **Bounds.** The per-story budget (the `budget` of each issue's build step, "Start the budget") applies to each issue
