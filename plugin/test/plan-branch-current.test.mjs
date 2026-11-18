@@ -42,10 +42,12 @@ const has = (text, phrase, where) => assert.ok(text.includes(phrase), `${where} 
 const storyStart = () => under(run, 'Story start');
 const bringCurrent = () => from(storyStart(), "**When the story's base is a plan branch, bring it current before the baseline:**", '3. **Take the baseline.**');
 
+const subIssueStep = () => from(under(run, 'Run a sub-issue'), '3. **Check whether it is blocked.**', '4. **Round 0, or straight to implementing.**');
 const precondition = () => from(under(run, 'Preconditions: all of them, or do not start'), '3. **The story is not blocked**', '4. **Leeway answers.**');
 const taskOrder = () => from(under(run, 'The task order'), '5. **Refuse a task whose blockers are not cleared**', '**Re-read the children before each task.**');
 const projectStep = () => from(under(run, 'Run a project'), '- **Refuse an issue whose blockers are not cleared**', '- **Skip an issue its issue run refuses**');
 const places = () => [
+  ['"Run a sub-issue" step 0.3', subIssueStep()],
   ['precondition 3', precondition()],
   ['"The task order" step 5', taskOrder()],
   ['"Run a project" step 2', projectStep()],
@@ -78,8 +80,10 @@ red('TC-8', 'a non-mechanical conflict aborts the merge and is stop 7, never res
   has(row, '"The story gate", "Story start"', "hard stop 7's Detected cell");
 });
 
-red('TC-8', 'one merge per story start, before the baseline', () => {
-  has(bringCurrent(), 'One merge per story start: the story worktree is cut after it, from the base as it then stands.', 'story start');
+red('TC-8', 'one merge per story start, after step 2 and before the baseline', () => {
+  const s = storyStart();
+  assert.ok(s.indexOf('2. **Create or reuse the story worktree**') < s.indexOf("**When the story's base is a plan branch"), 'the paragraph is not after step 2');
+  has(bringCurrent(), 'One merge per story start, made before the baseline: the story worktree is brought to the merged base by a fast-forward, never a second merge.', 'story start');
 });
 
 red('TC-9', 'the cleared rule is the same fixed sentence in precondition 3, "The task order" step 5 and "Run a project" step 2', () => {
@@ -98,6 +102,13 @@ red('TC-9', 'a sub-issue short of `done` and a story before its `build` step are
     has(text, '(never at `planned`, `ready` or `build` itself)', where);
     has(text, 'never at a step short of that, `in_review` included', where);
   }
+});
+
+red('TC-9', 'the "Run a project" prose says "not cleared", not "not done"', () => {
+  const p = under(run, 'Run a project');
+  has(p, 'It is skipped as an issue whose blockers are not cleared is:', '"Run a project"');
+  has(p, 'or the blockers not cleared), and the issues not started', '"Run a project"');
+  assert.ok(!/blockers (are )?not done|blockers not done/.test(p), '"Run a project" keeps "not done"');
 });
 
 red('AC-6', 'completeness holds in run: the plan branch is kept current at story start and "blocked by" is read as merged', () => {
