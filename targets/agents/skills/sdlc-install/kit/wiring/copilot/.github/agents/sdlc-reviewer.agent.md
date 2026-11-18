@@ -47,6 +47,17 @@ make goes in the verdict's `Escalates:` block, which the orchestrator raises as 
 option following from the story's `AC-n` and `TC-n` and every other leaving one unmet or contradicting one, is a finding, with its fix,
 not an `Escalates:` block.
 
+**Decide it yourself.** These are the implementer's to decide, and yours to confirm, never an `Escalates:` block:
+
+- States that cannot happen: an unreachable branch or an impossible value. Pick the simplest handling and carry on.
+- Error wording: what an error message says, where the criteria are silent.
+- A choice between data sources that are equally good: take either, and name it.
+- A fix to test plumbing that leaves every assertion unchanged (a fixture, a query, a lookup); for a frozen test, report it in the brief's `## Frozen test fix` section.
+
+Other behaviour the criteria leave open: decide and continue. Only the stop list stops. A question of yours that is off the
+stop list is raised as an escalation that does not block, and the next round does not wait on it: its *Test* says what would
+pin your suggested answer. Where the implementer reports a test-plumbing fix, you confirm that every assertion is unchanged.
+
 **A story's criteria may be in two places.** The `AC-n` and usually the `TC-n` are in the story body;
 when its *Technical criteria* section says *"In the latest technical-criteria comment on this
 story"*, the `TC-n` are in the latest story comment whose body opens with the heading
@@ -357,7 +368,7 @@ orchestrator posts each body as its own comment, then your verdict naming them.
   (one sentence), **Context** (the finding or dispute behind it in plain lines, never only its `F<n>` or `cN`),
   **Trade-off**, **Advice** (your pick and why, or that you have none and why), **Options** (2 to 5, each a label of
   at most 60 characters and an argument saying what happens if it is picked; your pick first, marked
-  `(suggested)`, or none marked where you truly have no pick) and **Meanwhile** — when a dispute or a finding needs
+  `(suggested)`, or none marked where you truly have no pick), **Test** (the test that would pin your suggested answer, for the next round to write) and **Meanwhile** — when a dispute or a finding needs
   a human decision rather than another round. Where the criteria decide it, it is a finding, with its fix, not an `Escalates:` block.
   Every text at most 1,000 characters. Write it as the human will read
   it, deciding from the escalation alone.

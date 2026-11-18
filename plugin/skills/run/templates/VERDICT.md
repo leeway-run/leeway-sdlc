@@ -145,6 +145,7 @@ as `cN`. Check each against the code at this sha.
   Every finding above is raised; a follow-up row is not.
 - **Escalates:** `none`, or a block when a dispute or a finding needs a human decision rather than another round. A gap the
   criteria decide is a finding, with its fix, not an `Escalates:` block.
+  A block carries a *Test*: the test that would pin your suggested answer, for the next round to write.
   One block per question that depends on no other; where one answer would settle or change another, merge them.
   Write it as the human will read it, not as an instruction to the implementer. Quote code as you would anywhere in the
   verdict: the orchestrator copies each line into a file of the escalation's fields, never onto a command line, so a
@@ -161,6 +162,7 @@ as `cN`. Check each against the code at this sha.
     no pick and why, and mark no option.
   - **Options:** 2 to 5, each a `label` (at most 60 characters) and its `argument` (at most 1,000): what happens if
     it is picked. Your pick comes first, marked `(suggested)`; the reason for it is in Advice, not in the argument.
+  - **Test:** the test that would pin your suggested answer, for the next round to write. The orchestrator does not copy this line into the escalation's fields.
   - **Meanwhile:** what stays blocked and what does not.
 
 ## Rules read
@@ -256,6 +258,7 @@ deleting it forces a full lint. Source: the testing doc, under "Which lane does 
   - **Options:**
     1. `Include the version` (suggested) — the next round adds the rules version to the cache key and a test that bumps it; every entry is invalidated on a rule change.
     2. `Leave it out, document the manual clear` — the next round documents the manual clear in docs/TESTING.md; upgrades stay fast, and a forgotten clear hides every new violation.
+  - **Test:** A test that bumps the linter's rules version and expects every cache entry to be invalidated.
   - **Meanwhile:** LWY-12.3 stays `in_progress`; LWY-12.4 does not touch the linter and carries on.
 
 ## Friction
@@ -278,7 +281,7 @@ The orchestrator posts, in order (alias `quiet-wren`; `LWY-12.3`; `it.2`):
 2. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F2` block (no `--anchor`); `c7`.
 3. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --stdin body` with the `F3` block (no `--anchor`): the finding that re-raises the disputed `c3`; `c8`.
 4. `leeway comment add LWY-12.3 --as quiet-wren/reviewer --kind review --iteration 2 --settles '["c2"]' --disputes '["c3"]' --raises '["c6","c7","c8"]' --stdin body`, with the verdict as the body: the finding-body blocks removed, `F1`/`F2`/`F3` in the tables rewritten as `c6`/`c7`/`c8`, and the ledger's `Raises:` line the same. `c9`.
-5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): each line of the block goes into a fields file as written, the backticks of its *Meanwhile* included, its options in its order with the `(suggested)` one marked, and `"comment"` is `c6`:
+5. `Escalates` is not `none` and concerns `F1`, so, as the role that raised it, tied to `F1`'s comment `c6` (never the verdict's `c9`): each line of the block goes into a fields file as written (its *Test* line is not copied into it), the backticks of its *Meanwhile* included, its options in its order with the `(suggested)` one marked, and `"comment"` is `c6`:
 
    ```json
    {"type":"blocker","question":"Should the cache key include the linter's rules version?","context":"The cache keys each file on its size and mtime only (scripts/lint-docs.mjs, lines 58 to 61). A file that passed under the old rules is skipped under new ones, so after a linter upgrade nothing is linted until someone deletes .cache/doc-lint.json by hand.","tradeoff":"Including the version costs one full lint after every upgrade; leaving it out keeps upgrades fast but relies on a manual clear nobody is reminded of.","advice":"Include the version: a stale cache hides violations silently, and that costs more than one full lint per upgrade.","options":[{"label":"Include the version","argument":"the next round adds the rules version to the cache key and a test that bumps it; every entry is invalidated on a rule change.","suggested":true},{"label":"Leave it out, document the manual clear","argument":"the next round documents the manual clear in docs/TESTING.md; upgrades stay fast, and a forgotten clear hides every new violation."}],"meanwhile":"LWY-12.3 stays `in_progress`; LWY-12.4 does not touch the linter and carries on.","comment":"c6"}

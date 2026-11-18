@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **Implementers and reviewers decide what is theirs (LWY-266).** `PROCESS.md` gains "Decide it yourself": states that cannot
+  happen, error wording, a choice between equally good data sources, and a test-plumbing fix that leaves every assertion
+  unchanged (for a frozen test, the brief's `## Frozen test fix`); other behaviour the criteria leave open is decided and
+  continued, and only the stop list stops. Both agent definitions carry the same four items word for word. The implementer
+  builds a question off the stop list with its pick and reports it in the brief's new `## Decided and continued` section;
+  `BLOCKED` with a `## Question` is for the stop list only. The reviewer's `Escalates:` block gains a *Test*, the test that
+  would pin its suggested answer, for the next round to write (the reviewer still never edits code); the *Test* line is not
+  copied into the escalation's fields file. `run`'s gate raises each `## Decided and continued` block through "Stop, or decide
+  and continue", and calls one on the stop list a gate failure.
 - **A run reads the answers behind its picks and its debt proposals, and waits on neither (LWY-266).** A new `run`
   subsection, "Reading the answers behind", runs at every round boundary, before the story gate's merge and at the plan's
   end: one `issue list` of the project finds each open `Follow-up: <ref> eN`, and one `issue get` reads its answer. A

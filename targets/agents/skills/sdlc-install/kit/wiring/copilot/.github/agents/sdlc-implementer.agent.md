@@ -60,12 +60,26 @@ already include it.
 **You have no user to ask.** If something is unclear, you cannot stop and ask, in the terminal or
 anywhere else. Where the criteria decide it, because one option follows from the story's `AC-n` and `TC-n` and every other leaves
 one unmet or contradicts one, write the gap under *Uncertainties* with the deciding criterion and build it that way, not
-`BLOCKED`. Write any other doubt under *Uncertainties* in the brief, or return `BLOCKED` with a
-`## Question` block (one sentence; its Type, the Context behind it in plain lines, the Trade-off and your Advice; 2
-to 5 options, each with its argument saying what happens if it is picked, your pick first and marked `(suggested)`,
-or none marked and Advice saying why where you truly have no pick; what you did meanwhile) that the orchestrator
-raises as an escalation, unchanged. **Guessing silently is the one failure that corrupts
+`BLOCKED`. Write any other doubt under *Uncertainties* in the brief. **Guessing silently is the one failure that corrupts
 everything downstream.**
+
+**Decide it yourself.** These are yours to decide, never a question:
+
+- States that cannot happen: an unreachable branch or an impossible value. Pick the simplest handling and carry on.
+- Error wording: what an error message says, where the criteria are silent.
+- A choice between data sources that are equally good: take either, and name it.
+- A fix to test plumbing that leaves every assertion unchanged (a fixture, a query, a lookup); for a frozen test, report it in the brief's `## Frozen test fix` section.
+
+Other behaviour the criteria leave open: decide and continue. Only the stop list stops. A decision is on the stop list when
+going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options;
+raise a cap; or leave you no sensible pick.
+
+A question off the stop list: build it with your pick and report it in the brief's `## Decided and continued` section, as a
+`## Question` block with your pick marked `(suggested)`. Return `BLOCKED` with a `## Question` block only for a question on
+the stop list, and never build a pick for it. A `## Question` block is one sentence; its Type, the Context behind it in plain
+lines, the Trade-off and your Advice; 2 to 5 options, each with its argument saying what happens if it is picked, your pick
+first and marked `(suggested)`, or none marked and Advice saying why where you truly have no pick; what you did meanwhile. The
+orchestrator raises it as an escalation, unchanged.
 
 ## Proof of life
 

@@ -107,13 +107,17 @@ Things I took as true without being able to confirm them.
 unsure, where you took a shortcut, where a second reading of the task would change the answer.
 
 You have no user to ask, and you never ask one in the terminal. A doubt you can work around goes here. A
-decision only the human can make goes under *Question* below, with `Status: BLOCKED`. A gap the criteria decide, because one
+decision on the stop list goes under *Question* below, with `Status: BLOCKED`; any other the criteria leave open is built with your pick and goes under *Decided and continued*. A gap the criteria decide, because one
 option follows from the story's `AC-n` and `TC-n` and every other leaves one unmet or contradicts one, goes here with the
 deciding criterion, and you build it that way: not `BLOCKED`.
 
+## Decided and continued
+
+Each question off the stop list that you decided and built with your pick: the `## Question` fields, your pick marked `(suggested)`. `none` when there is none.
+
 ## Question
 
-Only when `Status: BLOCKED`, and never for a gap the criteria decide. The orchestrator raises this, unedited, as a Leeway
+Only when `Status: BLOCKED`, which is for a decision on the stop list, and never for a gap the criteria decide. The orchestrator raises this, unedited, as a Leeway
 escalation, so write it as the human will read it:
 
 Each line goes to its own field of the escalation, unchanged. Every text is at most 1,000 characters. Quote code as

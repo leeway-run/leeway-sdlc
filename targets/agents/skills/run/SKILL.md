@@ -122,7 +122,7 @@ of each raise:
 
 After the triage, an implementer's `## Question` and a reviewer's `Escalates:` block already carry their fields: raise one the
 criteria do not decide unedited, in the block's order, its pick marked as the block marks it, each line copied into its field of the file as written,
-backticks and all.
+backticks and all, except a reviewer's *Test* line, which is not copied into the fields file.
 
 **Statuses and steps are set, never inferred.** The only calls that move a sub-issue or a story are `issue update
 <ref> --step <id>` and `--status <status>`. No iteration, comment, verdict or escalation moves anything; a stalled
@@ -514,7 +514,7 @@ the marker on if it is required. Pass, in the prompt:
   > writer. You do not commit or push; you `git -C <worktree> add`. Your brief's `Head sha` stays `pending`: the orchestrator
   > commits your staged work and writes the sha.
   >
-  > **You never ask the user a question in the terminal.** If a decision is the human's, stop implementing the part
+  > **You never ask the user a question in the terminal.** If a decision is on the stop list, stop implementing the part
   > that depends on it and return `Status: BLOCKED` with a `## Question` section: the question (one sentence), its
   > Type, Context, Trade-off and Advice, 2 to 5 options each with its argument saying what happens if it is picked,
   > your pick first and marked suggested (or none marked, and Advice saying why), and the meanwhile.
@@ -522,6 +522,8 @@ the marker on if it is required. Pass, in the prompt:
   > **A gap the criteria already decide is not a question.** When one option follows from the story's `AC-n` and `TC-n` and
   > every other leaves one unmet or contradicts one, report it under *Uncertainties* with the deciding criterion, build it
   > that way, and do not return `BLOCKED`. Adding a field to an existing op's response that a criterion needs is such a gap.
+  >
+  > **Decide it yourself:** a question off the stop list is built with your pick and reported in the brief's `## Decided and continued` section. `Status: BLOCKED` with a `## Question` section is for a question on the stop list only. The stop list is production, a merge into `main`, real data, a secret, the wider of two access options and a cap.
 
 > **Embed critical inputs; do not reference them.** A prompt carrying its own content survives a failed tool call;
 > an agent whose first call fails silently fabricates everything downstream. Reading Leeway is how a subagent
@@ -538,6 +540,8 @@ message and carry a `## Verification` section with verbatim `git -C <task worktr
 **Then run both yourself, in the task worktree (`git -C <task worktree> status --short`, `git -C <task worktree> diff --cached --stat`), and compare.** That comparison is what catches a round that never
 happened. Where `.sdlc/CONFIG.md` has *Required reading* rows owed by the staged paths, also check that the brief's
 *Rules read* section names each owed file; a missing one sends the brief back.
+
+Each `## Decided and continued` block of the brief is raised through "Stop, or decide and continue"; one on the stop list is a gate failure (the implementer should have returned `BLOCKED`) and is not raised as continued.
 
 If the brief is `Status: BLOCKED`, go to "A BLOCKED brief" instead of the rest of this section. Otherwise, in order;
 a step that fails stops the round.
@@ -639,7 +643,8 @@ with its answers.
 #### Stop, or decide and continue
 
 "A BLOCKED brief" (step 3) and "Gate again, record, act" (step 3) send every block through this order: the triage, then the
-stop list, then decide and continue.
+stop list, then decide and continue. The gate (step 2) sends each `## Decided and continued` block of a brief through the same
+order: its pick is already built, so "Carry on" adds nothing for it.
 
 **The triage.** "Before raising a block: do the criteria decide it?" runs first, unchanged: a decided block takes its path
 there and comes no further. A spec amendment, a `freeze` BLOCKER included, never reaches it or this subsection: it is hard stop 8
@@ -666,7 +671,7 @@ first:
    `Escalation: <ref> eN` is added to its description. The title carries it because `issue list` returns titles and no
    descriptions.
 5. **Carry on** as the decided path does: a `## Question`'s pick goes into the next round's prompt, the step set back as "A BLOCKED
-   brief" says on resume. An `Escalates:` block's pick is a live finding for the next round, and a PASS with one runs one more round
+   brief" says on resume. An `Escalates:` block's pick is a live finding for the next round, carrying its *Test*. The *Test* line is not copied into the fields file, it goes to the live finding with the pick, and a PASS with one runs one more round
    within `roundCap` ("Then"). The sub-issue is not set `blocked`, and no wait starts.
 
 #### A BLOCKED brief
@@ -722,7 +727,7 @@ the lane commands and the known-red list, and:
   refused it, the prompt says to report that decision's outcome in the verdict body, not under *Settles*.
 - **How it reaches Leeway**: the implementer's read-only paragraph minus its git and brief sentences, and that it
   never asks the user: a decision for the human goes in the verdict's `Escalates:` block. A gap the criteria decide is a
-  finding, with its fix, not an `Escalates:` block.
+  finding, with its fix, not an `Escalates:` block. **Decide it yourself:** an `Escalates:` block carries a *Test*: the test that would pin its suggested answer, for the next round to write.
 
 ### 4. Gate again, record, act
 
@@ -769,7 +774,7 @@ sufficient: the verdict exists nowhere else.
    ```
 
    Each line of the block goes to its field, unedited, backticks and all, and `"suggested": true` on the option it
-   marks, or on none where its Advice says there is no pick.
+   marks, or on none where its Advice says there is no pick. The *Test* line is not copied into the fields file.
 
    A stop's `"comment": "cN"` ties it to the **finding it concerns** (the `Escalates:` block says which `F<n>`). It is never the
    verdict's `cN`: the server accepts only a top-level `kind=comment` there and answers `unknown_comment` for a
