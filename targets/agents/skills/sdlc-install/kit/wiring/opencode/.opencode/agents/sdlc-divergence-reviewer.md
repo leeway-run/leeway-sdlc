@@ -61,6 +61,8 @@ item you never opened is a fabricated one, and it looks exactly like a real one.
 Bash is for reading: `git log`, `ls`, `grep`, a look at whether an endpoint a task assumes actually
 exists. Never a command that changes the tree, a branch, or Leeway.
 
+The sweeps are in the design doc's `## Sweeps` section or in the story comment opening `# Sweeps`, where your prompt says. Read them the way you read the hazard register.
+
 ## Proof of life
 
 **Open your response with the verbatim output of:**
@@ -186,6 +188,7 @@ you check its fixture yourself where you can. **A condition with no isolating ch
   and no other measure: no layer count and no line estimate of your own. Review finds least in the largest
   tasks. A task the guidance suggests splitting is a NOTE naming the point it strains. With no task-size
   guidance in your prompt, raise no size finding.
+- **Sweeps.** The plan records three, read paths, blast radius and completeness. A missing read-paths sweep, a missing blast-radius sweep or a missing completeness sweep is a BLOCKER, and so is the rest: a read-path item with no criterion or test is a BLOCKER, and a blast-radius item with no owner or reason is a BLOCKER, never a NOTE or a QUESTION.
 
 ## Findings
 
@@ -194,7 +197,7 @@ would close it.
 
 | Tag | Means | Typical |
 |---|---|---|
-| **BLOCKER** | The plan cannot be executed as written without a criterion going undelivered or a hazard going unclosed | orphan AC or TC; a criterion delivered but proven by nothing; story with no numbered ACs; hazard with no owner or no closing check; a condition of a compound rule with no isolating check; ordering gap; missing negative case on a data-scope, role or isolation criterion; hidden scope no task builds |
+| **BLOCKER** | The plan cannot be executed as written without a criterion going undelivered or a hazard going unclosed | orphan AC or TC; a criterion delivered but proven by nothing; story with no numbered ACs; hazard with no owner or no closing check; a condition of a compound rule with no isolating check; ordering gap; missing negative case on a data-scope, role or isolation criterion; hidden scope no task builds; a missing sweep (read paths, blast radius or completeness); a read-path item with no criterion or test; a blast-radius item with no owner or reason |
 | **QUESTION** | Only a human can decide it, and the answer changes the plan | scope drift; an untestable AC or TC whose intent you cannot pin down; a TC that changes what the user gets; any other missing negative case; a same-job *Parity* source with no extract-or-copy decision |
 | **NOTE** | Worth knowing, changes nothing unless someone chooses to | wording, a check that could be cheaper, a sibling worth citing under *Parity*; a story held at the product check; a task the guidance suggests splitting, naming the point it strains |
 

@@ -411,6 +411,23 @@ fails two conditions proves neither.
 **Do not turn the hazard list into the task list.** Tasks cut from hazards come out wildly uneven in size, hazards
 folded into one task lose criteria of their own, and the real tasks no hazard names get specified thinnest.
 
+### The three sweeps
+
+A plan has three sweeps beside its two lists. They find, while planning, the questions a run would otherwise stop on.
+The sweeps are recorded under `## Sweeps` in the design doc, or, where the type's plan step writes no design doc, in a story
+comment opening `# Sweeps`. A plan without all three does not pass the plan gate.
+
+- **Read paths.** List, for each rule the story adds or restricts, every op and surface that returns the affected data
+  (REST, MCP, the CLI, a list, a count, an export); each names its `TC-n` or hazard row and its test. No read-path item
+  is without a test.
+- **Blast radius.** List every rule the touched code already enforces (caps, rate limits); every script, test helper and
+  evidence tool that depends on a changed flow; and, for a migration, a migration's time on a copy of real data, where the
+  repo says how to make one. Where it does not, say the migration was not timed. Each blast-radius item names its owning
+  task or says "unaffected, because". No blast-radius item is without an owner or a reason.
+- **Completeness.** Name each screen's phone frame, where the floor asks for one; the rollout order of each migration that
+  drops something; and that `run` keeps the plan branch current (main merged into it before the run starts) and reads "blocked by" as merged
+  into the plan branch, not a person's manual step.
+
 ## 5. Create the hierarchy
 
 A **project** (the plan) holding **issues** (the stories), each holding **sub-issues** (the tasks), plus the
@@ -600,6 +617,7 @@ however it returns. Pass:
 - The **project id** and the story refs of the plan, or the story ref when the work has no project of its own.
 - The refs of any stories **held at step 1**, named as held, so it lists them rather than tracing them.
 - The **path to the design doc**, or that there is none.
+- Where the sweeps are: the design doc's `## Sweeps` section, or the story comment opening `# Sweeps`.
 - The **doc map** from `.sdlc/CONFIG.md`, with each doc's `real` / `stub` / `absent` state.
 - The **task-size guidance**: the text of `references/task-size.md`, with each `off` row's point removed and each
   `added` row's text appended, from the `## Task size` section of `.sdlc/CONFIG.md`. No section, or an empty table,
@@ -738,7 +756,7 @@ changes (read back under `project.links`) or named in the ending as left to `run
 its ref in the project description and a row in `.sdlc/leeway.md`, branch names read back, and a first task
 someone could pick up from its description alone.
 
-Plus: **every hazard names an owning task**, or the doc says which one does not and why. Every task's done-when
+Plus: Every plan has its three sweeps recorded: read paths, blast radius and completeness, under `## Sweeps` or in a story comment opening `# Sweeps`. **Every hazard names an owning task**, or the doc says which one does not and why. Every task's done-when
 names at least one thing that must be proven false. Every story passed the product check, or its gaps went back
 to the PO as one comment tied to a "how do we proceed?" escalation, and on *Hold* it was handed to shape-project with a `# Shaping started` comment and planned again on the hand-back (nothing is handed over on *Split* or *Accept*). Every planned story, a new one too, has a `# Interview closed`, posted before its
 design doc, and no escalation of its interview open. Every planned story has its *Technical criteria* in the body (or, on
