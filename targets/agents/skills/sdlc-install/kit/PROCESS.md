@@ -89,7 +89,7 @@ is not seen by it, and for that the invariant stays prose. A framework that clai
 not have is worse than one that admits the gap.
 
 A subagent has no user to ask. Where a paired session would stop and ask, a subagent writes the doubt
-under *Uncertainties* in its brief, or returns `BLOCKED` with a `## Question`. **Guessing silently is
+under *Uncertainties* in its brief, or, for the stop list only, returns `BLOCKED` with a `## Question` ("Decide it yourself"). **Guessing silently is
 the one failure that corrupts everything downstream.**
 
 ## How the plugin reaches Leeway
@@ -302,6 +302,23 @@ its evidence standard (the `evidence` doc in its doc map) names the exact comman
 transcripts, and where it differs from the wording above, it wins. A repo may record where the proof is
 committed durably in `.sdlc/CONFIG.md`. A claim about runtime behaviour is settled by running something,
 and the result is read from what it left behind.
+
+## Decide it yourself
+
+An implementer and a reviewer are asked only what they cannot sensibly decide. These are theirs to decide, never a question:
+
+- States that cannot happen: an unreachable branch or an impossible value. Pick the simplest handling and carry on.
+- Error wording: what an error message says, where the criteria are silent.
+- A choice between data sources that are equally good: take either, and name it.
+- A fix to test plumbing that leaves every assertion unchanged (a fixture, a query, a lookup); for a frozen test, report it in the brief's `## Frozen test fix` section.
+
+Other behaviour the criteria leave open: decide and continue. Only the stop list stops.
+
+Both agent definitions carry this list word for word, since an agent cannot read this file at run time. An implementer builds a
+question off the stop list with its pick and reports it in the brief's `## Decided and continued` section; `BLOCKED` with a
+`## Question` is for the stop list only. A reviewer's question off the stop list carries a *Test*, the test that would pin its
+suggested answer, for the next round to write, and is raised as an escalation that does not block ("Stop, or decide and
+continue", in `run`).
 
 ## Questions to the human are escalations
 
