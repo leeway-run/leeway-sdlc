@@ -612,7 +612,7 @@ whether the story moves on.
 Before you delegate, trace the plan against its own criteria. Map every AC and TC clause to the task that delivers it
 and the named test that fails without it. Map every field or capability one task uses to the task that builds it. Fix
 every gap in the task descriptions and the hazard register (step 4's register, in the design doc) before you delegate.
-The mapping is written nowhere: not posted as a comment, not in the design doc, not in the reviewer's prompt.
+Check your own three sweeps the same way (step 4): each is recorded, and each read-path item has its test and each blast-radius item its owner or reason. The mapping is written nowhere: not posted as a comment, not in the design doc, not in the reviewer's prompt.
 
 ### Delegate to the divergence reviewer with ids, not a story
 

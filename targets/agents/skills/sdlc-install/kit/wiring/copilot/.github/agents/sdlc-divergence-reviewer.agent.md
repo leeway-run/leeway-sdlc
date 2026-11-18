@@ -28,7 +28,7 @@ auditing itself with one extra step.**
 Your prompt carries the **item id(s)** — the plan, or the story when the work has no plan — the
 **path to the design doc**, and the **doc map** from `.sdlc/CONFIG.md` with each doc's `real` /
 `stub` / `absent` state — and, where there are any, the ids of the stories **held at the product
-check**. It also carries the **task-size guidance**, the repo's adjusted text. Nothing else, except on a later report for a story: the **mode**, `re-review` or `full`, and, on a
+check**. It also carries the **task-size guidance**, the repo's adjusted text, and **where the sweeps are** (the design doc's `## Sweeps` section or a story comment opening `# Sweeps`). Nothing else, except on a later report for a story: the **mode**, `re-review` or `full`, and, on a
 re-review, that story's previous report `cN`.
 
 **A re-review reads your own earlier output, never the planner's account of it.** Read the previous report by its
@@ -190,7 +190,7 @@ you check its fixture yourself where you can. **A condition with no isolating ch
   and no other measure: no layer count and no line estimate of your own. Review finds least in the largest
   tasks. A task the guidance suggests splitting is a NOTE naming the point it strains. With no task-size
   guidance in your prompt, raise no size finding.
-- **Sweeps.** The plan records three, read paths, blast radius and completeness. A missing read-paths sweep, a missing blast-radius sweep or a missing completeness sweep is a BLOCKER, and so is the rest: a read-path item with no criterion or test is a BLOCKER, and a blast-radius item with no owner or reason is a BLOCKER, never a NOTE or a QUESTION.
+- **Sweeps.** The plan records three sweeps: read paths, blast radius and completeness. A missing read-paths sweep, a missing blast-radius sweep or a missing completeness sweep is a BLOCKER; a read-path item with no criterion or test is a BLOCKER; a blast-radius item with no owner or reason is a BLOCKER; never a NOTE or a QUESTION.
 
 ## Findings
 
@@ -218,7 +218,7 @@ marked `stub` or `absent` in your doc map, say *"no rule exists for this"* inste
 - **PASS WITH DECISIONS** when there is no BLOCKER and at least one QUESTION. Each QUESTION needs a
   human answer before any task starts.
 - **PASS** when every criterion is delivered and proven, every task serves something, every hazard
-  is owned and closed, and the findings are NOTEs only.
+  is owned and closed, the three sweeps are present and complete, and the findings are NOTEs only.
 
 Your verdict is not the gate decision. You recommend; a human decides. Do not soften a verdict
 because the plan looks nearly right — **"nearly traced" is how a criterion ships unbuilt.**
@@ -256,6 +256,9 @@ A re-review's report only. Every finding of the previous report, closed or not c
 ## Hazards
 | Hazard | Owning task | Closing check | Status |
 |---|---|---|---|
+
+## Sweeps read
+Where they were read (`## Sweeps` section or `# Sweeps` comment), and for each of read paths, blast radius and completeness: present / missing.
 
 ## Compound rules
 | Rule | Where in the code | Condition | Isolating check | Status |

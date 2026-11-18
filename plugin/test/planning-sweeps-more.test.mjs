@@ -38,3 +38,31 @@ test('c3: the read-paths sweep says "for each rule the story adds or restricts"'
   assert.ok(readPaths.includes('**Read paths.**'), 'no read-paths item');
   assert.ok(readPaths.includes('for each rule the story adds or restricts'), 'the read-paths sweep lacks the scope phrase');
 });
+
+// Review round 2: c7 (the gate sentence), c9 (the sweeps carried through the loop).
+const reviewer = () => read('agents/sdlc-divergence-reviewer.md');
+const planProject = () => read('skills/plan-project/SKILL.md');
+
+test('c7: plan-project step 4 says a plan without all three does not pass the plan gate', () => {
+  const sweeps = section(planProject(), '### The three sweeps');
+  assert.ok(sweeps.includes('A plan without all three does not pass the plan gate.'), 'the gate sentence is missing');
+});
+
+test('c9: the reviewer\'s PASS needs the three sweeps present and complete', () => {
+  assert.ok(section(reviewer(), '## Verdict rules').includes('the three sweeps are present and complete'), 'the verdict rules do not mention the sweeps');
+});
+
+test('c9: the report has a "Sweeps read" section saying where they were read', () => {
+  const report = flat(reviewer().slice(reviewer().indexOf('## The report')));
+  assert.ok(report.includes('## Sweeps read'), 'the report template has no "## Sweeps read" section');
+  assert.ok(report.includes('Where they were read'), 'the section does not say where');
+});
+
+test('c9: "Trace it yourself first" has the planner check its own sweeps before delegating', () => {
+  assert.ok(section(planProject(), '### Trace it yourself first').includes('Check your own three sweeps'), 'no self-check of the sweeps');
+});
+
+test('c9: "What you receive" lists where the sweeps are among the items the prompt carries', () => {
+  const receive = section(reviewer(), '## What you receive, and what you must not');
+  assert.ok(receive.includes('**where the sweeps are**'), 'the sweeps location is not among the listed items');
+});
