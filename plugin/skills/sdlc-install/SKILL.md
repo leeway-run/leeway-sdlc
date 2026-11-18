@@ -234,7 +234,7 @@ process step 3.4 read, make only the change their answers ask for (3), write no 
    - The definition is `{version: 1, defaultType, types: [{id, label, branchPrefix, steps}]}`. Step kinds are
      `shape | plan | gate | build | manual`; statuses `backlog | ready | in_progress | in_review`. A `build`
      step carries `params {redTests, round0Cap, roundCap, review: light|standard|adversarial, blockingRungs,
-     unattended, budget?}`; a `plan` step `params {designDoc}`.
+     unattended, budget?}`; a `plan` step `params {designDoc}`. `round0Cap` and `roundCap` are each an integer 1 to 10.
    - Question 3 adds or drops types (the `defaultType` stays a kept type). Question 4 adds, removes or
      reorders steps. Question 5 sets `unattended` on `build` steps. Question 14, answered with the repo's, sets
      `branchPrefix` on each type it named (a prefix outside `^[a-z][a-z0-9-]{0,15}$` cannot be set: say so,

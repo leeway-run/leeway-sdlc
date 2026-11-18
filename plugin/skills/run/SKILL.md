@@ -1114,11 +1114,9 @@ A refusal here writes nothing: say in the session which precondition failed and 
    branch hides whatever the tasks break.
 4. **Start the budget** from the process: `params.budget` on the story's build step (precondition 1), never from
    `.sdlc/CONFIG.md`. It has up to three dimensions, whichever is hit first: `tokens`, `rounds` and `hours`, the
-   wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build
-   step with no `budget` limits none, so stop 9 never fires; say so in the session when the run starts. A *Per-story
+   wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build step with no `budget` has no notice and no stop; say so in the session when the run starts. A *Per-story
    budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves it into the process. Read the
-   budget again with the totals at each round boundary, so one a person changed while the run waited is the one
-   checked. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
+   budget again with the totals at each round boundary, so one a person changed while the run waited is the one checked. At a round boundary where a dimension has reached its budget, that is a notice, not a stop: post `# Budget reached — <story> · <dimension>` as a comment on the story, `<dimension>` being `tokens`, `rounds` or `hours`, and carry on. Post it unless the story already has a comment that opens `# Budget reached — <story> · <dimension>` for that dimension, read from `leeway issue get <story> --json` before posting: at most three notices a story, one per dimension. The run stops only at twice the budget in any dimension (stop 9). The notice and the stop read the same `totals` the same way: `tokensIncomplete` included. It is per story, across runs, and every dimension is summed by Leeway: `totals` in
    `leeway issue get <story> --json`, over the story's own records and its sub-issues' ("Recording spend").
    **Rounds** are `totals.rounds`, round-0 attempts included; **tokens** are `totals.tokens`, and **wall-clock** is
    `totals.minutes`. A continuation run reads them there, never from the `Spend` line of a `# Run status` comment.
@@ -1182,7 +1180,7 @@ further question for one stop); otherwise the issue run raises it on the story.
 | 6 | **A lane green at baseline is red on the story branch**, after a task lands or at the story gate | after each task | the issue run's, on the story |
 | 7 | **A merge conflict with the base that is not mechanical**: any conflict in a file a person wrote | "The story gate" | the issue run's, on the story |
 | 8 | **A frozen test needs a spec amendment**; the owner is the product owner for an `AC-n`, the developer for a `TC-n` | "The freeze" | the sub-issue run's, on the sub-issue |
-| 9 | **The per-story budget is exceeded**: tokens, rounds or wall-clock, whichever first | at every round boundary | the issue run's, on the story |
+| 9 | **The per-story budget is reached twice over**: tokens, rounds or wall-clock reaches twice its budget, whichever first | at every round boundary | the issue run's, on the story |
 | 10 | **Leeway is unreachable**: a call fails, or an empty result where something must exist (an expired sign-in is the usual cause) | any call | none can be raised: see the note |
 | 11 | **A block on the stop list**: a `## Question` or `Escalates:` block that is a stop | "Stop, or decide and continue" | the sub-issue run's, on the sub-issue |
 
@@ -1209,9 +1207,7 @@ Notes on the ones that need them:
   put the conflicting paths in the status comment.
 - **9: check at round boundaries, never mid-subagent.** Killing a subagent loses a round that may have been real.
   Read the story's `totals` at each boundary ("Start the budget"). Tokens are new tokens, counted from the transcripts
-  where the harness can ("Recording spend"). Stop when `totals.tokens` reaches the token budget; while
-  `tokensIncomplete` is true and that floor is under the budget, carry on, and every readout of it (the status
-  comment, the report to the user) says `at least <totals.tokens>, incomplete`. Rounds include round-0 attempts.
+  where the harness can ("Recording spend"). Stop when a dimension reaches twice its budget: `totals.tokens` twice `tokens`, `totals.rounds` twice `rounds`, `totals.minutes` twice `hours` × 60; while `tokensIncomplete` is true and that floor is under twice the budget, carry on, and every readout of it (the status comment, the report to the user) says `at least <totals.tokens>, incomplete`. A dimension that has only reached its budget is the notice of "Start the budget", not this stop. Rounds include round-0 attempts.
 - **10: no comment and no escalation can be written.** Put the status comment, word for word, in the session output,
   and post it once Leeway answers again, with the stop's escalation. Never retry in a loop.
 

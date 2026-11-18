@@ -102,7 +102,7 @@ Take the request in the human's words. It is one or more of these, and nothing e
   below (a step id `shaped` already in it, a third `gate`, more than 12 steps) is shown, naming the rule it
   breaks, and not offered.
 - **A build parameter** (red tests, review depth, caps, blocking rungs, the per-story budget) on that type's
-  `build` step. The `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 5; `roundCap` an
+  `build` step. The `build` step's `params`: `redTests` boolean; `round0Cap` an integer 1 to 10; `roundCap` an
   integer 1 to 10; `review` one of `light | standard | adversarial`; `blockingRungs` a list of at most 5 from `R1`
   to `R5`; `unattended` boolean; `budget`, optional, `{tokens, rounds, hours}`, each optional, `tokens` an integer
   1 to 1,000,000,000, `rounds` 1 to 500, `hours` 1 to 720, and a dimension left out is not limited. The `plan`

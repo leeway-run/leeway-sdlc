@@ -16,7 +16,7 @@ const read = (path) => readFileSync(join(plugin, path), 'utf8').replace(/\r\n/g,
 const flat = (text) => text.replace(/\s+/g, ' ').trim();
 
 const has = (text, phrase) => assert.ok(text.includes(phrase), `missing: ${phrase}`);
-const red = (criterion, name, fn) => test(`${criterion}: ${name}`, { skip: `red-test-${criterion}` }, fn);
+const red = (criterion, name, fn) => test(`${criterion}: ${name}`, fn);
 
 const run = read('skills/run/SKILL.md');
 const tune = flat(read('skills/sdlc-tune/SKILL.md'));
