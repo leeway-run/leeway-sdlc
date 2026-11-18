@@ -69,8 +69,7 @@ everything downstream.**
 - A fix to test plumbing that leaves every assertion unchanged (a fixture, a query, a lookup); for a frozen test, report it in the brief's `## Frozen test fix` section.
 
 Other behaviour the criteria leave open: decide and continue. Only the stop list stops. A decision is on the stop list when
-going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options;
-raise a cap; or leave you no sensible pick.
+going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action the permission check refused. When you cannot tell, it is on the stop list.
 
 A question off the stop list: build it with your pick and report it in the brief's `## Decided and continued` section, as a
 `## Question` block with your pick marked `(suggested)`. Return `BLOCKED` with a `## Question` block only for a question on

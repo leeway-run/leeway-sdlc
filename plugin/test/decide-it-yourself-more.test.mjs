@@ -125,3 +125,44 @@ test('AC-4 (c27): the check flags a negator that does not govern the copy, and k
     assert.deepEqual(putsTestIntoFields(good), [], good);
   }
 });
+
+// ---- c33 (round 7): the stop list, the same seven conditions wherever it is named --------------------------------------------
+
+// "touch production, a merge into `main` or real data; involve a secret; ...; or reports an action the permission check refused."
+const stopConditions = (text, lead, label) => {
+  const f = flat(text.replace(/^[ \t]*>[ \t]?/gm, ''));
+  const start = f.indexOf(lead);
+  assert.notEqual(start, -1, `${label}: no "${lead}"`);
+  const from = start + lead.length;
+  const end = f.indexOf('refused.', from);
+  assert.notEqual(end, -1, `${label}: the conditions do not end "refused."`);
+  return f.slice(from, end + 'refused.'.length);
+};
+
+test('AC-4 (c33): run\'s "The stop list", PROCESS.md, the implementer definition and run\'s implementer prompt name the same seven conditions, and no cap', () => {
+  const canonical = stopConditions(read('skills/run/SKILL.md'), '**The stop list.** A block is a stop when going on would ', 'run, "The stop list"');
+  assert.match(canonical, /production.*merge into `main`.*real data.*secret.*wider of two access options.*no option `\(suggested\)` \(no sensible pick\).*permission check refused\.$/);
+  const copies = {
+    'PROCESS.md': stopConditions(read('PROCESS.md'), 'A block is a stop when going on would ', 'PROCESS.md'),
+    'sdlc-implementer.md': stopConditions(read('agents/sdlc-implementer.md'), 'A decision is on the stop list when going on would ', 'sdlc-implementer.md'),
+    "run's implementer prompt": stopConditions(implementerPrompt(), 'A decision is on the stop list when going on would ', "run's implementer prompt"),
+  };
+  for (const [name, conditions] of Object.entries(copies)) {
+    assert.equal(conditions, canonical, `${name} differs from run's "The stop list"`);
+    assert.doesNotMatch(conditions, /\bcap\b/i, `${name} names a cap`);
+  }
+  for (const [name, text] of Object.entries({ 'sdlc-implementer.md': read('agents/sdlc-implementer.md'), "run's implementer prompt": implementerPrompt() })) {
+    assert.match(flat(text), /When you cannot tell, it is on the stop list\./, `${name}: no "When you cannot tell"`);
+    assert.doesNotMatch(flat(text), /\band a cap\b|\braise a cap\b/i, `${name} names a cap`);
+  }
+});
+
+// ---- c32 (round 7): two *Test* sentences, each pinned alone ---------------------------------------------------------------
+
+test('AC-4 (c32): VERDICT.md says "A block carries a *Test*: the test that would pin your suggested answer, for the next round to write."', () => {
+  assert.ok(flat(read('skills/run/templates/VERDICT.md')).includes('A block carries a *Test*: the test that would pin your suggested answer, for the next round to write.'));
+});
+
+test('AC-4 (c32): run says an `Escalates:` block\'s pick is a live finding for the next round, carrying its *Test*', () => {
+  assert.ok(flat(read('skills/run/SKILL.md')).includes("An `Escalates:` block's pick is a live finding for the next round, carrying its *Test*."));
+});

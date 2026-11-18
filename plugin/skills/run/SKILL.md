@@ -517,7 +517,7 @@ the marker on if it is required. Pass, in the prompt:
   > every other leaves one unmet or contradicts one, report it under *Uncertainties* with the deciding criterion, build it
   > that way, and do not return `BLOCKED`. Adding a field to an existing op's response that a criterion needs is such a gap.
   >
-  > **Decide it yourself:** a question off the stop list is built with your pick and reported in the brief's `## Decided and continued` section. `Status: BLOCKED` with a `## Question` section is for a question on the stop list only. The stop list is production, a merge into `main`, real data, a secret, the wider of two access options and a cap.
+  > **Decide it yourself:** a question off the stop list is built with your pick and reported in the brief's `## Decided and continued` section. `Status: BLOCKED` with a `## Question` section is for a question on the stop list only. A decision is on the stop list when going on would touch production, a merge into `main` or real data; involve a secret; take the wider of two access options; or when it marks no option `(suggested)` (no sensible pick), or reports an action the permission check refused. When you cannot tell, it is on the stop list.
 
 > **Embed critical inputs; do not reference them.** A prompt carrying its own content survives a failed tool call;
 > an agent whose first call fails silently fabricates everything downstream. Reading Leeway is how a subagent
