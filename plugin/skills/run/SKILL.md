@@ -1113,7 +1113,7 @@ A refusal here writes nothing: say in the session which precondition failed and 
    which are green. A lane red here that is not in *Known-red* is stop 6 before the first task: building on a red
    branch hides whatever the tasks break.
 4. **Start the budget** from the process: `params.budget` on the story's build step (precondition 1), never from
-   `.sdlc/CONFIG.md`. It has up to three dimensions, whichever is hit first: `tokens`, `rounds` and `hours`, the
+   `.sdlc/CONFIG.md`. It has up to three dimensions, each checked on its own: `tokens`, `rounds` and `hours`, the
    wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a build step with no `budget` has no notice and no stop; say so in the session when the run starts. A *Per-story
    budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves it into the process. Read the
    budget again with the totals at each round boundary, so one a person changed while the run waited is the one checked. At a round boundary where a dimension has reached its budget, that is a notice, not a stop: post `# Budget reached — <story> · <dimension>` as a comment on the story, `<dimension>` being `tokens`, `rounds` or `hours`, and carry on. Post it unless the story already has a comment that opens `# Budget reached — <story> · <dimension>` for that dimension, read from `leeway issue get <story> --json` before posting: at most three notices a story, one per dimension. The run stops only at twice the budget in any dimension (stop 9). The notice and the stop read the same `totals` the same way: `tokensIncomplete` included. It is per story, across runs, and every dimension is summed by Leeway: `totals` in

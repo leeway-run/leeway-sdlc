@@ -38,7 +38,7 @@ test('run reads the budget from the story\'s build step in the process, never fr
   assert.equal(
     from(under(run, 'Story start'), '4. **Start the budget**', 'It is per story, across runs'),
     '4. **Start the budget** from the process: `params.budget` on the story\'s build step (precondition 1), never from ' +
-      '`.sdlc/CONFIG.md`. It has up to three dimensions, whichever is hit first: `tokens`, `rounds` and `hours`, the ' +
+      '`.sdlc/CONFIG.md`. It has up to three dimensions, each checked on its own: `tokens`, `rounds` and `hours`, the ' +
       'wall-clock in whole hours, checked against `totals.minutes`. A dimension it leaves out is not limited, and a ' +
       'build step with no `budget` has no notice and no stop; say so in the session when the run starts. A ' +
       '*Per-story budget* row still in `.sdlc/CONFIG.md` is not read: say that `sync-repo` moves it into the process. ' +
@@ -109,7 +109,7 @@ test('sdlc-install writes the default budget on the preset path only, and says w
   assert.equal(
     from(install, '**Written without asking, with a preset only: the per-story budget**', ' ## Step 5'),
     '**Written without asking, with a preset only: the per-story budget** `{"tokens": 8000000, "rounds": 15, ' +
-      '"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock, whichever comes first), as ' +
+      '"hours": 4}` (8,000,000 tokens · 15 rounds · 4 h wall-clock: a `# Budget reached` notice at each one reached, and stop 9 at twice any of them), as ' +
       '`params.budget` on each `build` step that has none (step 5). No preset sets one, so the install does, as a ' +
       'default the human did not choose but can see in the process and change with `sdlc-tune`. With question 2 (d) ' +
       'the process is the human\'s and no budget is written. Step 7 says which `build` steps have one.',
