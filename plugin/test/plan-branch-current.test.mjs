@@ -40,7 +40,7 @@ function from(text, lead, until) {
 const has = (text, phrase, where) => assert.ok(text.includes(phrase), `${where} lacks: ${phrase}`);
 
 const storyStart = () => under(run, 'Story start');
-const bringCurrent = () => from(storyStart(), "**When the story's base is a plan branch, bring it current before the baseline:**", '3. **Take the baseline.**');
+const bringCurrent = () => from(storyStart(), "**When the story's base is a plan branch, bring it current before the baseline:**", '2. **Create or reuse the story worktree**');
 
 const subIssueStep = () => from(under(run, 'Run a sub-issue'), '3. **Check whether it is blocked.**', '4. **Round 0, or straight to implementing.**');
 const precondition = () => from(under(run, 'Preconditions: all of them, or do not start'), '3. **The story is not blocked**', '4. **Leeway answers.**');
@@ -80,10 +80,12 @@ red('TC-8', 'a non-mechanical conflict aborts the merge and is stop 7, never res
   has(row, '"The story gate", "Story start"', "hard stop 7's Detected cell");
 });
 
-red('TC-8', 'one merge per story start, after step 2 and before the baseline', () => {
+red('TC-8', 'one merge per story start, after step 1 and before step 2 (the worktree), so before the baseline', () => {
   const s = storyStart();
-  assert.ok(s.indexOf('2. **Create or reuse the story worktree**') < s.indexOf("**When the story's base is a plan branch"), 'the paragraph is not after step 2');
-  has(bringCurrent(), 'One merge per story start, made before the baseline: the story worktree is brought to the merged base by a fast-forward, never a second merge.', 'story start');
+  const at = s.indexOf("**When the story's base is a plan branch");
+  assert.ok(s.indexOf('1. **Set the story to its build step**') < at, 'the paragraph is not after step 1');
+  assert.ok(at < s.indexOf('2. **Create or reuse the story worktree**'), 'the paragraph is not before step 2');
+  has(bringCurrent(), 'One merge per story start, made before the baseline: a story worktree cut in step 2 is cut from the base as it then stands, and one reused from an earlier run is left as it is, because "The story gate", step 1, brings the base into the story branch.', 'story start');
 });
 
 red('TC-9', 'the cleared rule is the same fixed sentence in precondition 3, "The task order" step 5 and "Run a project" step 2', () => {
