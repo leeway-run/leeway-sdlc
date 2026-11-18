@@ -143,28 +143,40 @@ const STOP = /\bstop[- ]list\b/i;
 const BLOCKED_QUESTION = (b) => /\bBLOCKED\b/.test(b) && /## Question/.test(b);
 // The clauses of a block, a list item's marker also ending one: a clause is judged on its own, not on the paragraph around it.
 const itemClauses = (b) => b.split(/\s+(?:[-*+]|\d+[.)])\s+(?=[A-Z`*_])/).flatMap(clauses);
-// Strict per clause: every clause that names `BLOCKED` and the `## Question` block must itself name the stop list after `BLOCKED` ("Return `BLOCKED` with a
-// `## Question` block only for a question on the stop list"), with no never/not/don't/cannot between `BLOCKED` and it ("…when you cannot decide,
-// and never build a pick for a stop list question" is no rule). No lead, no next clause carries the stop list for it. A clause with an else word
-// ("otherwise", "any other") is off the list, and a clause that forbids `BLOCKED` is no permission and is skipped.
+// Strict per clause: every clause that names `BLOCKED` with a question (the `## Question` block, or a word like question, doubt, unsure, unclear,
+// stuck, decision) must restrict it to the stop list, in the form the phrase list hands over: "`BLOCKED` with a `## Question` block only for a
+// question on the stop list", "`Status: BLOCKED` with a `## Question` section is for a question on the stop list only", or the whole clause
+// "If a decision is on the stop list, [stop implementing the part that depends on it and] return `BLOCKED` ...". Nothing links another case to
+// `BLOCKED` (or, and, as well as, besides, also, too, whenever, any, usual), before it or after the form; ", and never build a pick for it" may follow.
+// A clause with an else word ("otherwise", "any other") is off the list. A clause that only forbids `BLOCKED` is skipped.
 const ON_THE_LIST = /\b(?:for|on|of|from|to|when|if|only)\b[^.;:]{0,40}\bstop[- ]list\b|\bstop[- ]list (?:questions?|ones?|items?|alone|only)\b/i;
 const ELSE_MARK = /\b(?:otherwise|any other|anything else|everything else|for the rest|the rest)\b/i;
-const NEGATION = /\b(?:never|not|don't|do not|doesn't|cannot|can't|nor)\b/i;
-// The clause names the stop list for every `BLOCKED` in it, with no never/not/cannot between the two: after the `BLOCKED` ("return `BLOCKED` ...
-// only for a question on the stop list"), or, for the first `BLOCKED` only, before it ("If a decision is on the stop list, ... return `BLOCKED`").
-// A second `BLOCKED` is a permission of its own ("..., though you may return `BLOCKED` when a doubt blocks you").
+const LINKS = /\b(?:or|and|as well as|besides|also|too|whenever|any|usual|when|unless|unsure|stuck|doubt|unclear)\b/i;
+const BLOCKED_ASKS = (c) => /\bBLOCKED\b/.test(c) && /\b(?:question|doubt|unsure|unclear|stuck|decision)\b/i.test(c);
+const SENTENCE_FORM = /^If a decision is on the stop list, (?:stop implementing [^,]*? and )?return `?(?:Status: )?BLOCKED`?(?: with an? `?## Question`? (?:block|section))?(?:, and never build a pick for it)?[.:]?$/;
+const AFTER_BLOCKED = /^`?(?: with an? `?## Question`? (?:block|section))? (?:only for (?:a question on )?the stop list|is for (?:a question on )?the stop list only)/;
 const namesStopList = (c) => {
+  if (SENTENCE_FORM.test(c)) return true;
   const at = [...c.matchAll(/\bBLOCKED\b/g)].map((m) => m.index);
-  const stops = [...c.matchAll(new RegExp(STOP.source, 'gi'))].map((m) => m.index);
-  return at.every((b, n) =>
-    stops.some((s) => (s > b ? !NEGATION.test(c.slice(b, s)) : n === 0 && !NEGATION.test(c.slice(s, b)))),
-  );
+  let rest = c;
+  for (const b of at) {
+    const m = AFTER_BLOCKED.exec(c.slice(b + 'BLOCKED'.length));
+    if (!m) return false;
+    rest = c.slice(b + 'BLOCKED'.length + m[0].length);
+  }
+  const lead = c.slice(0, c.search(/\bBLOCKED\b/));
+  return !LINKS.test(lead) && !LINKS.test(rest.replace(/^,? and never build\b/, ''));
 };
 const FORBIDS_BLOCKED = /\b(?:never|not|don't|doesn't|cannot|can't|nor)\b(?:\s+\w+){0,4}\s+\W*BLOCKED\b/i;
+// A clause that only forbids: a single `BLOCKED` and nothing after the forbidding that takes it back ("..., but do return `BLOCKED` ...").
+const onlyForbidsBlocked = (c) => {
+  const m = FORBIDS_BLOCKED.exec(c);
+  return !!m && c.match(/\bBLOCKED\b/g).length === 1 && !/\b(?:but|though|yet|however|except)\b/i.test(c.slice(m.index + m[0].length));
+};
 const blockedOffTheStopList = (text) =>
   blocks(text)
-    .flatMap((b) => itemClauses(b.replace(/\s+—\s+/g, ': ')))
-    .filter((c) => BLOCKED_QUESTION(c) && !FORBIDS_BLOCKED.test(c) && (ELSE_MARK.test(c) || !namesStopList(c)));
+    .flatMap((b) => itemClauses(b.replace(/\s+—\s+/g, ': ').replace(/([.!?])\*{1,2}\s+/g, '$1 ')))
+    .filter((c) => BLOCKED_ASKS(c) && !onlyForbidsBlocked(c) && (ELSE_MARK.test(c) || !namesStopList(c)));
 
 // A clause that tells the reviewer to write or edit a test: "you" or "the reviewer" as the subject, or a sentence-initial imperative,
 // with no negation ahead of it in the clause. "for the next round to write" and "the next round should write" have no such
@@ -415,11 +427,12 @@ const OUT_OF_THE_FIELDS = /\b(not|never|nor|without|neither|out of|excluded?|omi
 // The sentence is fixed: "the *Test* line is not copied into the fields file" (or "is never copied"), in a block that also says "live finding".
 const TEST_NOT_COPIED = /\bthe\s+\*{1,2}Test:?\*{1,2}\s+line\s+is\s+(?:not|never)\s+copied\s+into\s+the\s+fields\s+file\b/i;
 red('AC-4', 'the *Test* line goes to the live finding and is not copied into the escalation\'s fields file', () => {
-  const found = blocks(run()).filter((b) => /\*{1,2}Test:?\*{1,2}/.test(b) && /\blive finding\b/i.test(b) && /\bfields?\b/i.test(b));
-  assert.ok(found.length > 0, 'no block of run names the *Test*, the live finding and the fields file together');
-  assert.ok(found.some((b) => TEST_NOT_COPIED.test(b)), 'no block with "live finding" says "the *Test* line is not copied into the fields file"');
+  const found = blocks(run()).filter((b) => /\*{1,2}Test:?\*{1,2}/.test(b) && /\bfields?\b/i.test(b));
+  assert.ok(found.some((b) => /\blive finding\b/i.test(b)), 'no block of run names the *Test*, the live finding and the fields file together');
+  assert.ok(found.some((b) => /\blive finding\b/i.test(b) && TEST_NOT_COPIED.test(b)), 'no block with "live finding" says "the *Test* line is not copied into the fields file"');
+  // every block naming the *Test* and the fields, judged per piece: split at a comma, "but", a semicolon, a dash
   for (const b of found) {
-    const into = itemClauses(b).filter((c) => /\*{1,2}Test:?\*{1,2}/.test(c) && /\bfields? file\b/i.test(c) && !OUT_OF_THE_FIELDS.test(c));
+    const into = itemClauses(b).flatMap((c) => c.split(/,|\bbut\b|;|—/)).filter((c) => /\*{1,2}Test:?\*{1,2}/.test(c) && /\bfields?\b/i.test(c) && !OUT_OF_THE_FIELDS.test(c));
     assert.deepEqual(into, [], 'a clause puts the *Test* line into the fields file');
   }
 });
